@@ -1,0 +1,1131 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 51;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		4C6195308E9C00F72BB1B17F /* Pods_Jaguar.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B021898A0AC8306DAAE96EA /* Pods_Jaguar.framework */; };
+		A23435892819AD67000962F7 /* MainPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A23435882819AD67000962F7 /* MainPageView.swift */; };
+		A234358D2819AD6D000962F7 /* MainPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A234358C2819AD6D000962F7 /* MainPageViewModel.swift */; };
+		A2898AD5281F23BC0026EA8D /* UserSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2898AD4281F23BC0026EA8D /* UserSerializer.swift */; };
+		A2898AD6281F23BC0026EA8D /* UserSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2898AD4281F23BC0026EA8D /* UserSerializer.swift */; };
+		A2B002CF281ADA2400B771BA /* Translation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002CE281ADA2400B771BA /* Translation.swift */; };
+		A2B002D2281ADD0E00B771BA /* TranslationInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002D1281ADD0E00B771BA /* TranslationInput.swift */; };
+		A2B002D6281ADD1600B771BA /* LanguagePair.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002D5281ADD1600B771BA /* LanguagePair.swift */; };
+		A2B002D9281AF43D00B771BA /* TranslationArchiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002D8281AF43D00B771BA /* TranslationArchiver.swift */; };
+		A2B00315281B6CB700B771BA /* PhoneNumberPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00313281B6CB700B771BA /* PhoneNumberPageViewModel.swift */; };
+		A2B00316281B6CB700B771BA /* PhoneNumberPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00314281B6CB700B771BA /* PhoneNumberPageView.swift */; };
+		A2B0031B281B727900B771BA /* VerifyInfoPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00319281B727900B771BA /* VerifyInfoPageView.swift */; };
+		A2B0031C281B727900B771BA /* VerifyInfoPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0031A281B727900B771BA /* VerifyInfoPageViewModel.swift */; };
+		A2B0032D281C300300B771BA /* JaguarTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0032C281C300300B771BA /* JaguarTests.swift */; };
+		A2B00338281C301A00B771BA /* TranslatorServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00322281C2F5900B771BA /* TranslatorServiceTests.swift */; };
+		A2B0033B281C30D500B771BA /* TranslatorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBABE2819A5F00031592F /* TranslatorService.swift */; };
+		A2B0033E281C310000B771BA /* LanguagePair.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002D5281ADD1600B771BA /* LanguagePair.swift */; };
+		A2B00341281C310200B771BA /* Translation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002CE281ADA2400B771BA /* Translation.swift */; };
+		A2B00344281C310400B771BA /* TranslationArchiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002D8281AF43D00B771BA /* TranslationArchiver.swift */; };
+		A2B00347281C310600B771BA /* TranslationInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002D1281ADD0E00B771BA /* TranslationInput.swift */; };
+		A2B0034A281C310700B771BA /* TranslationSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAB22819A4C90031592F /* TranslationSerializer.swift */; };
+		A2B0034D281C319500B771BA /* AzureTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC22819A5F00031592F /* AzureTranslator.swift */; };
+		A2B00350281C319700B771BA /* DeepLTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBABF2819A5F00031592F /* DeepLTranslator.swift */; };
+		A2B00353281C319900B771BA /* GoogleTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC12819A5F00031592F /* GoogleTranslator.swift */; };
+		A2B00356281C319B00B771BA /* YandexTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC02819A5F00031592F /* YandexTranslator.swift */; };
+		A2B00359281C319F00B771BA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C5428199B660089DEA1 /* AppDelegate.swift */; };
+		A2B00374281C325300B771BA /* AKAlertAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7F28199C810089DEA1 /* AKAlertAction.swift */; };
+		A2B00375281C325300B771BA /* AKConfirmationAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7D28199C810089DEA1 /* AKConfirmationAlert.swift */; };
+		A2B00376281C325300B771BA /* AKCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7E28199C810089DEA1 /* AKCore.swift */; };
+		A2B00377281C325300B771BA /* AKTextFieldAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7B28199C810089DEA1 /* AKTextFieldAlert.swift */; };
+		A2B00378281C325300B771BA /* AKErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7A28199C810089DEA1 /* AKErrorAlert.swift */; };
+		A2B00379281C325300B771BA /* AKAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7C28199C810089DEA1 /* AKAlert.swift */; };
+		A2B0037C281C325600B771BA /* Builder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB628199D3C0089DEA1 /* Builder.swift */; };
+		A2B0037F281C325800B771BA /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB528199D3C0089DEA1 /* Extensions.swift */; };
+		A2B00382281C325A00B771BA /* SystemInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB728199D3C0089DEA1 /* SystemInformation.swift */; };
+		A2B00385281C326600B771BA /* BuildInfoController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB428199D3C0089DEA1 /* BuildInfoController.swift */; };
+		A2B00388281C326A00B771BA /* GeneralSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAB12819A4C90031592F /* GeneralSerializer.swift */; };
+		A2B00418281D7F8C00B771BA /* CallingCodes.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2B00417281D7F8C00B771BA /* CallingCodes.plist */; };
+		A2B00419281D7F8C00B771BA /* CallingCodes.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2B00417281D7F8C00B771BA /* CallingCodes.plist */; };
+		A2B0042E281DCCB800B771BA /* Array+.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0042D281DCCB800B771BA /* Array+.swift */; };
+		A2B0042F281DCCB800B771BA /* Array+.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0042D281DCCB800B771BA /* Array+.swift */; };
+		A2B00435281DCD0600B771BA /* Dictionary+.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00434281DCD0600B771BA /* Dictionary+.swift */; };
+		A2B00436281DCD0600B771BA /* Dictionary+.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00434281DCD0600B771BA /* Dictionary+.swift */; };
+		A2B0043E281DCD2D00B771BA /* String+.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0043D281DCD2D00B771BA /* String+.swift */; };
+		A2B0043F281DCD2D00B771BA /* String+.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0043D281DCD2D00B771BA /* String+.swift */; };
+		A2B00457281DD1A000B771BA /* Translatorable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00456281DD1A000B771BA /* Translatorable.swift */; };
+		A2B00458281DD1A000B771BA /* Translatorable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00456281DD1A000B771BA /* Translatorable.swift */; };
+		A2CFBAB32819A4C90031592F /* GeneralSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAB12819A4C90031592F /* GeneralSerializer.swift */; };
+		A2CFBAB42819A4C90031592F /* TranslationSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAB22819A4C90031592F /* TranslationSerializer.swift */; };
+		A2CFBAB72819A54F0031592F /* EssentialLocalizations.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2CFBAB62819A54F0031592F /* EssentialLocalizations.plist */; };
+		A2CFBABA2819A5550031592F /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2CFBAB92819A5550031592F /* GoogleService-Info.plist */; };
+		A2CFBAC32819A5F00031592F /* TranslatorService.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBABE2819A5F00031592F /* TranslatorService.swift */; };
+		A2CFBAC42819A5F00031592F /* DeepLTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBABF2819A5F00031592F /* DeepLTranslator.swift */; };
+		A2CFBAC52819A5F00031592F /* YandexTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC02819A5F00031592F /* YandexTranslator.swift */; };
+		A2CFBAC62819A5F00031592F /* GoogleTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC12819A5F00031592F /* GoogleTranslator.swift */; };
+		A2CFBAC72819A5F00031592F /* AzureTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC22819A5F00031592F /* AzureTranslator.swift */; };
+		A2CFBACB2819A8580031592F /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBACA2819A8580031592F /* ContentViewModel.swift */; };
+		A2D5EA9E281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2D5EA9D281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift */; };
+		A2D5EAA4281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2D5EAA3281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift */; };
+		A2DF2C5528199B660089DEA1 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C5428199B660089DEA1 /* AppDelegate.swift */; };
+		A2DF2C5728199B660089DEA1 /* SceneDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C5628199B660089DEA1 /* SceneDelegate.swift */; };
+		A2DF2C5928199B660089DEA1 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C5828199B660089DEA1 /* ContentView.swift */; };
+		A2DF2C5B28199B670089DEA1 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C5A28199B670089DEA1 /* Assets.xcassets */; };
+		A2DF2C5E28199B670089DEA1 /* Preview Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C5D28199B670089DEA1 /* Preview Assets.xcassets */; };
+		A2DF2C6128199B670089DEA1 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C5F28199B670089DEA1 /* LaunchScreen.storyboard */; };
+		A2DF2C7328199C3C0089DEA1 /* Chime.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C7228199C3C0089DEA1 /* Chime.mp3 */; };
+		A2DF2C7628199C400089DEA1 /* Chord.mp3 in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C7528199C400089DEA1 /* Chord.mp3 */; };
+		A2DF2C8028199C810089DEA1 /* AKErrorAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7A28199C810089DEA1 /* AKErrorAlert.swift */; };
+		A2DF2C8128199C810089DEA1 /* AKTextFieldAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7B28199C810089DEA1 /* AKTextFieldAlert.swift */; };
+		A2DF2C8228199C810089DEA1 /* AKAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7C28199C810089DEA1 /* AKAlert.swift */; };
+		A2DF2C8328199C810089DEA1 /* AKConfirmationAlert.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7D28199C810089DEA1 /* AKConfirmationAlert.swift */; };
+		A2DF2C8428199C810089DEA1 /* AKCore.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7E28199C810089DEA1 /* AKCore.swift */; };
+		A2DF2C8528199C810089DEA1 /* AKAlertAction.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C7F28199C810089DEA1 /* AKAlertAction.swift */; };
+		A2DF2CA128199CE20089DEA1 /* San Francisco (Heavy Italic).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9528199CE20089DEA1 /* San Francisco (Heavy Italic).otf */; };
+		A2DF2CA228199CE20089DEA1 /* San Francisco (Bold Italic).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9628199CE20089DEA1 /* San Francisco (Bold Italic).otf */; };
+		A2DF2CA328199CE20089DEA1 /* San Francisco (Heavy).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9728199CE20089DEA1 /* San Francisco (Heavy).otf */; };
+		A2DF2CA428199CE20089DEA1 /* San Francisco (Medium Italic).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9828199CE20089DEA1 /* San Francisco (Medium Italic).otf */; };
+		A2DF2CA528199CE20089DEA1 /* San Francisco (Regular).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9928199CE20089DEA1 /* San Francisco (Regular).otf */; };
+		A2DF2CA628199CE20089DEA1 /* San Francisco (Semibold Italic).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9A28199CE20089DEA1 /* San Francisco (Semibold Italic).otf */; };
+		A2DF2CA728199CE20089DEA1 /* San Francisco (Medium).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9B28199CE20089DEA1 /* San Francisco (Medium).otf */; };
+		A2DF2CA828199CE20089DEA1 /* San Francisco (Semibold).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9C28199CE20089DEA1 /* San Francisco (Semibold).otf */; };
+		A2DF2CA928199CE20089DEA1 /* San Francisco (Regular Italic).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9D28199CE20089DEA1 /* San Francisco (Regular Italic).otf */; };
+		A2DF2CAA28199CE20089DEA1 /* San Francisco (Light).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9E28199CE20089DEA1 /* San Francisco (Light).otf */; };
+		A2DF2CAB28199CE20089DEA1 /* San Francisco (Bold).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2C9F28199CE20089DEA1 /* San Francisco (Bold).otf */; };
+		A2DF2CAC28199CE20089DEA1 /* San Francisco (Light Italic).otf in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2CA028199CE20089DEA1 /* San Francisco (Light Italic).otf */; };
+		A2DF2CB128199D130089DEA1 /* NT (Black).png in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2CAF28199D130089DEA1 /* NT (Black).png */; };
+		A2DF2CB228199D130089DEA1 /* NT (White).png in Resources */ = {isa = PBXBuildFile; fileRef = A2DF2CB028199D130089DEA1 /* NT (White).png */; };
+		A2DF2CB828199D3C0089DEA1 /* BuildInfoController.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB428199D3C0089DEA1 /* BuildInfoController.swift */; };
+		A2DF2CB928199D3C0089DEA1 /* Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB528199D3C0089DEA1 /* Extensions.swift */; };
+		A2DF2CBA28199D3C0089DEA1 /* Builder.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB628199D3C0089DEA1 /* Builder.swift */; };
+		A2DF2CBB28199D3C0089DEA1 /* SystemInformation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2CB728199D3C0089DEA1 /* SystemInformation.swift */; };
+		D11BAA9D9769FD265AEAAD75 /* Pods_JaguarTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 11772CEE482CA4E06C54752E /* Pods_JaguarTests.framework */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		A2B0032F281C300300B771BA /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = A2DF2C4928199B660089DEA1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = A2DF2C5028199B660089DEA1;
+			remoteInfo = Jaguar;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		11772CEE482CA4E06C54752E /* Pods_JaguarTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_JaguarTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		1B2D2530447F561C314AAB83 /* Pods-Jaguar-JaguarTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Jaguar-JaguarTests.debug.xcconfig"; path = "Target Support Files/Pods-Jaguar-JaguarTests/Pods-Jaguar-JaguarTests.debug.xcconfig"; sourceTree = "<group>"; };
+		38491F127BCFDA2ACF36B884 /* Pods-JaguarTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-JaguarTests.debug.xcconfig"; path = "Target Support Files/Pods-JaguarTests/Pods-JaguarTests.debug.xcconfig"; sourceTree = "<group>"; };
+		4C96CB74C75710FB6A9EDF42 /* Pods-Jaguar-JaguarTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Jaguar-JaguarTests.release.xcconfig"; path = "Target Support Files/Pods-Jaguar-JaguarTests/Pods-Jaguar-JaguarTests.release.xcconfig"; sourceTree = "<group>"; };
+		596CCF69FB4275796738EE46 /* Pods-Jaguar.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Jaguar.debug.xcconfig"; path = "Target Support Files/Pods-Jaguar/Pods-Jaguar.debug.xcconfig"; sourceTree = "<group>"; };
+		7CB23219FB06B68EDA4E5A8C /* Pods-Jaguar.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Jaguar.release.xcconfig"; path = "Target Support Files/Pods-Jaguar/Pods-Jaguar.release.xcconfig"; sourceTree = "<group>"; };
+		7DF07BAD76E9A6BDAA3E7CE7 /* Pods-JaguarTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-JaguarTests.release.xcconfig"; path = "Target Support Files/Pods-JaguarTests/Pods-JaguarTests.release.xcconfig"; sourceTree = "<group>"; };
+		9B021898A0AC8306DAAE96EA /* Pods_Jaguar.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Jaguar.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A23435882819AD67000962F7 /* MainPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPageView.swift; sourceTree = "<group>"; };
+		A234358C2819AD6D000962F7 /* MainPageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPageViewModel.swift; sourceTree = "<group>"; };
+		A2898AD4281F23BC0026EA8D /* UserSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSerializer.swift; sourceTree = "<group>"; };
+		A2B002CE281ADA2400B771BA /* Translation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translation.swift; sourceTree = "<group>"; };
+		A2B002D1281ADD0E00B771BA /* TranslationInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationInput.swift; sourceTree = "<group>"; };
+		A2B002D5281ADD1600B771BA /* LanguagePair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LanguagePair.swift; sourceTree = "<group>"; };
+		A2B002D8281AF43D00B771BA /* TranslationArchiver.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationArchiver.swift; sourceTree = "<group>"; };
+		A2B00313281B6CB700B771BA /* PhoneNumberPageViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhoneNumberPageViewModel.swift; sourceTree = "<group>"; };
+		A2B00314281B6CB700B771BA /* PhoneNumberPageView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = PhoneNumberPageView.swift; sourceTree = "<group>"; };
+		A2B00319281B727900B771BA /* VerifyInfoPageView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VerifyInfoPageView.swift; sourceTree = "<group>"; };
+		A2B0031A281B727900B771BA /* VerifyInfoPageViewModel.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = VerifyInfoPageViewModel.swift; sourceTree = "<group>"; };
+		A2B00322281C2F5900B771BA /* TranslatorServiceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslatorServiceTests.swift; sourceTree = "<group>"; };
+		A2B0032A281C300300B771BA /* JaguarTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = JaguarTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2B0032C281C300300B771BA /* JaguarTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = JaguarTests.swift; sourceTree = "<group>"; };
+		A2B0032E281C300300B771BA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A2B00417281D7F8C00B771BA /* CallingCodes.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = CallingCodes.plist; sourceTree = "<group>"; };
+		A2B0042D281DCCB800B771BA /* Array+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Array+.swift"; sourceTree = "<group>"; };
+		A2B00434281DCD0600B771BA /* Dictionary+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Dictionary+.swift"; sourceTree = "<group>"; };
+		A2B0043D281DCD2D00B771BA /* String+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+.swift"; sourceTree = "<group>"; };
+		A2B00456281DD1A000B771BA /* Translatorable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translatorable.swift; sourceTree = "<group>"; };
+		A2CFBAB12819A4C90031592F /* GeneralSerializer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeneralSerializer.swift; sourceTree = "<group>"; };
+		A2CFBAB22819A4C90031592F /* TranslationSerializer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TranslationSerializer.swift; sourceTree = "<group>"; };
+		A2CFBAB62819A54F0031592F /* EssentialLocalizations.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = EssentialLocalizations.plist; sourceTree = "<group>"; };
+		A2CFBAB92819A5550031592F /* GoogleService-Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = "GoogleService-Info.plist"; sourceTree = "<group>"; };
+		A2CFBABE2819A5F00031592F /* TranslatorService.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TranslatorService.swift; sourceTree = "<group>"; };
+		A2CFBABF2819A5F00031592F /* DeepLTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = DeepLTranslator.swift; sourceTree = "<group>"; };
+		A2CFBAC02819A5F00031592F /* YandexTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YandexTranslator.swift; sourceTree = "<group>"; };
+		A2CFBAC12819A5F00031592F /* GoogleTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GoogleTranslator.swift; sourceTree = "<group>"; };
+		A2CFBAC22819A5F00031592F /* AzureTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AzureTranslator.swift; sourceTree = "<group>"; };
+		A2CFBACA2819A8580031592F /* ContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentViewModel.swift; sourceTree = "<group>"; };
+		A2D5EA9D281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyPhoneNumberPageView.swift; sourceTree = "<group>"; };
+		A2D5EAA3281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyPhoneNumberPageViewModel.swift; sourceTree = "<group>"; };
+		A2DF2C5128199B660089DEA1 /* Jaguar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jaguar.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2DF2C5428199B660089DEA1 /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		A2DF2C5628199B660089DEA1 /* SceneDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SceneDelegate.swift; sourceTree = "<group>"; };
+		A2DF2C5828199B660089DEA1 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
+		A2DF2C5A28199B670089DEA1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		A2DF2C5D28199B670089DEA1 /* Preview Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = "Preview Assets.xcassets"; sourceTree = "<group>"; };
+		A2DF2C6028199B670089DEA1 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		A2DF2C6228199B670089DEA1 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		A2DF2C7228199C3C0089DEA1 /* Chime.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Chime.mp3; sourceTree = "<group>"; };
+		A2DF2C7528199C400089DEA1 /* Chord.mp3 */ = {isa = PBXFileReference; lastKnownFileType = audio.mp3; path = Chord.mp3; sourceTree = "<group>"; };
+		A2DF2C7A28199C810089DEA1 /* AKErrorAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AKErrorAlert.swift; sourceTree = "<group>"; };
+		A2DF2C7B28199C810089DEA1 /* AKTextFieldAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AKTextFieldAlert.swift; sourceTree = "<group>"; };
+		A2DF2C7C28199C810089DEA1 /* AKAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AKAlert.swift; sourceTree = "<group>"; };
+		A2DF2C7D28199C810089DEA1 /* AKConfirmationAlert.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AKConfirmationAlert.swift; sourceTree = "<group>"; };
+		A2DF2C7E28199C810089DEA1 /* AKCore.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AKCore.swift; sourceTree = "<group>"; };
+		A2DF2C7F28199C810089DEA1 /* AKAlertAction.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AKAlertAction.swift; sourceTree = "<group>"; };
+		A2DF2C9528199CE20089DEA1 /* San Francisco (Heavy Italic).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Heavy Italic).otf"; sourceTree = "<group>"; };
+		A2DF2C9628199CE20089DEA1 /* San Francisco (Bold Italic).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Bold Italic).otf"; sourceTree = "<group>"; };
+		A2DF2C9728199CE20089DEA1 /* San Francisco (Heavy).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Heavy).otf"; sourceTree = "<group>"; };
+		A2DF2C9828199CE20089DEA1 /* San Francisco (Medium Italic).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Medium Italic).otf"; sourceTree = "<group>"; };
+		A2DF2C9928199CE20089DEA1 /* San Francisco (Regular).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Regular).otf"; sourceTree = "<group>"; };
+		A2DF2C9A28199CE20089DEA1 /* San Francisco (Semibold Italic).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Semibold Italic).otf"; sourceTree = "<group>"; };
+		A2DF2C9B28199CE20089DEA1 /* San Francisco (Medium).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Medium).otf"; sourceTree = "<group>"; };
+		A2DF2C9C28199CE20089DEA1 /* San Francisco (Semibold).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Semibold).otf"; sourceTree = "<group>"; };
+		A2DF2C9D28199CE20089DEA1 /* San Francisco (Regular Italic).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Regular Italic).otf"; sourceTree = "<group>"; };
+		A2DF2C9E28199CE20089DEA1 /* San Francisco (Light).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Light).otf"; sourceTree = "<group>"; };
+		A2DF2C9F28199CE20089DEA1 /* San Francisco (Bold).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Bold).otf"; sourceTree = "<group>"; };
+		A2DF2CA028199CE20089DEA1 /* San Francisco (Light Italic).otf */ = {isa = PBXFileReference; lastKnownFileType = file; path = "San Francisco (Light Italic).otf"; sourceTree = "<group>"; };
+		A2DF2CAF28199D130089DEA1 /* NT (Black).png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "NT (Black).png"; sourceTree = "<group>"; };
+		A2DF2CB028199D130089DEA1 /* NT (White).png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "NT (White).png"; sourceTree = "<group>"; };
+		A2DF2CB428199D3C0089DEA1 /* BuildInfoController.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = BuildInfoController.swift; sourceTree = "<group>"; };
+		A2DF2CB528199D3C0089DEA1 /* Extensions.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Extensions.swift; sourceTree = "<group>"; };
+		A2DF2CB628199D3C0089DEA1 /* Builder.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Builder.swift; sourceTree = "<group>"; };
+		A2DF2CB728199D3C0089DEA1 /* SystemInformation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SystemInformation.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		A2B00327281C300300B771BA /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				D11BAA9D9769FD265AEAAD75 /* Pods_JaguarTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A2DF2C4E28199B660089DEA1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				4C6195308E9C00F72BB1B17F /* Pods_Jaguar.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		74ABAAB4198FAD65E6ED01A1 /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				596CCF69FB4275796738EE46 /* Pods-Jaguar.debug.xcconfig */,
+				7CB23219FB06B68EDA4E5A8C /* Pods-Jaguar.release.xcconfig */,
+				1B2D2530447F561C314AAB83 /* Pods-Jaguar-JaguarTests.debug.xcconfig */,
+				4C96CB74C75710FB6A9EDF42 /* Pods-Jaguar-JaguarTests.release.xcconfig */,
+				38491F127BCFDA2ACF36B884 /* Pods-JaguarTests.debug.xcconfig */,
+				7DF07BAD76E9A6BDAA3E7CE7 /* Pods-JaguarTests.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		A23435872819AD44000962F7 /* Main */ = {
+			isa = PBXGroup;
+			children = (
+				A23435882819AD67000962F7 /* MainPageView.swift */,
+				A234358C2819AD6D000962F7 /* MainPageViewModel.swift */,
+			);
+			path = Main;
+			sourceTree = "<group>";
+		};
+		A2B002DB281AF44100B771BA /* Translation */ = {
+			isa = PBXGroup;
+			children = (
+				A2B002DD281AF47D00B771BA /* Classes */,
+				A2B00446281DCDEB00B771BA /* Extensions */,
+				A2B002DC281AF45F00B771BA /* Serializers */,
+				A2CFBABD2819A5D70031592F /* Translators */,
+			);
+			path = Translation;
+			sourceTree = "<group>";
+		};
+		A2B002DC281AF45F00B771BA /* Serializers */ = {
+			isa = PBXGroup;
+			children = (
+				A2CFBAB22819A4C90031592F /* TranslationSerializer.swift */,
+			);
+			path = Serializers;
+			sourceTree = "<group>";
+		};
+		A2B002DD281AF47D00B771BA /* Classes */ = {
+			isa = PBXGroup;
+			children = (
+				A2B002D5281ADD1600B771BA /* LanguagePair.swift */,
+				A2B002CE281ADA2400B771BA /* Translation.swift */,
+				A2B002D8281AF43D00B771BA /* TranslationArchiver.swift */,
+				A2B002D1281ADD0E00B771BA /* TranslationInput.swift */,
+			);
+			path = Classes;
+			sourceTree = "<group>";
+		};
+		A2B00311281B6CA600B771BA /* SignUp */ = {
+			isa = PBXGroup;
+			children = (
+				A2B00312281B6CAA00B771BA /* PhoneNumber */,
+				A2D5EA9C281F05C600C7EE77 /* VerifyPhoneNumber */,
+				A2B00318281B726800B771BA /* VerifyInfo */,
+			);
+			path = SignUp;
+			sourceTree = "<group>";
+		};
+		A2B00312281B6CAA00B771BA /* PhoneNumber */ = {
+			isa = PBXGroup;
+			children = (
+				A2B00314281B6CB700B771BA /* PhoneNumberPageView.swift */,
+				A2B00313281B6CB700B771BA /* PhoneNumberPageViewModel.swift */,
+			);
+			path = PhoneNumber;
+			sourceTree = "<group>";
+		};
+		A2B00318281B726800B771BA /* VerifyInfo */ = {
+			isa = PBXGroup;
+			children = (
+				A2B00319281B727900B771BA /* VerifyInfoPageView.swift */,
+				A2B0031A281B727900B771BA /* VerifyInfoPageViewModel.swift */,
+			);
+			path = VerifyInfo;
+			sourceTree = "<group>";
+		};
+		A2B0031E281C2F1A00B771BA /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A2B00321281C2F3400B771BA /* Internal */,
+				A2B00320281C2F3100B771BA /* Public */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A2B0031F281C2F2000B771BA /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				A2B00322281C2F5900B771BA /* TranslatorServiceTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A2B00320281C2F3100B771BA /* Public */ = {
+			isa = PBXGroup;
+			children = (
+				A2B00456281DD1A000B771BA /* Translatorable.swift */,
+				A2CFBABE2819A5F00031592F /* TranslatorService.swift */,
+			);
+			path = Public;
+			sourceTree = "<group>";
+		};
+		A2B00321281C2F3400B771BA /* Internal */ = {
+			isa = PBXGroup;
+			children = (
+				A2CFBAC22819A5F00031592F /* AzureTranslator.swift */,
+				A2CFBABF2819A5F00031592F /* DeepLTranslator.swift */,
+				A2CFBAC12819A5F00031592F /* GoogleTranslator.swift */,
+				A2CFBAC02819A5F00031592F /* YandexTranslator.swift */,
+			);
+			path = Internal;
+			sourceTree = "<group>";
+		};
+		A2B0032B281C300300B771BA /* JaguarTests */ = {
+			isa = PBXGroup;
+			children = (
+				A2B0032C281C300300B771BA /* JaguarTests.swift */,
+				A2B0032E281C300300B771BA /* Info.plist */,
+			);
+			path = JaguarTests;
+			sourceTree = "<group>";
+		};
+		A2B00446281DCDEB00B771BA /* Extensions */ = {
+			isa = PBXGroup;
+			children = (
+				A2B0042D281DCCB800B771BA /* Array+.swift */,
+				A2B00434281DCD0600B771BA /* Dictionary+.swift */,
+				A2B0043D281DCD2D00B771BA /* String+.swift */,
+			);
+			path = Extensions;
+			sourceTree = "<group>";
+		};
+		A2CFBAB02819A4B50031592F /* Serialization Layer */ = {
+			isa = PBXGroup;
+			children = (
+				A2CFBAB12819A4C90031592F /* GeneralSerializer.swift */,
+				A2898AD4281F23BC0026EA8D /* UserSerializer.swift */,
+			);
+			path = "Serialization Layer";
+			sourceTree = "<group>";
+		};
+		A2CFBABD2819A5D70031592F /* Translators */ = {
+			isa = PBXGroup;
+			children = (
+				A2B0031F281C2F2000B771BA /* Tests */,
+				A2B0031E281C2F1A00B771BA /* Sources */,
+			);
+			path = Translators;
+			sourceTree = "<group>";
+		};
+		A2D5EA9C281F05C600C7EE77 /* VerifyPhoneNumber */ = {
+			isa = PBXGroup;
+			children = (
+				A2D5EA9D281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift */,
+				A2D5EAA3281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift */,
+			);
+			path = VerifyPhoneNumber;
+			sourceTree = "<group>";
+		};
+		A2DF2C4828199B660089DEA1 = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C5328199B660089DEA1 /* Application */,
+				A2B0032B281C300300B771BA /* JaguarTests */,
+				A2DF2C5228199B660089DEA1 /* Products */,
+				74ABAAB4198FAD65E6ED01A1 /* Pods */,
+				AC23AA13B6729C7B931C1C21 /* Frameworks */,
+			);
+			sourceTree = "<group>";
+		};
+		A2DF2C5228199B660089DEA1 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C5128199B660089DEA1 /* Jaguar.app */,
+				A2B0032A281C300300B771BA /* JaguarTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		A2DF2C5328199B660089DEA1 /* Application */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C5428199B660089DEA1 /* AppDelegate.swift */,
+				A2DF2C5628199B660089DEA1 /* SceneDelegate.swift */,
+				A2DF2C5C28199B670089DEA1 /* Preview Content */,
+				A2CFBAB02819A4B50031592F /* Serialization Layer */,
+				A2DF2C7028199C0B0089DEA1 /* Storyboard Files */,
+				A2DF2C6F28199BF40089DEA1 /* Supporting Files */,
+				A2B002DB281AF44100B771BA /* Translation */,
+				A2DF2CBE28199D630089DEA1 /* Views */,
+				A2DF2CBF28199D670089DEA1 /* Other Files */,
+			);
+			path = Application;
+			sourceTree = "<group>";
+		};
+		A2DF2C5C28199B670089DEA1 /* Preview Content */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C5D28199B670089DEA1 /* Preview Assets.xcassets */,
+			);
+			path = "Preview Content";
+			sourceTree = "<group>";
+		};
+		A2DF2C6F28199BF40089DEA1 /* Supporting Files */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C7128199C260089DEA1 /* Audio Files */,
+				A2DF2C7828199C450089DEA1 /* Auxiliary Classes */,
+				A2DF2C8728199C890089DEA1 /* Fonts */,
+				A2DF2CAE28199CE90089DEA1 /* Image Files */,
+			);
+			path = "Supporting Files";
+			sourceTree = "<group>";
+		};
+		A2DF2C7028199C0B0089DEA1 /* Storyboard Files */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C5F28199B670089DEA1 /* LaunchScreen.storyboard */,
+			);
+			path = "Storyboard Files";
+			sourceTree = "<group>";
+		};
+		A2DF2C7128199C260089DEA1 /* Audio Files */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C7228199C3C0089DEA1 /* Chime.mp3 */,
+				A2DF2C7528199C400089DEA1 /* Chord.mp3 */,
+			);
+			path = "Audio Files";
+			sourceTree = "<group>";
+		};
+		A2DF2C7828199C450089DEA1 /* Auxiliary Classes */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C7928199C6F0089DEA1 /* AlertKit */,
+				A2DF2CB628199D3C0089DEA1 /* Builder.swift */,
+				A2DF2CB428199D3C0089DEA1 /* BuildInfoController.swift */,
+				A2DF2CB528199D3C0089DEA1 /* Extensions.swift */,
+				A2DF2CB728199D3C0089DEA1 /* SystemInformation.swift */,
+			);
+			path = "Auxiliary Classes";
+			sourceTree = "<group>";
+		};
+		A2DF2C7928199C6F0089DEA1 /* AlertKit */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C7C28199C810089DEA1 /* AKAlert.swift */,
+				A2DF2C7F28199C810089DEA1 /* AKAlertAction.swift */,
+				A2DF2C7D28199C810089DEA1 /* AKConfirmationAlert.swift */,
+				A2DF2C7E28199C810089DEA1 /* AKCore.swift */,
+				A2DF2C7A28199C810089DEA1 /* AKErrorAlert.swift */,
+				A2DF2C7B28199C810089DEA1 /* AKTextFieldAlert.swift */,
+			);
+			path = AlertKit;
+			sourceTree = "<group>";
+		};
+		A2DF2C8728199C890089DEA1 /* Fonts */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C8828199CBC0089DEA1 /* San Francisco */,
+			);
+			path = Fonts;
+			sourceTree = "<group>";
+		};
+		A2DF2C8828199CBC0089DEA1 /* San Francisco */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C9628199CE20089DEA1 /* San Francisco (Bold Italic).otf */,
+				A2DF2C9F28199CE20089DEA1 /* San Francisco (Bold).otf */,
+				A2DF2C9528199CE20089DEA1 /* San Francisco (Heavy Italic).otf */,
+				A2DF2C9728199CE20089DEA1 /* San Francisco (Heavy).otf */,
+				A2DF2CA028199CE20089DEA1 /* San Francisco (Light Italic).otf */,
+				A2DF2C9E28199CE20089DEA1 /* San Francisco (Light).otf */,
+				A2DF2C9828199CE20089DEA1 /* San Francisco (Medium Italic).otf */,
+				A2DF2C9B28199CE20089DEA1 /* San Francisco (Medium).otf */,
+				A2DF2C9D28199CE20089DEA1 /* San Francisco (Regular Italic).otf */,
+				A2DF2C9928199CE20089DEA1 /* San Francisco (Regular).otf */,
+				A2DF2C9A28199CE20089DEA1 /* San Francisco (Semibold Italic).otf */,
+				A2DF2C9C28199CE20089DEA1 /* San Francisco (Semibold).otf */,
+			);
+			path = "San Francisco";
+			sourceTree = "<group>";
+		};
+		A2DF2CAE28199CE90089DEA1 /* Image Files */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2CAF28199D130089DEA1 /* NT (Black).png */,
+				A2DF2CB028199D130089DEA1 /* NT (White).png */,
+			);
+			path = "Image Files";
+			sourceTree = "<group>";
+		};
+		A2DF2CBE28199D630089DEA1 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C5828199B660089DEA1 /* ContentView.swift */,
+				A2CFBACA2819A8580031592F /* ContentViewModel.swift */,
+				A23435872819AD44000962F7 /* Main */,
+				A2B00311281B6CA600B771BA /* SignUp */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		A2DF2CBF28199D670089DEA1 /* Other Files */ = {
+			isa = PBXGroup;
+			children = (
+				A2DF2C5A28199B670089DEA1 /* Assets.xcassets */,
+				A2B00417281D7F8C00B771BA /* CallingCodes.plist */,
+				A2CFBAB62819A54F0031592F /* EssentialLocalizations.plist */,
+				A2CFBAB92819A5550031592F /* GoogleService-Info.plist */,
+				A2DF2C6228199B670089DEA1 /* Info.plist */,
+			);
+			path = "Other Files";
+			sourceTree = "<group>";
+		};
+		AC23AA13B6729C7B931C1C21 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				9B021898A0AC8306DAAE96EA /* Pods_Jaguar.framework */,
+				11772CEE482CA4E06C54752E /* Pods_JaguarTests.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		A2B00329281C300300B771BA /* JaguarTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A2B00331281C300300B771BA /* Build configuration list for PBXNativeTarget "JaguarTests" */;
+			buildPhases = (
+				78C439E4E33E1D33918330B0 /* [CP] Check Pods Manifest.lock */,
+				A2B00326281C300300B771BA /* Sources */,
+				A2B00327281C300300B771BA /* Frameworks */,
+				A2B00328281C300300B771BA /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				A2B00330281C300300B771BA /* PBXTargetDependency */,
+			);
+			name = JaguarTests;
+			productName = JaguarTests;
+			productReference = A2B0032A281C300300B771BA /* JaguarTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		A2DF2C5028199B660089DEA1 /* Jaguar */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = A2DF2C6528199B670089DEA1 /* Build configuration list for PBXNativeTarget "Jaguar" */;
+			buildPhases = (
+				A14327DF2520C8CC717979B3 /* [CP] Check Pods Manifest.lock */,
+				A2DF2C4D28199B660089DEA1 /* Sources */,
+				A2DF2C4E28199B660089DEA1 /* Frameworks */,
+				A2DF2C4F28199B660089DEA1 /* Resources */,
+				A2DF2CC228199F000089DEA1 /* Update Build Information */,
+				0C1F0386651E1AD568B7FD45 /* [CP] Embed Pods Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = Jaguar;
+			productName = Application;
+			productReference = A2DF2C5128199B660089DEA1 /* Jaguar.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		A2DF2C4928199B660089DEA1 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1220;
+				LastUpgradeCheck = 1220;
+				TargetAttributes = {
+					A2B00329281C300300B771BA = {
+						CreatedOnToolsVersion = 12.2;
+						TestTargetID = A2DF2C5028199B660089DEA1;
+					};
+					A2DF2C5028199B660089DEA1 = {
+						CreatedOnToolsVersion = 12.2;
+					};
+				};
+			};
+			buildConfigurationList = A2DF2C4C28199B660089DEA1 /* Build configuration list for PBXProject "Jaguar" */;
+			compatibilityVersion = "Xcode 9.3";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = A2DF2C4828199B660089DEA1;
+			productRefGroup = A2DF2C5228199B660089DEA1 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				A2DF2C5028199B660089DEA1 /* Jaguar */,
+				A2B00329281C300300B771BA /* JaguarTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A2B00328281C300300B771BA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2B00419281D7F8C00B771BA /* CallingCodes.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A2DF2C4F28199B660089DEA1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2DF2CA328199CE20089DEA1 /* San Francisco (Heavy).otf in Resources */,
+				A2DF2CB128199D130089DEA1 /* NT (Black).png in Resources */,
+				A2DF2CA728199CE20089DEA1 /* San Francisco (Medium).otf in Resources */,
+				A2DF2CA528199CE20089DEA1 /* San Francisco (Regular).otf in Resources */,
+				A2B00418281D7F8C00B771BA /* CallingCodes.plist in Resources */,
+				A2DF2C6128199B670089DEA1 /* LaunchScreen.storyboard in Resources */,
+				A2DF2C7328199C3C0089DEA1 /* Chime.mp3 in Resources */,
+				A2DF2CA828199CE20089DEA1 /* San Francisco (Semibold).otf in Resources */,
+				A2DF2C7628199C400089DEA1 /* Chord.mp3 in Resources */,
+				A2DF2CA428199CE20089DEA1 /* San Francisco (Medium Italic).otf in Resources */,
+				A2DF2CAA28199CE20089DEA1 /* San Francisco (Light).otf in Resources */,
+				A2DF2CA928199CE20089DEA1 /* San Francisco (Regular Italic).otf in Resources */,
+				A2DF2CAC28199CE20089DEA1 /* San Francisco (Light Italic).otf in Resources */,
+				A2DF2C5E28199B670089DEA1 /* Preview Assets.xcassets in Resources */,
+				A2DF2CB228199D130089DEA1 /* NT (White).png in Resources */,
+				A2DF2CAB28199CE20089DEA1 /* San Francisco (Bold).otf in Resources */,
+				A2DF2CA128199CE20089DEA1 /* San Francisco (Heavy Italic).otf in Resources */,
+				A2DF2C5B28199B670089DEA1 /* Assets.xcassets in Resources */,
+				A2DF2CA228199CE20089DEA1 /* San Francisco (Bold Italic).otf in Resources */,
+				A2CFBAB72819A54F0031592F /* EssentialLocalizations.plist in Resources */,
+				A2DF2CA628199CE20089DEA1 /* San Francisco (Semibold Italic).otf in Resources */,
+				A2CFBABA2819A5550031592F /* GoogleService-Info.plist in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		0C1F0386651E1AD568B7FD45 /* [CP] Embed Pods Frameworks */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Jaguar/Pods-Jaguar-frameworks-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			name = "[CP] Embed Pods Frameworks";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-Jaguar/Pods-Jaguar-frameworks-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Jaguar/Pods-Jaguar-frameworks.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+		78C439E4E33E1D33918330B0 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-JaguarTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A14327DF2520C8CC717979B3 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Jaguar-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		A2DF2CC228199F000089DEA1 /* Update Build Information */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Update Build Information";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/bash\nbuildNumber=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" \"$INFOPLIST_FILE\")\n\nreleaseBuildNumber=$((($buildNumber + 1) - 0))\n\nbuildNumber=$(($buildNumber + 1))\nminorReleaseNumber=$((releaseBuildNumber/150))\nbugFixReleaseNumber=$((releaseBuildNumber/50))\nCFBundleVersionINCR=0.$((minorReleaseNumber)).$((bugFixReleaseNumber))\n\nbuildDate=`date +%s`\n\n/usr/libexec/PlistBuddy -c \"Set :CFBuildDate $buildDate\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $buildNumber\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleReleaseVersion $releaseBuildNumber\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $CFBundleVersionINCR\" \"$INFOPLIST_FILE\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		A2B00326281C300300B771BA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2B00356281C319B00B771BA /* YandexTranslator.swift in Sources */,
+				A2B00338281C301A00B771BA /* TranslatorServiceTests.swift in Sources */,
+				A2B00388281C326A00B771BA /* GeneralSerializer.swift in Sources */,
+				A2B0033E281C310000B771BA /* LanguagePair.swift in Sources */,
+				A2B0032D281C300300B771BA /* JaguarTests.swift in Sources */,
+				A2B00344281C310400B771BA /* TranslationArchiver.swift in Sources */,
+				A2B00350281C319700B771BA /* DeepLTranslator.swift in Sources */,
+				A2B00379281C325300B771BA /* AKAlert.swift in Sources */,
+				A2898AD6281F23BC0026EA8D /* UserSerializer.swift in Sources */,
+				A2B0034D281C319500B771BA /* AzureTranslator.swift in Sources */,
+				A2B00347281C310600B771BA /* TranslationInput.swift in Sources */,
+				A2B00374281C325300B771BA /* AKAlertAction.swift in Sources */,
+				A2B00377281C325300B771BA /* AKTextFieldAlert.swift in Sources */,
+				A2B00382281C325A00B771BA /* SystemInformation.swift in Sources */,
+				A2B0042F281DCCB800B771BA /* Array+.swift in Sources */,
+				A2B00359281C319F00B771BA /* AppDelegate.swift in Sources */,
+				A2B0033B281C30D500B771BA /* TranslatorService.swift in Sources */,
+				A2B0037F281C325800B771BA /* Extensions.swift in Sources */,
+				A2B00458281DD1A000B771BA /* Translatorable.swift in Sources */,
+				A2B00375281C325300B771BA /* AKConfirmationAlert.swift in Sources */,
+				A2B00378281C325300B771BA /* AKErrorAlert.swift in Sources */,
+				A2B00376281C325300B771BA /* AKCore.swift in Sources */,
+				A2B00436281DCD0600B771BA /* Dictionary+.swift in Sources */,
+				A2B00341281C310200B771BA /* Translation.swift in Sources */,
+				A2B00385281C326600B771BA /* BuildInfoController.swift in Sources */,
+				A2B0034A281C310700B771BA /* TranslationSerializer.swift in Sources */,
+				A2B00353281C319900B771BA /* GoogleTranslator.swift in Sources */,
+				A2B0043F281DCD2D00B771BA /* String+.swift in Sources */,
+				A2B0037C281C325600B771BA /* Builder.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		A2DF2C4D28199B660089DEA1 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A2B002D9281AF43D00B771BA /* TranslationArchiver.swift in Sources */,
+				A2CFBAC62819A5F00031592F /* GoogleTranslator.swift in Sources */,
+				A2B0031C281B727900B771BA /* VerifyInfoPageViewModel.swift in Sources */,
+				A2CFBAC72819A5F00031592F /* AzureTranslator.swift in Sources */,
+				A2B00316281B6CB700B771BA /* PhoneNumberPageView.swift in Sources */,
+				A2B0043E281DCD2D00B771BA /* String+.swift in Sources */,
+				A2898AD5281F23BC0026EA8D /* UserSerializer.swift in Sources */,
+				A2D5EA9E281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift in Sources */,
+				A234358D2819AD6D000962F7 /* MainPageViewModel.swift in Sources */,
+				A2CFBAC52819A5F00031592F /* YandexTranslator.swift in Sources */,
+				A2B00315281B6CB700B771BA /* PhoneNumberPageViewModel.swift in Sources */,
+				A2DF2CB828199D3C0089DEA1 /* BuildInfoController.swift in Sources */,
+				A2B00457281DD1A000B771BA /* Translatorable.swift in Sources */,
+				A2DF2C8528199C810089DEA1 /* AKAlertAction.swift in Sources */,
+				A2DF2C8328199C810089DEA1 /* AKConfirmationAlert.swift in Sources */,
+				A23435892819AD67000962F7 /* MainPageView.swift in Sources */,
+				A2DF2C8228199C810089DEA1 /* AKAlert.swift in Sources */,
+				A2B0031B281B727900B771BA /* VerifyInfoPageView.swift in Sources */,
+				A2B002D6281ADD1600B771BA /* LanguagePair.swift in Sources */,
+				A2DF2C5528199B660089DEA1 /* AppDelegate.swift in Sources */,
+				A2CFBAC42819A5F00031592F /* DeepLTranslator.swift in Sources */,
+				A2D5EAA4281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift in Sources */,
+				A2B002CF281ADA2400B771BA /* Translation.swift in Sources */,
+				A2CFBAC32819A5F00031592F /* TranslatorService.swift in Sources */,
+				A2B002D2281ADD0E00B771BA /* TranslationInput.swift in Sources */,
+				A2DF2C8128199C810089DEA1 /* AKTextFieldAlert.swift in Sources */,
+				A2CFBAB32819A4C90031592F /* GeneralSerializer.swift in Sources */,
+				A2DF2C8428199C810089DEA1 /* AKCore.swift in Sources */,
+				A2DF2C5728199B660089DEA1 /* SceneDelegate.swift in Sources */,
+				A2DF2C5928199B660089DEA1 /* ContentView.swift in Sources */,
+				A2CFBAB42819A4C90031592F /* TranslationSerializer.swift in Sources */,
+				A2DF2CB928199D3C0089DEA1 /* Extensions.swift in Sources */,
+				A2B00435281DCD0600B771BA /* Dictionary+.swift in Sources */,
+				A2CFBACB2819A8580031592F /* ContentViewModel.swift in Sources */,
+				A2DF2C8028199C810089DEA1 /* AKErrorAlert.swift in Sources */,
+				A2DF2CBB28199D3C0089DEA1 /* SystemInformation.swift in Sources */,
+				A2DF2CBA28199D3C0089DEA1 /* Builder.swift in Sources */,
+				A2B0042E281DCCB800B771BA /* Array+.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		A2B00330281C300300B771BA /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = A2DF2C5028199B660089DEA1 /* Jaguar */;
+			targetProxy = A2B0032F281C300300B771BA /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin PBXVariantGroup section */
+		A2DF2C5F28199B670089DEA1 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				A2DF2C6028199B670089DEA1 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
+/* End PBXVariantGroup section */
+
+/* Begin XCBuildConfiguration section */
+		A2B00332281C300300B771BA /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 38491F127BCFDA2ACF36B884 /* Pods-JaguarTests.debug.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7R4R2FSWH9;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth/FirebaseAuth.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCore/FirebaseCore.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreDiagnostics/FirebaseCoreDiagnostics.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseDatabase/FirebaseDatabase.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseInstallations/FirebaseInstallations.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher/GTMSessionFetcher.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GoogleDataTransport/GoogleDataTransport.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/InputBarAccessoryView/InputBarAccessoryView.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/MessageKit/MessageKit.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PKHUD/PKHUD.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PhoneNumberKit/PhoneNumberKit.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/ReachabilitySwift/Reachability.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/leveldb-library/leveldb.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/nanopb/nanopb.framework/Headers\"",
+					"\"${PODS_ROOT}/Headers/Public\"",
+					"\"${PODS_ROOT}/Headers/Public/Firebase\"",
+					"$(inherited)",
+					"${PODS_ROOT}/Firebase/CoreOnly/Sources",
+				);
+				INFOPLIST_FILE = JaguarTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = us.neotechnica.JaguarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Jaguar.app/Jaguar";
+			};
+			name = Debug;
+		};
+		A2B00333281C300300B771BA /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7DF07BAD76E9A6BDAA3E7CE7 /* Pods-JaguarTests.release.xcconfig */;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				DEVELOPMENT_TEAM = 7R4R2FSWH9;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseAuth/FirebaseAuth.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCore/FirebaseCore.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseCoreDiagnostics/FirebaseCoreDiagnostics.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseDatabase/FirebaseDatabase.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/FirebaseInstallations/FirebaseInstallations.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GTMSessionFetcher/GTMSessionFetcher.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GoogleDataTransport/GoogleDataTransport.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/GoogleUtilities/GoogleUtilities.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/InputBarAccessoryView/InputBarAccessoryView.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/MessageKit/MessageKit.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PKHUD/PKHUD.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PhoneNumberKit/PhoneNumberKit.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/PromisesObjC/FBLPromises.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/ReachabilitySwift/Reachability.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/leveldb-library/leveldb.framework/Headers\"",
+					"\"${PODS_CONFIGURATION_BUILD_DIR}/nanopb/nanopb.framework/Headers\"",
+					"\"${PODS_ROOT}/Headers/Public\"",
+					"\"${PODS_ROOT}/Headers/Public/Firebase\"",
+					"$(inherited)",
+					"${PODS_ROOT}/Firebase/CoreOnly/Sources",
+				);
+				INFOPLIST_FILE = JaguarTests/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = us.neotechnica.JaguarTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Jaguar.app/Jaguar";
+			};
+			name = Release;
+		};
+		A2DF2C6328199B670089DEA1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.2;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+			};
+			name = Debug;
+		};
+		A2DF2C6428199B670089DEA1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 14.2;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		A2DF2C6628199B670089DEA1 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 596CCF69FB4275796738EE46 /* Pods-Jaguar.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Application Icon";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0;
+				DEVELOPMENT_ASSET_PATHS = "\"Application/Preview Content\"";
+				DEVELOPMENT_TEAM = 7R4R2FSWH9;
+				ENABLE_PREVIEWS = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				INFOPLIST_FILE = "Application/Other Files/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = us.neotechnica.jaguar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		A2DF2C6728199B670089DEA1 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 7CB23219FB06B68EDA4E5A8C /* Pods-Jaguar.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = "Application Icon";
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 0;
+				DEVELOPMENT_ASSET_PATHS = "\"Application/Preview Content\"";
+				DEVELOPMENT_TEAM = 7R4R2FSWH9;
+				ENABLE_PREVIEWS = YES;
+				GCC_SYMBOLS_PRIVATE_EXTERN = YES;
+				INFOPLIST_FILE = "Application/Other Files/Info.plist";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 0.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = us.neotechnica.jaguar;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		A2B00331281C300300B771BA /* Build configuration list for PBXNativeTarget "JaguarTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A2B00332281C300300B771BA /* Debug */,
+				A2B00333281C300300B771BA /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A2DF2C4C28199B660089DEA1 /* Build configuration list for PBXProject "Jaguar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A2DF2C6328199B670089DEA1 /* Debug */,
+				A2DF2C6428199B670089DEA1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		A2DF2C6528199B670089DEA1 /* Build configuration list for PBXNativeTarget "Jaguar" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A2DF2C6628199B670089DEA1 /* Debug */,
+				A2DF2C6728199B670089DEA1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = A2DF2C4928199B660089DEA1 /* Project object */;
+}
