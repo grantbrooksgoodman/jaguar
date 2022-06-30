@@ -42,6 +42,14 @@ public struct MainPageView: View {
             }
             .padding(.vertical, 5)
             .foregroundColor(.blue)
+            
+            Button {
+                viewRouter.currentPage = .signIn
+            } label: {
+                Text(translations["alreadyUse"]!.output)
+            }
+            .padding(.vertical, 5)
+            .foregroundColor(.blue)
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

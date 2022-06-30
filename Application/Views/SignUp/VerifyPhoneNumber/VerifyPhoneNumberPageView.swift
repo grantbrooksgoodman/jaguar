@@ -69,6 +69,12 @@ public struct VerifyPhoneNumberPageView: View {
                             errorDescriptor = (error as NSError).localizedDescription
                             log(errorInfo(error),
                                 metadata: [#file, #function, #line])
+                            let error = AKError(errorInfo(error),
+                                                metadata: [#file, #function, #line],
+                                                isReportable: false)
+                            AKErrorAlert(message: viewModel.simpleErrorString(errorDescriptor),
+                                         error: error).present()
+                            
                         }
                     }
                 } label: {
@@ -78,9 +84,9 @@ public struct VerifyPhoneNumberPageView: View {
                 .padding(.top, 5)
                 .accentColor(.blue)
                 .disabled(verificationCode.lowercasedTrimmingWhitespace.count != 6)
-                .alert(isPresented: $errored) {
-                    return Alert(title: Text(viewModel.getErrorAlertText(errorDescriptor)))
-                }
+                //                .alert(isPresented: $errored) {
+                //                    return Alert(title: Text(viewModel.simpleErrorString(errorDescriptor)))
+                //                }
                 
                 Button {
                     viewRouter.currentPage = .main

@@ -78,10 +78,10 @@ public class VerifyPhoneNumberPageViewModel: ObservableObject {
         }
     }
     
-    public func getErrorAlertText(_ errorDescriptor: String) -> String {
+    public func simpleErrorString(_ errorDescriptor: String) -> String {
         switch errorDescriptor {
         case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code SMS and be sure to use the verification code provided by the user.":
-            return "The verification code entered was invalid. Please try again."
+            return "The verification code entered was invalid.\n\nPlease try again."
         default:
             return "An unknown error has occurred. Please try again."
         }

@@ -54,11 +54,11 @@ var codeName                  = "Jaguar"
 var currentFile               = #file
 var dmyFirstCompileDateString = "23042022"
 var finalName                 = ""
-var languageCode              = ["ca", "es", "fr", "gl", "it", "pt", "ro"].randomElement()! //["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()! //Locale.preferredLanguages[0].components(separatedBy: "-")[0]
+var languageCode              = "es" //["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()! //["ca", "es", "fr", "gl", "it", "pt", "ro"].randomElement()! //Locale.preferredLanguages[0].components(separatedBy: "-")[0]
 
 //UIViewControllers
 var buildInfoController: BuildInfoController?
-var frontmostViewController: UIViewController!
+var frontmostViewController: UIViewController! = UIApplication.shared.windows.first!.rootViewController!
 
 //Other Declarations
 let telephonyNetworkInfo = CTTelephonyNetworkInfo()
@@ -69,6 +69,12 @@ var currentCalendar = Calendar(identifier: .gregorian)
 var informationDictionary: [String:String]!
 var statusBarStyle: UIStatusBarStyle = .default
 var touchTimer: Timer?
+
+var currentUserID = "" {
+    didSet {
+        UserDefaults.standard.setValue(currentUserID, forKey: "currentUserID")
+    }
+}
 
 //==================================================//
 
@@ -162,6 +168,10 @@ var touchTimer: Timer?
         }
         
         TranslationSerializer.downloadTranslations()
+        
+        if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
+            currentUserID = userID
+        }
         
         return true
     }

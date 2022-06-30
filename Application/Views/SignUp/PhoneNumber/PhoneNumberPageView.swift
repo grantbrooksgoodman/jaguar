@@ -97,7 +97,7 @@ public struct PhoneNumberPageView: View {
                 .accentColor(.blue)
                 .disabled(phoneNumberString.removingOccurrences(of: ["+"]).lowercasedTrimmingWhitespace.count < 7)
                 .alert(isPresented: $errored) {
-                    return Alert(title: Text(viewModel.getErrorAlertText(errorDescriptor)))
+                    return Alert(title: Text(viewModel.simpleErrorString(errorDescriptor)))
                 }
                 
                 Button {

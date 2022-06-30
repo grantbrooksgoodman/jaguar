@@ -15,7 +15,8 @@ import SwiftUI
 
 public enum Page {
     case main
-    case logIn
+    case home
+    case signIn
     case signUp_phoneNumber
     case signUp_verifyPhoneNumber(identifier: String,
                                   phoneNumber: Int)
@@ -24,7 +25,7 @@ public enum Page {
 }
 
 public class ViewRouter: ObservableObject {
-    @Published var currentPage: Page? = .main
+    @Published var currentPage: Page? = currentUserID == "" ? .main : .home
 }
 
 public struct ContentView: View {
@@ -34,6 +35,15 @@ public struct ContentView: View {
         switch viewRouter.currentPage {
         case .main:
             MainPageView(viewModel: MainPageViewModel(), viewRouter: viewRouter)
+                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+                .zIndex(1)
+        case .home:
+            HomePageView(viewModel: HomePageViewModel(),
+                         viewRouter: viewRouter)
+                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+                .zIndex(1)
+        case .signIn:
+            SignInPageView(viewModel: SignInPageViewModel(), viewRouter: viewRouter)
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)
         case .signUp_phoneNumber:

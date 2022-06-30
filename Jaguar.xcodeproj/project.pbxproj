@@ -54,6 +54,10 @@
 		A2B0043F281DCD2D00B771BA /* String+.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B0043D281DCD2D00B771BA /* String+.swift */; };
 		A2B00457281DD1A000B771BA /* Translatorable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00456281DD1A000B771BA /* Translatorable.swift */; };
 		A2B00458281DD1A000B771BA /* Translatorable.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B00456281DD1A000B771BA /* Translatorable.swift */; };
+		A2B14FC2286E3E5900A7F78F /* SignInPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B14FC1286E3E5900A7F78F /* SignInPageView.swift */; };
+		A2B14FC6286E3E6200A7F78F /* SignInPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B14FC5286E3E6200A7F78F /* SignInPageViewModel.swift */; };
+		A2B14FCB286E47A300A7F78F /* HomePageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B14FCA286E47A300A7F78F /* HomePageView.swift */; };
+		A2B14FCF286E47A900A7F78F /* HomePageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B14FCE286E47A900A7F78F /* HomePageViewModel.swift */; };
 		A2CFBAB32819A4C90031592F /* GeneralSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAB12819A4C90031592F /* GeneralSerializer.swift */; };
 		A2CFBAB42819A4C90031592F /* TranslationSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAB22819A4C90031592F /* TranslationSerializer.swift */; };
 		A2CFBAB72819A54F0031592F /* EssentialLocalizations.plist in Resources */ = {isa = PBXBuildFile; fileRef = A2CFBAB62819A54F0031592F /* EssentialLocalizations.plist */; };
@@ -140,6 +144,10 @@
 		A2B00434281DCD0600B771BA /* Dictionary+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Dictionary+.swift"; sourceTree = "<group>"; };
 		A2B0043D281DCD2D00B771BA /* String+.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "String+.swift"; sourceTree = "<group>"; };
 		A2B00456281DD1A000B771BA /* Translatorable.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translatorable.swift; sourceTree = "<group>"; };
+		A2B14FC1286E3E5900A7F78F /* SignInPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInPageView.swift; sourceTree = "<group>"; };
+		A2B14FC5286E3E6200A7F78F /* SignInPageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignInPageViewModel.swift; sourceTree = "<group>"; };
+		A2B14FCA286E47A300A7F78F /* HomePageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePageView.swift; sourceTree = "<group>"; };
+		A2B14FCE286E47A900A7F78F /* HomePageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HomePageViewModel.swift; sourceTree = "<group>"; };
 		A2CFBAB12819A4C90031592F /* GeneralSerializer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GeneralSerializer.swift; sourceTree = "<group>"; };
 		A2CFBAB22819A4C90031592F /* TranslationSerializer.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = TranslationSerializer.swift; sourceTree = "<group>"; };
 		A2CFBAB62819A54F0031592F /* EssentialLocalizations.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = EssentialLocalizations.plist; sourceTree = "<group>"; };
@@ -344,6 +352,24 @@
 			path = Extensions;
 			sourceTree = "<group>";
 		};
+		A2B14FB4286E33AE00A7F78F /* SignIn */ = {
+			isa = PBXGroup;
+			children = (
+				A2B14FC1286E3E5900A7F78F /* SignInPageView.swift */,
+				A2B14FC5286E3E6200A7F78F /* SignInPageViewModel.swift */,
+			);
+			path = SignIn;
+			sourceTree = "<group>";
+		};
+		A2B14FC9286E479200A7F78F /* Home */ = {
+			isa = PBXGroup;
+			children = (
+				A2B14FCA286E47A300A7F78F /* HomePageView.swift */,
+				A2B14FCE286E47A900A7F78F /* HomePageViewModel.swift */,
+			);
+			path = Home;
+			sourceTree = "<group>";
+		};
 		A2CFBAB02819A4B50031592F /* Serialization Layer */ = {
 			isa = PBXGroup;
 			children = (
@@ -510,6 +536,8 @@
 				A2DF2C5828199B660089DEA1 /* ContentView.swift */,
 				A2CFBACA2819A8580031592F /* ContentViewModel.swift */,
 				A23435872819AD44000962F7 /* Main */,
+				A2B14FC9286E479200A7F78F /* Home */,
+				A2B14FB4286E33AE00A7F78F /* SignIn */,
 				A2B00311281B6CA600B771BA /* SignUp */,
 			);
 			path = Views;
@@ -780,10 +808,12 @@
 			files = (
 				A2B002D9281AF43D00B771BA /* TranslationArchiver.swift in Sources */,
 				A2CFBAC62819A5F00031592F /* GoogleTranslator.swift in Sources */,
+				A2B14FCF286E47A900A7F78F /* HomePageViewModel.swift in Sources */,
 				A2B0031C281B727900B771BA /* VerifyInfoPageViewModel.swift in Sources */,
 				A2CFBAC72819A5F00031592F /* AzureTranslator.swift in Sources */,
 				A2B00316281B6CB700B771BA /* PhoneNumberPageView.swift in Sources */,
 				A2B0043E281DCD2D00B771BA /* String+.swift in Sources */,
+				A2B14FCB286E47A300A7F78F /* HomePageView.swift in Sources */,
 				A2898AD5281F23BC0026EA8D /* UserSerializer.swift in Sources */,
 				A2D5EA9E281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift in Sources */,
 				A234358D2819AD6D000962F7 /* MainPageViewModel.swift in Sources */,
@@ -810,10 +840,12 @@
 				A2DF2C5928199B660089DEA1 /* ContentView.swift in Sources */,
 				A2CFBAB42819A4C90031592F /* TranslationSerializer.swift in Sources */,
 				A2DF2CB928199D3C0089DEA1 /* Extensions.swift in Sources */,
+				A2B14FC2286E3E5900A7F78F /* SignInPageView.swift in Sources */,
 				A2B00435281DCD0600B771BA /* Dictionary+.swift in Sources */,
 				A2CFBACB2819A8580031592F /* ContentViewModel.swift in Sources */,
 				A2DF2C8028199C810089DEA1 /* AKErrorAlert.swift in Sources */,
 				A2DF2CBB28199D3C0089DEA1 /* SystemInformation.swift in Sources */,
+				A2B14FC6286E3E6200A7F78F /* SignInPageViewModel.swift in Sources */,
 				A2DF2CBA28199D3C0089DEA1 /* Builder.swift in Sources */,
 				A2B0042E281DCCB800B771BA /* Array+.swift in Sources */,
 			);

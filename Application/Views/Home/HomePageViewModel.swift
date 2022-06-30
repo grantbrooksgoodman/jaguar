@@ -1,15 +1,15 @@
 //
-//  MainPageViewModel.swift
+//  HomePageViewModel.swift
 //  Jaguar
 //
-//  Created by Grant Brooks Goodman on 23/04/2022.
+//  Created by Grant Brooks Goodman on 30/06/2022.
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
 /* First-party Frameworks */
-import Foundation
+import SwiftUI
 
-public class MainPageViewModel: ObservableObject {
+public class HomePageViewModel: ObservableObject {
     
     public enum State {
         case idle
@@ -24,9 +24,7 @@ public class MainPageViewModel: ObservableObject {
     
     @Published private(set) var state = State.idle
     
-    private let inputs = ["instruction": TranslationInput("Welcome to Hello. Follow the short instructions to get started."),
-                          "continue": TranslationInput("Continue"),
-                          "alreadyUse": TranslationInput("I already use this app")]
+    private let inputs = ["messages": TranslationInput("Messages")]
     
     //==================================================//
     

@@ -1,8 +1,8 @@
 //
-//  PhoneNumberPageViewModel.swift
+//  SignInPageViewModel.swift
 //  Jaguar
 //
-//  Created by Grant Brooks Goodman on 23/04/2022.
+//  Created by Grant Brooks Goodman on 30/06/2022.
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
@@ -11,9 +11,8 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import Firebase
-import PhoneNumberKit
 
-public class PhoneNumberPageViewModel: ObservableObject {
+public class SignInPageViewModel: ObservableObject {
     
     public enum State {
         case idle
@@ -28,10 +27,10 @@ public class PhoneNumberPageViewModel: ObservableObject {
     
     @Published private(set) var state = State.idle
     
-    private let inputs = ["title": TranslationInput("Enter Phone Number"),
-                          "subtitle": TranslationInput("Please enter your phone number to begin setup. A verification code will be sent to your number. Standard messaging rates apply."),
-                          "instruction": TranslationInput("Enter your phone number below:"),
+    private let inputs = ["phoneNumberPrompt": TranslationInput("Enter your phone number below:"),
+                          "codePrompt": TranslationInput("Enter the code sent to your device:"),
                           "continue": TranslationInput("Continue"),
+                          "finish": TranslationInput("Finish"),
                           "back": TranslationInput("Back", alternate: "Go back")]
     
     //==================================================//
@@ -63,6 +62,22 @@ public class PhoneNumberPageViewModel: ObservableObject {
         }
     }
     
+    public func authenticateUser(identifier: String,
+                                 verificationCode: String,
+                                 completion: @escaping(_ userID: String?,
+                                                       _ returnedError: Error?) -> Void) {
+        let credential = PhoneAuthProvider.provider().credential(withVerificationID: identifier,
+                                                                 verificationCode: verificationCode)
+        
+        Auth.auth().signIn(with: credential) { (returnedResult, returnedError) in
+            if let result = returnedResult {
+                completion(result.user.uid, nil)
+            } else if let error = returnedError {
+                completion(nil, error)
+            }
+        }
+    }
+    
     public func verifyPhoneNumber(_ string: String,
                                   completion: @escaping (_ returnedIdentifier: String?,
                                                          _ returnedError: Error?) -> Void) {
@@ -75,29 +90,10 @@ public class PhoneNumberPageViewModel: ObservableObject {
     
     public func simpleErrorString(_ errorDescriptor: String) -> String {
         switch errorDescriptor {
-        case "Invalid format.", "The format of the phone number provided is incorrect. Please enter the phone number in a format that can be parsed into E.164 format. E.164 phone numbers are written in the format [+][country code][subscriber number including area code].", "TOO_SHORT":
-            return "The format of the phone number provided is incorrect.\n\nPlease verify that you have fully entered your phone number, including the country and area codes."
-        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code sms and be sure use the verification code provided by the user.":
-            return "The verification code entered was invalid. Please try again."
-        case "We have blocked all requests from this device due to unusual activity. Try again later.":
-            return "Due to unusual activity, all requests from this device have been temporarily blocked. Please try again later."
+        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code SMS and be sure to use the verification code provided by the user.":
+            return "The verification code entered was invalid.\n\nPlease try again."
         default:
             return "An unknown error has occurred. Please try again."
         }
     }
 }
-
-//==================================================//
-
-/* MARK: Extensions */
-
-/**/
-
-/* MARK: String */
-extension String {
-    var digitalValue: Int? {
-        return Int(components(separatedBy: CharacterSet.decimalDigits.inverted).joined(separator: ""))
-    }
-}
-
-
