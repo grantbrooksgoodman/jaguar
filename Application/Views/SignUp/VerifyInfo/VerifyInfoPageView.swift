@@ -18,15 +18,19 @@ public struct VerifyInfoPageView: View {
     @StateObject public var viewModel: VerifyInfoPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
+    //Strings
     @State public var userID: String
-    @State public var phoneNumber: Int
     
-    public var languages = Array(languageCodeDictionary.values).sorted()
     @State private var selectedLanguage: String = languageCodeDictionary[languageCode]!
+    
+    //Other Declarations
+    public var languages = Array(languageCodeDictionary.values).sorted()
+    
+    @State public var phoneNumber: Int
     
     //==================================================//
     
-    /* MARK: - Views */
+    /* MARK: - View Body */
     
     public var body: some View {
         switch viewModel.state {
@@ -53,9 +57,9 @@ public struct VerifyInfoPageView: View {
                 .padding(.horizontal, 30)
                 
                 Button {
-                    UserSerializer.createUser(userID,
-                                              phoneNumber: phoneNumber,
-                                              languageCode: languageCodeDictionary.allKeys(forValue: selectedLanguage).first!) { (errorDescriptor) in
+                    UserSerializer.shared.createUser(userID,
+                                                     languageCode: languageCodeDictionary.allKeys(forValue: selectedLanguage).first!,
+                                                     phoneNumber: phoneNumber) { (errorDescriptor) in
                         if let error = errorDescriptor {
                             print(error)
                         } else {

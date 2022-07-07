@@ -30,6 +30,21 @@ public struct TranslationArchiver {
         
         if matches.first != nil {
             log("Found translation in local archive.",
+                verbose: true,
+                metadata: [#file, #function, #line])
+        }
+        
+        return matches.first
+    }
+    
+    public static func getFromArchive(withReference: String,
+                                      languagePair: LanguagePair) -> Translation? {
+        let translations = translationArchive.filter({ $0.languagePair.to == languagePair.to })
+        let matches = translations.filter({ $0.input.value().compressedHash == withReference })
+        
+        if matches.first != nil {
+            log("Found translation BY REFERENCE in local archive.",
+                verbose: true,
                 metadata: [#file, #function, #line])
         }
         

@@ -19,17 +19,19 @@ public struct VerifyPhoneNumberPageView: View {
     @StateObject public var viewModel: VerifyPhoneNumberPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
+    //Strings
     @State public var verificationIdentifier: String
-    @State public var phoneNumber: Int
     
+    @State private var errorDescriptor = ""
     @State private var verificationCode: String = ""
     
+    //Other Declarations
+    @State public var phoneNumber: Int
     @State private var errored = false
-    @State private var errorDescriptor = ""
     
     //==================================================//
     
-    /* MARK: - Views */
+    /* MARK: - View Body */
     
     public var body: some View {
         switch viewModel.state {

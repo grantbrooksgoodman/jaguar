@@ -26,7 +26,7 @@ var isPresentingMailComposeViewController = false
 var prefersConsistentBuildInfo            = false
 var streamOpen                            = false
 var timebombActive                        = true
-var verboseFunctionExposure               = true
+var verboseFunctionExposure               = false
 
 //DateFormatters
 let masterDateFormatter    = DateFormatter()
@@ -52,6 +52,11 @@ var unableTitleDictionary:          [String: String]!
 var callingCode: String!
 var codeName                  = "Jaguar"
 var currentFile               = #file
+var currentUserID = "" {
+    didSet {
+        UserDefaults.standard.setValue(currentUserID, forKey: "currentUserID")
+    }
+}
 var dmyFirstCompileDateString = "23042022"
 var finalName                 = ""
 var languageCode              = "es" //["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()! //["ca", "es", "fr", "gl", "it", "pt", "ro"].randomElement()! //Locale.preferredLanguages[0].components(separatedBy: "-")[0]
@@ -66,15 +71,13 @@ let telephonyNetworkInfo = CTTelephonyNetworkInfo()
 var appStoreReleaseVersion = 0
 var buildType: Build.BuildType = .preAlpha
 var currentCalendar = Calendar(identifier: .gregorian)
+
+var currentUser: User?
+var currentUserConversations: [Conversation]?
+
 var informationDictionary: [String:String]!
 var statusBarStyle: UIStatusBarStyle = .default
 var touchTimer: Timer?
-
-var currentUserID = "" {
-    didSet {
-        UserDefaults.standard.setValue(currentUserID, forKey: "currentUserID")
-    }
-}
 
 //==================================================//
 
@@ -171,6 +174,13 @@ var currentUserID = "" {
         
         if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
             currentUserID = userID
+            UserSerializer().getUser(withIdentifier: userID) { (returnedUser, errorDescriptor) in
+                if let error = errorDescriptor {
+                    log(error, metadata: [#file, #function, #line])
+                } else {
+                    currentUser = returnedUser!
+                }
+            }
         }
         
         return true

@@ -14,6 +14,10 @@ import Firebase
 
 public class VerifyPhoneNumberPageViewModel: ObservableObject {
     
+    //==================================================//
+    
+    /* MARK: - Enumerated Type Declarations */
+    
     public enum State {
         case idle
         case loading
@@ -25,17 +29,18 @@ public class VerifyPhoneNumberPageViewModel: ObservableObject {
     
     /* MARK: - Class-level Variable Declarations */
     
-    @Published private(set) var state = State.idle
-    
+    //Other Declarations
     private let inputs = ["title": TranslationInput("Enter Verification Code"),
                           "subtitle": TranslationInput("A verification code was sent to your device. It may take a minute or so to arrive."),
                           "instruction": TranslationInput("Enter the code sent to your device:"),
                           "continue": TranslationInput("Continue"),
                           "back": TranslationInput("Back", alternate: "Go back")]
     
+    @Published private(set) var state = State.idle
+    
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Initializer Function */
     
     public func load() {
         state = .loading
@@ -61,6 +66,10 @@ public class VerifyPhoneNumberPageViewModel: ObservableObject {
             }
         }
     }
+    
+    //==================================================//
+    
+    /* MARK: - Other Functions */
     
     public func authenticateUser(identifier: String,
                                  verificationCode: String,

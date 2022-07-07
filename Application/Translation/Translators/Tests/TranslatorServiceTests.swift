@@ -92,4 +92,30 @@ final class TranslatorServiceTests: XCTestCase {
         
         wait(for: [expectation], timeout: 10)
     }
+    
+    func testYandexTranslator() {
+        let expectation = XCTestExpectation(description: "No error returned")
+        
+        TranslatorService.main.translate(TranslationInput("This is a test."),
+                                         with: LanguagePair(from: "en",
+                                                            to: "ru"),
+                                         using: .yandex) { (returnedTranslation,
+                                                            errorDescriptor) in
+            guard returnedTranslation != nil || errorDescriptor != nil else {
+                XCTFail("An unknown error occurred.")
+                return
+            }
+            
+            if let error = errorDescriptor {
+                XCTFail(error)
+            }
+            
+            if let translation = returnedTranslation {
+                print(translation.output)
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 10)
+    }
 }

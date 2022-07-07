@@ -14,6 +14,10 @@ import Firebase
 
 public class SignInPageViewModel: ObservableObject {
     
+    //==================================================//
+    
+    /* MARK: - Enumerated Type Declarations */
+    
     public enum State {
         case idle
         case loading
@@ -25,17 +29,18 @@ public class SignInPageViewModel: ObservableObject {
     
     /* MARK: - Class-level Variable Declarations */
     
-    @Published private(set) var state = State.idle
-    
+    //Other Declarations
     private let inputs = ["phoneNumberPrompt": TranslationInput("Enter your phone number below:"),
                           "codePrompt": TranslationInput("Enter the code sent to your device:"),
                           "continue": TranslationInput("Continue"),
                           "finish": TranslationInput("Finish"),
                           "back": TranslationInput("Back", alternate: "Go back")]
     
+    @Published private(set) var state = State.idle
+    
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Initializer Function */
     
     public func load() {
         state = .loading
@@ -62,6 +67,10 @@ public class SignInPageViewModel: ObservableObject {
         }
     }
     
+    //==================================================//
+    
+    /* MARK: - Other Functions */
+    
     public func authenticateUser(identifier: String,
                                  verificationCode: String,
                                  completion: @escaping(_ userID: String?,
@@ -78,6 +87,15 @@ public class SignInPageViewModel: ObservableObject {
         }
     }
     
+    public func simpleErrorString(_ errorDescriptor: String) -> String {
+        switch errorDescriptor {
+        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code SMS and be sure to use the verification code provided by the user.":
+            return "The verification code entered was invalid.\n\nPlease try again."
+        default:
+            return "An unknown error has occurred. Please try again."
+        }
+    }
+    
     public func verifyPhoneNumber(_ string: String,
                                   completion: @escaping (_ returnedIdentifier: String?,
                                                          _ returnedError: Error?) -> Void) {
@@ -85,15 +103,6 @@ public class SignInPageViewModel: ObservableObject {
                                                        uiDelegate: nil) { (returnedIdentifier,
                                                                            returnedError) in
             completion(returnedIdentifier, returnedError)
-        }
-    }
-    
-    public func simpleErrorString(_ errorDescriptor: String) -> String {
-        switch errorDescriptor {
-        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code SMS and be sure to use the verification code provided by the user.":
-            return "The verification code entered was invalid.\n\nPlease try again."
-        default:
-            return "An unknown error has occurred. Please try again."
         }
     }
 }

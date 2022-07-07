@@ -8,8 +8,22 @@
 
 /* Begin PBXBuildFile section */
 		4C6195308E9C00F72BB1B17F /* Pods_Jaguar.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 9B021898A0AC8306DAAE96EA /* Pods_Jaguar.framework */; };
+		A2044EC728760620009158E8 /* ContactsServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2044EC628760620009158E8 /* ContactsServer.swift */; };
+		A20D1F02287731F000E92420 /* ContactsServer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2044EC628760620009158E8 /* ContactsServer.swift */; };
 		A23435892819AD67000962F7 /* MainPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A23435882819AD67000962F7 /* MainPageView.swift */; };
 		A234358D2819AD6D000962F7 /* MainPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A234358C2819AD6D000962F7 /* MainPageViewModel.swift */; };
+		A244BEE228763D3F00C098B9 /* ChatPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A244BEE128763D3F00C098B9 /* ChatPageView.swift */; };
+		A25714A528725D7900022366 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714A428725D7900022366 /* User.swift */; };
+		A25714A928725E3100022366 /* Conversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714A828725E3100022366 /* Conversation.swift */; };
+		A25714AD28725E9500022366 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714AC28725E9500022366 /* Message.swift */; };
+		A25714B128725F3900022366 /* ConversationSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714B028725F3900022366 /* ConversationSerializer.swift */; };
+		A25714B72872642800022366 /* MessageSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714B62872642800022366 /* MessageSerializer.swift */; };
+		A25714C72872A71C00022366 /* UserSerializerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714C52872A71C00022366 /* UserSerializerTests.swift */; };
+		A25714CE2872A90B00022366 /* User.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714A428725D7900022366 /* User.swift */; };
+		A25714D12872A92800022366 /* ConversationSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714B028725F3900022366 /* ConversationSerializer.swift */; };
+		A25714D42872A92F00022366 /* Conversation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714A828725E3100022366 /* Conversation.swift */; };
+		A25714D72872A93100022366 /* Message.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714AC28725E9500022366 /* Message.swift */; };
+		A25714DA2872A93700022366 /* MessageSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A25714B62872642800022366 /* MessageSerializer.swift */; };
 		A2898AD5281F23BC0026EA8D /* UserSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2898AD4281F23BC0026EA8D /* UserSerializer.swift */; };
 		A2898AD6281F23BC0026EA8D /* UserSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2898AD4281F23BC0026EA8D /* UserSerializer.swift */; };
 		A2B002CF281ADA2400B771BA /* Translation.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2B002CE281ADA2400B771BA /* Translation.swift */; };
@@ -67,7 +81,6 @@
 		A2CFBAC52819A5F00031592F /* YandexTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC02819A5F00031592F /* YandexTranslator.swift */; };
 		A2CFBAC62819A5F00031592F /* GoogleTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC12819A5F00031592F /* GoogleTranslator.swift */; };
 		A2CFBAC72819A5F00031592F /* AzureTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBAC22819A5F00031592F /* AzureTranslator.swift */; };
-		A2CFBACB2819A8580031592F /* ContentViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2CFBACA2819A8580031592F /* ContentViewModel.swift */; };
 		A2D5EA9E281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2D5EA9D281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift */; };
 		A2D5EAA4281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2D5EAA3281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift */; };
 		A2DF2C5528199B660089DEA1 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = A2DF2C5428199B660089DEA1 /* AppDelegate.swift */; };
@@ -124,8 +137,16 @@
 		7CB23219FB06B68EDA4E5A8C /* Pods-Jaguar.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Jaguar.release.xcconfig"; path = "Target Support Files/Pods-Jaguar/Pods-Jaguar.release.xcconfig"; sourceTree = "<group>"; };
 		7DF07BAD76E9A6BDAA3E7CE7 /* Pods-JaguarTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-JaguarTests.release.xcconfig"; path = "Target Support Files/Pods-JaguarTests/Pods-JaguarTests.release.xcconfig"; sourceTree = "<group>"; };
 		9B021898A0AC8306DAAE96EA /* Pods_Jaguar.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Jaguar.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A2044EC628760620009158E8 /* ContactsServer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactsServer.swift; sourceTree = "<group>"; };
 		A23435882819AD67000962F7 /* MainPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPageView.swift; sourceTree = "<group>"; };
 		A234358C2819AD6D000962F7 /* MainPageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MainPageViewModel.swift; sourceTree = "<group>"; };
+		A244BEE128763D3F00C098B9 /* ChatPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChatPageView.swift; sourceTree = "<group>"; };
+		A25714A428725D7900022366 /* User.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = User.swift; sourceTree = "<group>"; };
+		A25714A828725E3100022366 /* Conversation.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Conversation.swift; sourceTree = "<group>"; };
+		A25714AC28725E9500022366 /* Message.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = Message.swift; sourceTree = "<group>"; };
+		A25714B028725F3900022366 /* ConversationSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationSerializer.swift; sourceTree = "<group>"; };
+		A25714B62872642800022366 /* MessageSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MessageSerializer.swift; sourceTree = "<group>"; };
+		A25714C52872A71C00022366 /* UserSerializerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSerializerTests.swift; sourceTree = "<group>"; };
 		A2898AD4281F23BC0026EA8D /* UserSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserSerializer.swift; sourceTree = "<group>"; };
 		A2B002CE281ADA2400B771BA /* Translation.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Translation.swift; sourceTree = "<group>"; };
 		A2B002D1281ADD0E00B771BA /* TranslationInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TranslationInput.swift; sourceTree = "<group>"; };
@@ -157,7 +178,6 @@
 		A2CFBAC02819A5F00031592F /* YandexTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = YandexTranslator.swift; sourceTree = "<group>"; };
 		A2CFBAC12819A5F00031592F /* GoogleTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = GoogleTranslator.swift; sourceTree = "<group>"; };
 		A2CFBAC22819A5F00031592F /* AzureTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = AzureTranslator.swift; sourceTree = "<group>"; };
-		A2CFBACA2819A8580031592F /* ContentViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentViewModel.swift; sourceTree = "<group>"; };
 		A2D5EA9D281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyPhoneNumberPageView.swift; sourceTree = "<group>"; };
 		A2D5EAA3281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VerifyPhoneNumberPageViewModel.swift; sourceTree = "<group>"; };
 		A2DF2C5128199B660089DEA1 /* Jaguar.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Jaguar.app; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -236,6 +256,97 @@
 				A234358C2819AD6D000962F7 /* MainPageViewModel.swift */,
 			);
 			path = Main;
+			sourceTree = "<group>";
+		};
+		A244BEE028763D2400C098B9 /* Chat */ = {
+			isa = PBXGroup;
+			children = (
+				A244BEE128763D3F00C098B9 /* ChatPageView.swift */,
+			);
+			path = Chat;
+			sourceTree = "<group>";
+		};
+		A25714A328725D6400022366 /* Objects */ = {
+			isa = PBXGroup;
+			children = (
+				A25714A828725E3100022366 /* Conversation.swift */,
+				A25714AC28725E9500022366 /* Message.swift */,
+				A25714A428725D7900022366 /* User.swift */,
+			);
+			path = Objects;
+			sourceTree = "<group>";
+		};
+		A25714BC2872A6B500022366 /* User */ = {
+			isa = PBXGroup;
+			children = (
+				A25714BD2872A6BD00022366 /* Sources */,
+				A25714BE2872A6C000022366 /* Tests */,
+			);
+			path = User;
+			sourceTree = "<group>";
+		};
+		A25714BD2872A6BD00022366 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A2898AD4281F23BC0026EA8D /* UserSerializer.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A25714BE2872A6C000022366 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+				A25714C52872A71C00022366 /* UserSerializerTests.swift */,
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A25714BF2872A6C700022366 /* Conversation */ = {
+			isa = PBXGroup;
+			children = (
+				A25714C02872A6CD00022366 /* Sources */,
+				A25714C12872A6D400022366 /* Tests */,
+			);
+			path = Conversation;
+			sourceTree = "<group>";
+		};
+		A25714C02872A6CD00022366 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A25714B028725F3900022366 /* ConversationSerializer.swift */,
+			);
+			path = Sources;
+			sourceTree = "<group>";
+		};
+		A25714C12872A6D400022366 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A25714C22872A6D700022366 /* Message */ = {
+			isa = PBXGroup;
+			children = (
+				A25714C42872A6DF00022366 /* Sources */,
+				A25714C32872A6DC00022366 /* Tests */,
+			);
+			path = Message;
+			sourceTree = "<group>";
+		};
+		A25714C32872A6DC00022366 /* Tests */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = Tests;
+			sourceTree = "<group>";
+		};
+		A25714C42872A6DF00022366 /* Sources */ = {
+			isa = PBXGroup;
+			children = (
+				A25714B62872642800022366 /* MessageSerializer.swift */,
+			);
+			path = Sources;
 			sourceTree = "<group>";
 		};
 		A2B002DB281AF44100B771BA /* Translation */ = {
@@ -374,7 +485,9 @@
 			isa = PBXGroup;
 			children = (
 				A2CFBAB12819A4C90031592F /* GeneralSerializer.swift */,
-				A2898AD4281F23BC0026EA8D /* UserSerializer.swift */,
+				A25714C22872A6D700022366 /* Message */,
+				A25714BF2872A6C700022366 /* Conversation */,
+				A25714BC2872A6B500022366 /* User */,
 			);
 			path = "Serialization Layer";
 			sourceTree = "<group>";
@@ -422,6 +535,7 @@
 			children = (
 				A2DF2C5428199B660089DEA1 /* AppDelegate.swift */,
 				A2DF2C5628199B660089DEA1 /* SceneDelegate.swift */,
+				A25714A328725D6400022366 /* Objects */,
 				A2DF2C5C28199B670089DEA1 /* Preview Content */,
 				A2CFBAB02819A4B50031592F /* Serialization Layer */,
 				A2DF2C7028199C0B0089DEA1 /* Storyboard Files */,
@@ -534,8 +648,8 @@
 			isa = PBXGroup;
 			children = (
 				A2DF2C5828199B660089DEA1 /* ContentView.swift */,
-				A2CFBACA2819A8580031592F /* ContentViewModel.swift */,
 				A23435872819AD44000962F7 /* Main */,
+				A244BEE028763D2400C098B9 /* Chat */,
 				A2B14FC9286E479200A7F78F /* Home */,
 				A2B14FB4286E33AE00A7F78F /* SignIn */,
 				A2B00311281B6CA600B771BA /* SignUp */,
@@ -548,6 +662,7 @@
 			children = (
 				A2DF2C5A28199B670089DEA1 /* Assets.xcassets */,
 				A2B00417281D7F8C00B771BA /* CallingCodes.plist */,
+				A2044EC628760620009158E8 /* ContactsServer.swift */,
 				A2CFBAB62819A54F0031592F /* EssentialLocalizations.plist */,
 				A2CFBAB92819A5550031592F /* GoogleService-Info.plist */,
 				A2DF2C6228199B670089DEA1 /* Info.plist */,
@@ -773,7 +888,9 @@
 				A2B00356281C319B00B771BA /* YandexTranslator.swift in Sources */,
 				A2B00338281C301A00B771BA /* TranslatorServiceTests.swift in Sources */,
 				A2B00388281C326A00B771BA /* GeneralSerializer.swift in Sources */,
+				A25714D72872A93100022366 /* Message.swift in Sources */,
 				A2B0033E281C310000B771BA /* LanguagePair.swift in Sources */,
+				A25714CE2872A90B00022366 /* User.swift in Sources */,
 				A2B0032D281C300300B771BA /* JaguarTests.swift in Sources */,
 				A2B00344281C310400B771BA /* TranslationArchiver.swift in Sources */,
 				A2B00350281C319700B771BA /* DeepLTranslator.swift in Sources */,
@@ -781,9 +898,11 @@
 				A2898AD6281F23BC0026EA8D /* UserSerializer.swift in Sources */,
 				A2B0034D281C319500B771BA /* AzureTranslator.swift in Sources */,
 				A2B00347281C310600B771BA /* TranslationInput.swift in Sources */,
+				A25714D12872A92800022366 /* ConversationSerializer.swift in Sources */,
 				A2B00374281C325300B771BA /* AKAlertAction.swift in Sources */,
 				A2B00377281C325300B771BA /* AKTextFieldAlert.swift in Sources */,
 				A2B00382281C325A00B771BA /* SystemInformation.swift in Sources */,
+				A25714C72872A71C00022366 /* UserSerializerTests.swift in Sources */,
 				A2B0042F281DCCB800B771BA /* Array+.swift in Sources */,
 				A2B00359281C319F00B771BA /* AppDelegate.swift in Sources */,
 				A2B0033B281C30D500B771BA /* TranslatorService.swift in Sources */,
@@ -794,9 +913,12 @@
 				A2B00376281C325300B771BA /* AKCore.swift in Sources */,
 				A2B00436281DCD0600B771BA /* Dictionary+.swift in Sources */,
 				A2B00341281C310200B771BA /* Translation.swift in Sources */,
+				A25714D42872A92F00022366 /* Conversation.swift in Sources */,
 				A2B00385281C326600B771BA /* BuildInfoController.swift in Sources */,
 				A2B0034A281C310700B771BA /* TranslationSerializer.swift in Sources */,
+				A25714DA2872A93700022366 /* MessageSerializer.swift in Sources */,
 				A2B00353281C319900B771BA /* GoogleTranslator.swift in Sources */,
+				A20D1F02287731F000E92420 /* ContactsServer.swift in Sources */,
 				A2B0043F281DCD2D00B771BA /* String+.swift in Sources */,
 				A2B0037C281C325600B771BA /* Builder.swift in Sources */,
 			);
@@ -818,15 +940,20 @@
 				A2D5EA9E281F05DE00C7EE77 /* VerifyPhoneNumberPageView.swift in Sources */,
 				A234358D2819AD6D000962F7 /* MainPageViewModel.swift in Sources */,
 				A2CFBAC52819A5F00031592F /* YandexTranslator.swift in Sources */,
+				A25714AD28725E9500022366 /* Message.swift in Sources */,
 				A2B00315281B6CB700B771BA /* PhoneNumberPageViewModel.swift in Sources */,
 				A2DF2CB828199D3C0089DEA1 /* BuildInfoController.swift in Sources */,
 				A2B00457281DD1A000B771BA /* Translatorable.swift in Sources */,
 				A2DF2C8528199C810089DEA1 /* AKAlertAction.swift in Sources */,
+				A25714A928725E3100022366 /* Conversation.swift in Sources */,
+				A25714B128725F3900022366 /* ConversationSerializer.swift in Sources */,
 				A2DF2C8328199C810089DEA1 /* AKConfirmationAlert.swift in Sources */,
 				A23435892819AD67000962F7 /* MainPageView.swift in Sources */,
+				A2044EC728760620009158E8 /* ContactsServer.swift in Sources */,
 				A2DF2C8228199C810089DEA1 /* AKAlert.swift in Sources */,
 				A2B0031B281B727900B771BA /* VerifyInfoPageView.swift in Sources */,
 				A2B002D6281ADD1600B771BA /* LanguagePair.swift in Sources */,
+				A25714B72872642800022366 /* MessageSerializer.swift in Sources */,
 				A2DF2C5528199B660089DEA1 /* AppDelegate.swift in Sources */,
 				A2CFBAC42819A5F00031592F /* DeepLTranslator.swift in Sources */,
 				A2D5EAA4281F060300C7EE77 /* VerifyPhoneNumberPageViewModel.swift in Sources */,
@@ -842,12 +969,13 @@
 				A2DF2CB928199D3C0089DEA1 /* Extensions.swift in Sources */,
 				A2B14FC2286E3E5900A7F78F /* SignInPageView.swift in Sources */,
 				A2B00435281DCD0600B771BA /* Dictionary+.swift in Sources */,
-				A2CFBACB2819A8580031592F /* ContentViewModel.swift in Sources */,
 				A2DF2C8028199C810089DEA1 /* AKErrorAlert.swift in Sources */,
 				A2DF2CBB28199D3C0089DEA1 /* SystemInformation.swift in Sources */,
 				A2B14FC6286E3E6200A7F78F /* SignInPageViewModel.swift in Sources */,
 				A2DF2CBA28199D3C0089DEA1 /* Builder.swift in Sources */,
 				A2B0042E281DCCB800B771BA /* Array+.swift in Sources */,
+				A244BEE228763D3F00C098B9 /* ChatPageView.swift in Sources */,
+				A25714A528725D7900022366 /* User.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -19,21 +19,23 @@ public struct PhoneNumberPageView: View {
     
     /* MARK: - Struct-level Variable Declarations */
     
-    @StateObject public var viewModel: PhoneNumberPageViewModel
-    @StateObject public var viewRouter: ViewRouter
-    
-    @State private var errored = false
+    //Strings
     @State private var errorDescriptor = "" {
         didSet {
             errored = true
         }
     }
-    
     @State private var phoneNumberString: String = callingCode
+    
+    //Other Declarations
+    @State private var errored = false
+    
+    @StateObject public var viewModel: PhoneNumberPageViewModel
+    @StateObject public var viewRouter: ViewRouter
     
     //==================================================//
     
-    /* MARK: - Views */
+    /* MARK: - View Body */
     
     public var body: some View {
         switch viewModel.state {

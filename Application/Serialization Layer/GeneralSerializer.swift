@@ -12,13 +12,7 @@ import UIKit
 /* Third-party Frameworks */
 import FirebaseDatabase
 
-class GeneralSerializer {
-    
-    //==================================================//
-    
-    /* MARK: - Class-level Variable Declarations */
-    
-    public static let shared = GeneralSerializer()
+public struct GeneralSerializer {
     
     //==================================================//
     
@@ -30,8 +24,8 @@ class GeneralSerializer {
      - Parameter atPath: The server path at which to retrieve values.
      - Parameter completion: Returns the Firebase snapshot value.
      */
-    func getValues(atPath: String, completion: @escaping (_ returnedValues: Any?,
-                                                          _ errorDescriptor: String?) -> Void) {
+    public static func getValues(atPath: String, completion: @escaping (_ returnedValues: Any?,
+                                                                        _ errorDescriptor: String?) -> Void) {
         Database.database().reference().child(atPath).observeSingleEvent(of: .value) { (returnedSnapshot) in
             completion(returnedSnapshot.value, nil)
         } withCancel: { (returnedError) in
@@ -39,7 +33,7 @@ class GeneralSerializer {
         }
     }
     
-    func setValue(onKey: String, withData: Any, completion: @escaping (Error?) -> Void) {
+    public static func setValue(onKey: String, withData: Any, completion: @escaping (Error?) -> Void) {
         Database.database().reference().child(onKey).setValue(withData) { returnedError, _ in
             if let error = returnedError {
                 completion(error)
@@ -57,7 +51,7 @@ class GeneralSerializer {
      
      - Parameter completion: Returns an `Error` if unable to update values.
      */
-    func updateValue(onKey: String, withData: [String: Any], completion: @escaping (Error?) -> Void) {
+    public static func updateValue(onKey: String, withData: [String: Any], completion: @escaping (Error?) -> Void) {
         Database.database().reference().child(onKey).updateChildValues(withData, withCompletionBlock: { returnedError, _ in
             if let error = returnedError {
                 completion(error)

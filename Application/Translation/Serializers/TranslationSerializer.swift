@@ -22,8 +22,8 @@ public struct TranslationSerializer {
         let serializedTranslation = translation.serialize()
         let dictionary = [serializedTranslation.key: serializedTranslation.value]
         
-        GeneralSerializer.shared.updateValue(onKey: "allTranslations/\(languagePair.asString())",
-                                             withData: dictionary) { (returnedError) in
+        GeneralSerializer.updateValue(onKey: "allTranslations/\(languagePair.asString())",
+                                      withData: dictionary) { (returnedError) in
             if let error = returnedError {
                 log("Couldn't upload translation.\n\(errorInfo(error))",
                     verbose: true,
@@ -70,7 +70,7 @@ public struct TranslationSerializer {
     /* MARK: - Downloading Functions */
     
     public static func downloadTranslations(completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
-        GeneralSerializer.shared.getValues(atPath: "/allTranslations/en-\(languageCode)") { (returnedValues, errorDescriptor) in
+        GeneralSerializer.getValues(atPath: "/allTranslations/en-\(languageCode)") { (returnedValues, errorDescriptor) in
             if let values = returnedValues as? [String: String] {
                 guard let decodedValues = values.hashDecoded() else {
                     log("Unable to decode values.",
@@ -106,13 +106,44 @@ public struct TranslationSerializer {
         }
     }
     
+    public static func findTranslation(withReference: String,
+                                       languagePair: LanguagePair,
+                                       completion: @escaping(_ returnedTranslation: Translation?,
+                                                             _ errorDescriptor: String?) -> Void) {
+        let path = "/allTranslations/\(languagePair.asString())"
+        
+        GeneralSerializer.getValues(atPath: "\(path)/\(withReference)") { (returnedValues,
+                                                                           errorDescriptor) in
+            guard returnedValues != nil || errorDescriptor != nil else {
+                completion(nil, "An unknown error occurred.")
+                return
+            }
+            
+            if let error = errorDescriptor {
+                completion(nil, error)
+            } else if let value = returnedValues as? String {
+                guard let decodedInput = value.decoded(getInput: true),
+                      let decodedOutput = value.decoded(getInput: false) else {
+                    completion(nil, "Failed to decode translation.")
+                    return
+                }
+                
+                let translation = Translation(input: TranslationInput(decodedInput),
+                                              output: decodedOutput,
+                                              languagePair: languagePair)
+                
+                completion(translation, nil)
+            }
+        }
+    }
+    
     public static func findTranslation(for input: TranslationInput,
                                        languagePair: LanguagePair,
                                        completion: @escaping(_ returnedString: String?,
                                                              _ errorDescriptor: String?) -> Void) {
         let path = "/allTranslations/\(languagePair.asString())"
         
-        GeneralSerializer.shared.getValues(atPath: "\(path)/\(input.value().compressedHash)") { (returnedValues, errorDescriptor) in
+        GeneralSerializer.getValues(atPath: "\(path)/\(input.value().compressedHash)") { (returnedValues, errorDescriptor) in
             if let value = returnedValues as? String {
                 guard let decoded = value.decoded(getInput: false) else {
                     completion(nil, "Failed to decode translation.")
@@ -180,8 +211,8 @@ public struct TranslationSerializer {
     public static func removeTranslation(for input: TranslationInput,
                                          languagePair: LanguagePair,
                                          completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
-        GeneralSerializer.shared.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
-                                             withData: [input.value().compressedHash: NSNull()]) { (returnedError) in
+        GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
+                                      withData: [input.value().compressedHash: NSNull()]) { (returnedError) in
             if let error = returnedError {
                 log("Couldn't remove translation.\n\(errorInfo(error))",
                     verbose: true,
@@ -206,8 +237,8 @@ public struct TranslationSerializer {
             nulledDictionary[input.value()] = NSNull()
         }
         
-        GeneralSerializer.shared.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
-                                             withData: nulledDictionary) { (returnedError) in
+        GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
+                                      withData: nulledDictionary) { (returnedError) in
             if let error = returnedError {
                 log("Couldn't remove translations.\n\(errorInfo(error))",
                     verbose: true,
@@ -244,8 +275,8 @@ public struct TranslationSerializer {
             dictionary[serialized.key] = serialized.value
         }
         
-        GeneralSerializer.shared.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
-                                             withData: dictionary) { (returnedError) in
+        GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
+                                      withData: dictionary) { (returnedError) in
             if let error = returnedError {
                 log("Couldn't upload translations.\n\(errorInfo(error))",
                     verbose: true,

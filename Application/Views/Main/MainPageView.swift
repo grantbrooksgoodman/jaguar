@@ -9,13 +9,19 @@
 /* First-party Frameworks */
 import SwiftUI
 
-//==================================================//
-
-/* MARK: - Views */
-
 public struct MainPageView: View {
+    
+    //==================================================//
+    
+    /* MARK: - Struct-level Variable Declarations */
+    
+    //Other Declarations
     @StateObject public var viewModel: MainPageViewModel
     @StateObject public var viewRouter: ViewRouter
+    
+    //==================================================//
+    
+    /* MARK: - View Body */
     
     public var body: some View {
         switch viewModel.state {
@@ -56,8 +62,21 @@ public struct MainPageView: View {
     }
 }
 
+//==================================================//
+
+/* MARK: - Other Views */
+
 public struct TitleSubtitleView: View {
+    
+    //==================================================//
+    
+    /* MARK: - Struct-level Variable Declarations */
+    
     @State public var translations: [String: Translation]
+    
+    //==================================================//
+    
+    /* MARK: - View Body */
     
     public var body: some View {
         VStack(alignment: .leading) {

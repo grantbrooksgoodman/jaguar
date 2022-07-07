@@ -9,11 +9,11 @@
 /* First-party Frameworks */
 import SwiftUI
 
-//==================================================//
-
-/* MARK: - Views */
-
 public class VerifyInfoPageViewModel: ObservableObject {
+    
+    //==================================================//
+    
+    /* MARK: - Enumerated Type Declarations */
     
     public enum State {
         case idle
@@ -26,8 +26,6 @@ public class VerifyInfoPageViewModel: ObservableObject {
     
     /* MARK: - Class-level Variable Declarations */
     
-    @Published private(set) var state = State.idle
-    
     private let inputs = ["title": TranslationInput("Verify Information"),
                           "subtitle": TranslationInput("Verify your information and press continue to complete setup."),
                           "instruction": TranslationInput("You speak:", alternate: "Language you speak:"),
@@ -36,9 +34,11 @@ public class VerifyInfoPageViewModel: ObservableObject {
     
     private var languageNames = [String]()
     
+    @Published private(set) var state = State.idle
+    
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Initializer Function */
     
     public func load() {
         state = .loading

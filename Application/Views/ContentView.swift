@@ -11,12 +11,14 @@ import SwiftUI
 
 //==================================================//
 
-/* MARK: - Views */
+/* MARK: - Enumerated Type Declarations */
 
 public enum Page {
     case main
+    
     case home
     case signIn
+    
     case signUp_phoneNumber
     case signUp_verifyPhoneNumber(identifier: String,
                                   phoneNumber: Int)
@@ -24,17 +26,35 @@ public enum Page {
                            phoneNumber: Int)
 }
 
+//==================================================//
+
+/* MARK: - View Router Declaration */
+
 public class ViewRouter: ObservableObject {
     @Published var currentPage: Page? = currentUserID == "" ? .main : .home
 }
 
+//==================================================//
+
+/* MARK: - Views */
+
 public struct ContentView: View {
+    
+    //==================================================//
+    
+    /* MARK: - Struct-level Variable Declarations */
+    
     @StateObject public var viewRouter: ViewRouter
+    
+    //==================================================//
+    
+    /* MARK: - View Body */
     
     public var body: some View {
         switch viewRouter.currentPage {
         case .main:
-            MainPageView(viewModel: MainPageViewModel(), viewRouter: viewRouter)
+            MainPageView(viewModel: MainPageViewModel(),
+                         viewRouter: viewRouter)
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)
         case .home:
@@ -43,11 +63,13 @@ public struct ContentView: View {
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)
         case .signIn:
-            SignInPageView(viewModel: SignInPageViewModel(), viewRouter: viewRouter)
+            SignInPageView(viewModel: SignInPageViewModel(),
+                           viewRouter: viewRouter)
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)
         case .signUp_phoneNumber:
-            PhoneNumberPageView(viewModel: PhoneNumberPageViewModel(), viewRouter: viewRouter)
+            PhoneNumberPageView(viewModel: PhoneNumberPageViewModel(),
+                                viewRouter: viewRouter)
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)
         case .signUp_verifyPhoneNumber(let identifier,
@@ -67,7 +89,8 @@ public struct ContentView: View {
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)
         default:
-            MainPageView(viewModel: MainPageViewModel(), viewRouter: viewRouter)
+            MainPageView(viewModel: MainPageViewModel(),
+                         viewRouter: viewRouter)
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)
         }

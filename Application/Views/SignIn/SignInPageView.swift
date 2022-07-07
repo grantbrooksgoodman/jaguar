@@ -17,23 +17,29 @@ import PhoneNumberKit
 /* MARK: - Views */
 
 public struct SignInPageView: View {
-    @StateObject public var viewModel: SignInPageViewModel
-    @StateObject public var viewRouter: ViewRouter
     
+    //==================================================//
+    
+    /* MARK: - Struct-level Variable Declarations */
+    
+    //Strings
     @State private var phoneNumberString: String = callingCode
-    @State private var verificationCode: String = ""
-    
     @State private var verificationIdentifier: String = "" {
         didSet {
             verified = true
         }
     }
+    @State private var verificationCode: String = ""
     
+    //Other Declarations
     @State private var verified = false
+    
+    @StateObject public var viewModel: SignInPageViewModel
+    @StateObject public var viewRouter: ViewRouter
     
     //==================================================//
     
-    /* MARK: - Views */
+    /* MARK: - View Body */
     
     public var body: some View {
         switch viewModel.state {

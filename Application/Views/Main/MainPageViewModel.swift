@@ -11,6 +11,10 @@ import Foundation
 
 public class MainPageViewModel: ObservableObject {
     
+    //==================================================//
+    
+    /* MARK: - Enumerated Type Declarations */
+    
     public enum State {
         case idle
         case loading
@@ -22,15 +26,16 @@ public class MainPageViewModel: ObservableObject {
     
     /* MARK: - Class-level Variable Declarations */
     
-    @Published private(set) var state = State.idle
-    
+    //Other Declarations
     private let inputs = ["instruction": TranslationInput("Welcome to Hello. Follow the short instructions to get started."),
                           "continue": TranslationInput("Continue"),
                           "alreadyUse": TranslationInput("I already use this app")]
     
+    @Published private(set) var state = State.idle
+    
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Initializer Function */
     
     public func load() {
         state = .loading

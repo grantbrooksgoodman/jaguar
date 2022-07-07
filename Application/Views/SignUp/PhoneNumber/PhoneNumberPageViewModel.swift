@@ -15,6 +15,10 @@ import PhoneNumberKit
 
 public class PhoneNumberPageViewModel: ObservableObject {
     
+    //==================================================//
+    
+    /* MARK: - Enumerated Type Declarations */
+    
     public enum State {
         case idle
         case loading
@@ -26,17 +30,18 @@ public class PhoneNumberPageViewModel: ObservableObject {
     
     /* MARK: - Class-level Variable Declarations */
     
-    @Published private(set) var state = State.idle
-    
+    //Other Declarations
     private let inputs = ["title": TranslationInput("Enter Phone Number"),
                           "subtitle": TranslationInput("Please enter your phone number to begin setup. A verification code will be sent to your number. Standard messaging rates apply."),
                           "instruction": TranslationInput("Enter your phone number below:"),
                           "continue": TranslationInput("Continue"),
                           "back": TranslationInput("Back", alternate: "Go back")]
     
+    @Published private(set) var state = State.idle
+    
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Initializer Function */
     
     public func load() {
         state = .loading
@@ -63,15 +68,9 @@ public class PhoneNumberPageViewModel: ObservableObject {
         }
     }
     
-    public func verifyPhoneNumber(_ string: String,
-                                  completion: @escaping (_ returnedIdentifier: String?,
-                                                         _ returnedError: Error?) -> Void) {
-        PhoneAuthProvider.provider().verifyPhoneNumber(string,
-                                                       uiDelegate: nil) { (returnedIdentifier,
-                                                                           returnedError) in
-            completion(returnedIdentifier, returnedError)
-        }
-    }
+    //==================================================//
+    
+    /* MARK: - Other Functions */
     
     public func simpleErrorString(_ errorDescriptor: String) -> String {
         switch errorDescriptor {
@@ -83,6 +82,16 @@ public class PhoneNumberPageViewModel: ObservableObject {
             return "Due to unusual activity, all requests from this device have been temporarily blocked. Please try again later."
         default:
             return "An unknown error has occurred. Please try again."
+        }
+    }
+    
+    public func verifyPhoneNumber(_ string: String,
+                                  completion: @escaping (_ returnedIdentifier: String?,
+                                                         _ returnedError: Error?) -> Void) {
+        PhoneAuthProvider.provider().verifyPhoneNumber(string,
+                                                       uiDelegate: nil) { (returnedIdentifier,
+                                                                           returnedError) in
+            completion(returnedIdentifier, returnedError)
         }
     }
 }
