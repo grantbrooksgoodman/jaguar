@@ -12,18 +12,18 @@ import SwiftUI
 /* Third-party Frameworks */
 import PhoneNumberKit
 
-//==================================================//
-
-/* MARK: - Views */
-
 public struct SignInPageView: View {
     
     //==================================================//
     
     /* MARK: - Struct-level Variable Declarations */
     
+    @StateObject public var viewModel: SignInPageViewModel
+    @StateObject public var viewRouter: ViewRouter
+    
     //Strings
-    @State private var phoneNumberString: String = callingCode
+    @State public var phoneNumberString: String
+    @State public var fromSignUp: Bool
     @State private var verificationIdentifier: String = "" {
         didSet {
             verified = true
@@ -33,9 +33,7 @@ public struct SignInPageView: View {
     
     //Other Declarations
     @State private var verified = false
-    
-    @StateObject public var viewModel: SignInPageViewModel
-    @StateObject public var viewRouter: ViewRouter
+    @State private var selectedRegion = "US"
     
     //==================================================//
     
@@ -46,7 +44,7 @@ public struct SignInPageView: View {
         case .idle:
             Color.clear.onAppear(perform: viewModel.load)
         case .loading:
-            ProgressView("Loading...")
+            ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
             Spacer()
             
@@ -56,89 +54,44 @@ public struct SignInPageView: View {
                     .frame(width: 150, height: 70)
                     .padding(.bottom, 30)
                 
+                Text(translations[verified ? "codePrompt" : "phoneNumberPrompt"]!.output)
+                    .bold()
+                    .foregroundColor(.gray)
+                    .font(.system(size: 16))
+                    .padding(.vertical, 5)
+                
                 if verified {
-                    Text(translations["codePrompt"]!.output)
-                        .bold()
-                        .foregroundColor(.gray)
-                        .font(.system(size: 16))
-                        .padding(.vertical, 5)
-                    
                     TextField("000000", text: $verificationCode)
                         .padding(.vertical, 2)
                         .multilineTextAlignment(.center)
-                        .overlay(Rectangle()
-                                    .stroke(lineWidth: 1))
+                        .overlay(VStack {
+                            Divider()
+                                .offset(x: 0, y: 15)
+                        })
                         .padding(.horizontal, 30)
                         .keyboardType(.numberPad)
                 } else {
-                    Text(translations["phoneNumberPrompt"]!.output)
-                        .bold()
-                        .foregroundColor(.gray)
-                        .font(.system(size: 16))
-                        .padding(.vertical, 5)
-                    
-                    TextField("+1 (555) 555-5555", text: $phoneNumberString)
-                        //                    .textFieldStyle(.plain)
-                        .padding(.vertical, 2)
-                        .multilineTextAlignment(.center)
-                        .overlay(Rectangle()
-                                    .stroke(lineWidth: 1))
-                        .keyboardType(.phonePad)
-                        .padding(.horizontal, 30)
-                        .onChange(of: phoneNumberString, perform: { value in
-                            DispatchQueue.main.async {
-                                guard let digits = phoneNumberString.digitalValue else {
-                                    phoneNumberString = "+"
-                                    return
-                                }
-                                
-                                let formatted = PartialFormatter().formatPartial("\(digits)")
-                                phoneNumberString = "+\(formatted)".replacingOccurrences(of: "(", with: " (").replacingOccurrences(of: "+ (", with: "+(")
-                            }
-                        })
+                    HStack(alignment: .center) {
+                        RegionMenu(selectedRegion: $selectedRegion,
+                                   initialRegion: selectedRegion)
+                            .padding(.leading, 20)
+                            .padding(.trailing, 5)
+                        
+                        PhoneNumberTextField(phoneNumberString: $phoneNumberString,
+                                             region: selectedRegion)
+                            .padding(.vertical, 2)
+                            .padding(.trailing, 20)
+                    }
                 }
                 
                 Button {
                     if verified {
-                        viewModel.authenticateUser(identifier: verificationIdentifier,
-                                                   verificationCode: verificationCode) { (userID, returnedError) in
-                            if let identifier = userID {
-                                currentUserID = identifier
-                                viewRouter.currentPage = .home
-                            } else if let error = returnedError {
-                                log(errorInfo(error),
-                                    metadata: [#file, #function, #line])
-                                
-                                let akError = AKError(errorInfo(error),
-                                                      metadata: [#file, #function, #line],
-                                                      isReportable: false)
-                                AKErrorAlert(message: viewModel.simpleErrorString(error.localizedDescription),
-                                             error: akError).present()
-                                
-                            }
-                        }
+                        authenticateUser()
                     } else {
-                        viewModel.verifyPhoneNumber(phoneNumberString) { (returnedIdentifier,
-                                                                          returnedError) in
-                            if let identifier = returnedIdentifier {
-                                guard phoneNumberString.digitalValue != nil else {
-                                    print("phone number not int")
-                                    return
-                                }
-                                
-                                verificationIdentifier = identifier
-                            } else if let error = returnedError {
-                                let akError = AKError(errorInfo(error),
-                                                      metadata: [#file, #function, #line],
-                                                      isReportable: false)
-                                AKErrorAlert(message: viewModel.simpleErrorString(errorInfo(error)),
-                                             error: akError,
-                                             networkDependent: true).present()
-                            }
-                        }
+                        verifyPhoneNumber()
                     }
                 } label: {
-                    Text(verified ? translations["finish"]!.output : translations["continue"]!.output)
+                    Text(translations[verified ? "finish" : "continue"]!.output)
                         .bold()
                 }
                 .padding(.top, 5)
@@ -148,8 +101,11 @@ public struct SignInPageView: View {
                 Button {
                     if verified {
                         verified = false
+                    } else if fromSignUp {
+                        languageCode = previousLanguageCode
+                        viewRouter.currentPage = .signUp_verifyNumber
                     } else {
-                        viewRouter.currentPage = .main
+                        viewRouter.currentPage = .initial
                     }
                 } label: {
                     Text(translations["back"]!.output)
@@ -163,6 +119,57 @@ public struct SignInPageView: View {
             Spacer()
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Private Functions */
+    
+    private func authenticateUser() {
+        viewModel.authenticateUser(identifier: verificationIdentifier,
+                                   verificationCode: verificationCode) { (userID, returnedError) in
+            guard let identifier = userID else {
+                let errorDescriptor = returnedError == nil ? "An unknown error occurred." : errorInfo(returnedError!)
+                log(errorDescriptor,
+                    metadata: [#file, #function, #line])
+                
+                let akError = AKError(errorDescriptor,
+                                      metadata: [#file, #function, #line],
+                                      isReportable: true)
+                AKErrorAlert(message: viewModel.simpleErrorString(errorDescriptor),
+                             error: akError).present()
+                
+                return
+            }
+            
+            currentUserID = identifier
+            viewRouter.currentPage = .conversations
+        }
+    }
+    
+    private func verifyPhoneNumber() {
+        let compiledNumber = "\(callingCodeDictionary[selectedRegion]!)\(phoneNumberString.digits)".digits
+        
+        viewModel.verifyPhoneNumber("+\(compiledNumber)") { (returnedIdentifier,
+                                                             returnedError) in
+            
+            guard let identifier = returnedIdentifier else {
+                let error = returnedError == nil ? "An unknown error occurred." : errorInfo(returnedError!)
+                let akError = AKError(error,
+                                      metadata: [#file, #function, #line],
+                                      isReportable: false)
+                
+                log(error,
+                    metadata: [#file, #function, #line])
+                AKErrorAlert(message: viewModel.simpleErrorString(error),
+                             error: akError,
+                             networkDependent: true).present()
+                
+                return
+            }
+            
+            verificationIdentifier = identifier
         }
     }
 }

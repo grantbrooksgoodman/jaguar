@@ -26,6 +26,9 @@ public class User {
     public var identifier: String!
     public var languageCode: String!
     public var phoneNumber: String!
+    public var region: String!
+    
+    private(set) var isUpdatingConversations = false
     
     //==================================================//
     
@@ -34,68 +37,95 @@ public class User {
     public init(identifier: String,
                 languageCode: String,
                 openConversations: [String]?,
-                phoneNumber: String) {
+                phoneNumber: String,
+                region: String) {
         self.identifier = identifier
         self.languageCode = languageCode
         self.openConversations = openConversations
         self.phoneNumber = phoneNumber
+        self.region = region
     }
     
     //==================================================//
     
     /* MARK: - Other Functions */
     
-    public func deSerializeConversations(completion: @escaping(_ conversations: [Conversation]?,
-                                                               _ error: String?) -> Void) {
-        if let openConversations = openConversations {
-            if let DSOpenConversations = DSOpenConversations {
-                completion(DSOpenConversations, nil)
-            } else {
-                ConversationSerializer().getConversations(withIdentifiers: openConversations) { (returnedConversations, errorDescriptor) in
-                    if let conversations = returnedConversations {
-                        //if a user has a conversation, that means they have a match already. it must.
-                        self.DSOpenConversations = conversations
-                        
-                        completion(conversations, nil)
-                    } else if let error = errorDescriptor {
-                        completion(nil, error)
+    public func updateConversationData(completion: @escaping(_ returnedConversations: [Conversation]?,
+                                                             _ errorDescriptor: String?) -> Void = { _,_  in }) {
+        guard let openConversations = openConversations else {
+            completion([], nil)
+            return
+        }
+        
+        guard openConversations != [] else {
+            completion([], nil)
+            return
+        }
+        
+        isUpdatingConversations = true
+        
+        deSerializeConversations { (returnedConversations,
+                                    errorDescriptor) in
+            guard let conversations = returnedConversations else {
+                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                
+                return
+            }
+            
+            let dispatchGroup = DispatchGroup()
+            var errors = [String]()
+            
+            for conversation in conversations {
+                dispatchGroup.enter()
+                
+                conversation.setOtherUser { (errorDescriptor) in
+                    if let error = errorDescriptor {
+                        errors.append(error)
                     }
+                    
+                    dispatchGroup.leave()
                 }
             }
-        } else {
-            completion(nil, "No Conversations to deserialize.")
+            
+            dispatchGroup.notify(queue: .main) {
+                self.isUpdatingConversations = false
+                completion(conversations, errors.isEmpty ? nil : errors.joined(separator: "\n"))
+            }
         }
     }
     
-    public func formattedPhoneNumber() -> String {
-        let phoneNumberKit = PhoneNumberKit()
-        let numberFormats: [PhoneNumberFormat] = [.e164, .international, .national]
-        var numberString = phoneNumber!
+    public func deSerializeConversations(completion: @escaping(_ conversations: [Conversation]?,
+                                                               _ error: String?) -> Void) {
+        var conversations = openConversations ?? []
         
-        var index = 0
-        while index < numberFormats.count && !numberString.contains(" ") {
-            do {
-                let parsedPhoneNumber = try phoneNumberKit.parse(phoneNumber!)
-                numberString = phoneNumberKit.format(parsedPhoneNumber, toType: numberFormats[index])
-            } catch {
-                log("Unable to format phone number with this method.",
-                    verbose: true,
+        GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { (returnedConversations, errorDescriptor) in
+            
+            guard let updatedConversations = returnedConversations as? [String] else {
+                log(errorDescriptor ?? "An unknown error occurred.",
                     metadata: [#file, #function, #line])
+                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                return
             }
             
-            index += 1
-        }
-        
-        if !numberString.contains(" ") {
-            log("Reverting to formatting phone number using partial formatter.",
-                verbose: true,
-                metadata: [#file, #function, #line])
+            conversations = updatedConversations
             
-            numberString = PartialFormatter().formatPartial(phoneNumber!)
-            numberString = "+\(numberString)".replacingOccurrences(of: "(", with: " (").replacingOccurrences(of: "+ (", with: "+(")
+            if conversations == self.openConversations,
+               let DSOpenConversations = self.DSOpenConversations {
+                completion(DSOpenConversations, nil)
+            } else {
+                ConversationSerializer().getConversations(withIdentifiers: conversations) { (returnedConversations, errorDescriptor) in
+                    guard let conversations = returnedConversations else {
+                        log(errorDescriptor ?? "An unknown error occurred.",
+                            metadata: [#file, #function, #line])
+                        completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                        return
+                    }
+                    
+                    self.DSOpenConversations = conversations
+                    completion(conversations, nil)
+                }
+            }
         }
-        
-        return numberString
     }
     
     public func updateLastActiveDate() {
@@ -113,6 +143,9 @@ public class User {
 
 /* MARK: - Extensions */
 
+/**/
+
+/* MARK: Sequence */
 extension Sequence where Iterator.Element == String {
     func containsAny(in array: [String]) -> Bool {
         for individualString in array {
@@ -144,6 +177,91 @@ extension Sequence where Iterator.Element == String {
         }
         
         return finalArray
+    }
+}
+
+extension PhoneNumberFormat {
+    func asString() -> String {
+        switch self {
+        case .e164:
+            return "E164"
+        case .international:
+            return "International"
+        case .national:
+            return "National"
+        }
+    }
+}
+
+/* MARK: String */
+extension String {
+    func callingCodeFormatted(region: String) -> String {
+        let phoneNumberKit = PhoneNumberKit()
+        let callingCode = callingCodeDictionary[region] ?? ""
+        
+        let mutableSelf = self
+        let digits = mutableSelf.digits
+        let nationalNumber = digits.dropPrefix(callingCode.count)
+        
+        var formattedNumber = "\(nationalNumber)"
+        
+        do {
+            let parsed = try phoneNumberKit.parse("\(nationalNumber)", withRegion: region)
+            
+            formattedNumber = phoneNumberKit.format(parsed, toType: .international)
+            formattedNumber = formattedNumber.removingOccurrences(of: ["+"])
+        } catch {
+            //            log("Couldn't format number to international.",
+            //                verbose: true,
+            //                metadata: [#file, #function, #line])
+        }
+        
+        if !formattedNumber.contains(" ") || (formattedNumber.characterArray.count(of: "-") == 2 &&
+                                                formattedNumber.digits.count == 11) {
+            
+            formattedNumber = PartialFormatter(phoneNumberKit: PhoneNumberKit(),
+                                               defaultRegion: region,
+                                               withPrefix: true,
+                                               maxDigits: nil).formatPartial(nationalNumber)
+        }
+        
+        return "+\(callingCode) \(formattedNumber)".replacingOccurrences(of: "1(", with: "(")
+    }
+    
+    func formattedPhoneNumber(region: String) -> String {
+        let phoneNumberKit = PhoneNumberKit()
+        let callingCode = callingCodeDictionary[region]!
+        
+        let mutableSelf = self
+        let digits = mutableSelf.digits
+        
+        var formattedNumber = "\(callingCode)\(digits)"
+        
+        do {
+            let parsed = try phoneNumberKit.parse("\(digits)", withRegion: region)
+            
+            formattedNumber = phoneNumberKit.format(parsed, toType: .international)
+            formattedNumber = formattedNumber.removingOccurrences(of: ["+"])
+        } catch {
+            //            log("Couldn't format number to international.",
+            //                verbose: true,
+            //                metadata: [#file, #function, #line])
+        }
+        
+        if !formattedNumber.contains(" ") {
+            formattedNumber = PartialFormatter(phoneNumberKit: PhoneNumberKit(),
+                                               defaultRegion: region,
+                                               withPrefix: true,
+                                               maxDigits: nil).formatPartial(digits)
+        }
+        
+        if formattedNumber.characterArray.count(of: "-") == 2 &&
+            formattedNumber.digits.count == 11 {
+            
+            formattedNumber = "\(PartialFormatter().formatPartial(self))"
+        }
+        
+        return formattedNumber.hasPrefix("\(callingCode) ") ? formattedNumber.dropPrefix(callingCode.count + 1) : formattedNumber
     }
 }
 

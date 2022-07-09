@@ -71,7 +71,7 @@ public struct MessageSerializer {
                 messages.append(generatedKey)
                 
                 GeneralSerializer.updateValue(onKey: "/allConversations/\(conversationIdentifier)",
-                                              withData: ["messages": messages]) { (returnedError) in
+                                              withData: ["messages": messages.filter({$0 != "!"})]) { (returnedError) in
                     if let error = returnedError {
                         completion(nil, errorInfo(error))
                     } else {

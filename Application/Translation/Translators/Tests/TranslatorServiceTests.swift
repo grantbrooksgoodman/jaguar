@@ -28,6 +28,29 @@ final class TranslatorServiceTests: XCTestCase {
     
     /* MARK: Testing Functions */
     
+    func testTranslateToEnglish() {
+        let expectation = XCTestExpectation(description: "No error returned")
+        
+        TranslatorService.main.translate(TranslationInput("Hola mi amigo."),
+                                         with: LanguagePair(from: "es",
+                                                            to: "en")) { (returnedTranslation,
+                                                                          errorDescriptor) in
+            guard returnedTranslation != nil || errorDescriptor != nil else {
+                XCTFail("An unknown error occurred.")
+                return
+            }
+            
+            if let error = errorDescriptor {
+                XCTFail(error)
+            } else if let translation = returnedTranslation {
+                print(translation.output)
+                expectation.fulfill()
+            }
+        }
+        
+        wait(for: [expectation], timeout: 10)
+    }
+    
     func testAddRemoveTranslations() {
         let expectation = XCTestExpectation(description: "No error returned")
         

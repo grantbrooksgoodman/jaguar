@@ -177,7 +177,7 @@ extension Message: MessageType {
     }
     
     public var kind: MessageKind {
-        return .text(translation.output)
+        return .text(fromAccountIdentifier != currentUserID ? translation.output : translation.input.value())
     }
     
     public var messageId: String {
@@ -188,6 +188,23 @@ extension Message: MessageType {
         return Sender(senderId: fromAccountIdentifier, displayName: "??")
     }
 }
+
+//extension TranslationPlatform {
+//    func asString() -> String {
+//        switch self {
+//        case .azure:
+//            return "Azure"
+//        case .deepL:
+//            return "DeepL"
+//        case .google:
+//            return "Google"
+//        case .yandex:
+//            return "Yandex"
+//        case .random:
+//            return "Random"
+//        }
+//    }
+//}
 
 /* MARK: InputBarAccessoryViewDelegate */
 extension ChatPageView.Coordinator: InputBarAccessoryViewDelegate {
@@ -200,7 +217,8 @@ extension ChatPageView.Coordinator: InputBarAccessoryViewDelegate {
         
         TranslatorService.main.translate(TranslationInput(text),
                                          with: LanguagePair(from: currentUser!.languageCode,
-                                                            to: conversation.wrappedValue.otherUser!.languageCode)) { (returnedTranslation, errorDescriptor) in
+                                                            to: conversation.wrappedValue.otherUser!.languageCode),
+                                         using: .random) { (returnedTranslation, errorDescriptor) in
             inputBar.sendButton.stopAnimating()
             inputBar.inputTextView.placeholder = "Aa"
             inputBar.inputTextView.tintColor = .systemBlue

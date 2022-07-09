@@ -49,7 +49,7 @@ public class SignInPageViewModel: ObservableObject {
                                                languagePair: LanguagePair(from: "en",
                                                                           to: languageCode),
                                                requiresHUD: false,
-                                               using: .google) { (returnedTranslations,
+                                               using: .random) { (returnedTranslations,
                                                                   errorDescriptors) in
             if let translations = returnedTranslations {
                 guard let matchedTranslations = translations.matchedTo(self.inputs) else {

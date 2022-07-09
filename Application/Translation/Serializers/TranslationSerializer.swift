@@ -133,6 +133,8 @@ public struct TranslationSerializer {
                                               languagePair: languagePair)
                 
                 completion(translation, nil)
+            } else if returnedValues as? NSNull != nil {
+                completion(nil, "No translations for language pair '\(languagePair.asString())'.")
             }
         }
     }

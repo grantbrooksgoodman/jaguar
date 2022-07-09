@@ -24,12 +24,21 @@ public struct UserSerializer {
     
     /* MARK: - Creation Functions */
     
+    public func createAccount(languageCode: String) {
+        Auth.auth().languageCode = languageCode
+        
+        //        Auth.auth().createUser(withEmail: self.createUserController.eMailTextField.text!, password: self.createUserController.passwordTextField.text!, completion: { (wrappedReturnedUser, wrappedReturnedError)
+        
+    }
+    
     public func createUser(_ identifier: String,
                            languageCode: String,
-                           phoneNumber: Int,
+                           phoneNumber: String,
+                           region: String,
                            completion: @escaping(_ errorDescriptor: String?) -> Void) {
         let dataBundle = ["languageCode": languageCode,
-                          "phoneNumber": String(phoneNumber),
+                          "phoneNumber": phoneNumber.digits,
+                          "region": region,
                           "openConversations": ["!"]] as [String: Any]
         
         GeneralSerializer.updateValue(onKey: "/allUsers/\(identifier)",
@@ -57,12 +66,15 @@ public struct UserSerializer {
                     return
                 }
                 
+                var found = false
+                
                 for user in asData {
                     if var userData = user.value as? [String: Any],
                        let phoneNumberString = userData["phoneNumber"] as? String,
                        phoneNumberString.digits == byPhoneNumber.digits {
                         userData["identifier"] = user.key
                         
+                        found = true
                         UserSerializer.shared.deSerializeUser(fromData: userData) { (returnedUser,
                                                                                      errorDescriptor) in
                             if let error = errorDescriptor {
@@ -73,6 +85,12 @@ public struct UserSerializer {
                         }
                     }
                 }
+                
+                if !found {
+                    completion(nil, "No user exists with the provided phone number.")
+                }
+            } else {
+                completion(nil, "No user exists with the provided phone number.")
             }
         }) { (error) in
             completion(nil, "Unable to retrieve the specified data. (\(errorInfo(error)))")
@@ -132,10 +150,16 @@ public struct UserSerializer {
             return
         }
         
+        guard let region = fromData["region"] as? String else {
+            completion(nil, "Unable to deserialize «region».")
+            return
+        }
+        
         let deSerializedUser = User(identifier: identifier,
                                     languageCode: languageCode,
                                     openConversations: openConversations == ["!"] ? nil : openConversations,
-                                    phoneNumber: phoneNumber)
+                                    phoneNumber: phoneNumber,
+                                    region: region)
         
         completion(deSerializedUser, nil)
     }

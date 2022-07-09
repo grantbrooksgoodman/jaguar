@@ -26,4 +26,6 @@ public enum TranslationPlatform: CaseIterable {
     case deepL
     case google
     case yandex
+    
+    case random
 }

@@ -26,13 +26,14 @@ var isPresentingMailComposeViewController = false
 var prefersConsistentBuildInfo            = false
 var streamOpen                            = false
 var timebombActive                        = true
-var verboseFunctionExposure               = false
+var verboseFunctionExposure               = true
 
 //DateFormatters
 let masterDateFormatter    = DateFormatter()
 let secondaryDateFormatter = DateFormatter()
 
 //Dictionaries
+var callingCodeDictionary:          [String: String]!
 var dismissDictionary:              [String: String]!
 var followingUnableDictionary:      [String: String]!
 var languageCodeDictionary:         [String: String]!
@@ -55,11 +56,25 @@ var currentFile               = #file
 var currentUserID = "" {
     didSet {
         UserDefaults.standard.setValue(currentUserID, forKey: "currentUserID")
+        UserSerializer.shared.getUser(withIdentifier: currentUserID) { (returnedUser, errorDescriptor) in
+            guard let user = returnedUser else {
+                log(errorDescriptor ?? "An unknown error occurred.",
+                    isFatal: true,
+                    metadata: [#file, #function, #line])
+                return
+            }
+            
+            currentUser = user
+            languageCode = user.languageCode
+            currentUser!.updateConversationData()
+        }
     }
 }
 var dmyFirstCompileDateString = "23042022"
 var finalName                 = ""
-var languageCode              = "es" //["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()! //["ca", "es", "fr", "gl", "it", "pt", "ro"].randomElement()! //Locale.preferredLanguages[0].components(separatedBy: "-")[0]
+var languageCode              = Locale.preferredLanguages[0].components(separatedBy: "-")[0] //["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()! //["ca", "es", "fr", "gl", "it", "pt", "ro"].randomElement()! //Locale.preferredLanguages[0].components(separatedBy: "-")[0]
+
+var previousLanguageCode = ""
 
 //UIViewControllers
 var buildInfoController: BuildInfoController?
@@ -73,11 +88,12 @@ var buildType: Build.BuildType = .preAlpha
 var currentCalendar = Calendar(identifier: .gregorian)
 
 var currentUser: User?
-var currentUserConversations: [Conversation]?
 
 var informationDictionary: [String:String]!
 var statusBarStyle: UIStatusBarStyle = .default
 var touchTimer: Timer?
+
+let supportedLanguages = getSupportedLanguagesDictionary()
 
 //==================================================//
 
@@ -138,10 +154,18 @@ var touchTimer: Timer?
                 metadata: [#file, #function, #line])
         }
         
-        if let code = getCallingCode() {
-            callingCode = "+\(code) "
+        if let callingCodes = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "CallingCodes", ofType: "plist") ?? "") as? [String: String] {
+            callingCodeDictionary = callingCodes
         } else {
-            callingCode = "+"
+            log("Calling codes missing.",
+                isFatal: true,
+                metadata: [#file, #function, #line])
+        }
+        
+        if let code = getCallingCode() {
+            callingCode = code //"+\(code) "
+        } else {
+            callingCode = "" //"+"
         }
         
         //Set the array of information.
@@ -172,15 +196,10 @@ var touchTimer: Timer?
         
         TranslationSerializer.downloadTranslations()
         
+        //        UserDefaults.standard.setValue(nil, forKey: "currentUserID")
+        
         if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
             currentUserID = userID
-            UserSerializer().getUser(withIdentifier: userID) { (returnedUser, errorDescriptor) in
-                if let error = errorDescriptor {
-                    log(error, metadata: [#file, #function, #line])
-                } else {
-                    currentUser = returnedUser!
-                }
-            }
         }
         
         return true
@@ -259,6 +278,18 @@ var touchTimer: Timer?
             }
         })
     }
+}
+
+func getSupportedLanguagesDictionary() -> [String: String] {
+    let supportArray = ["en", "es", "fr", "de", "ja", "zh", "ru"]
+    
+    var supportedLanguages = [String: String]()
+    
+    for key in supportArray {
+        supportedLanguages[key] = languageCodeDictionary[key]
+    }
+    
+    return supportedLanguages
 }
 
 //==================================================//

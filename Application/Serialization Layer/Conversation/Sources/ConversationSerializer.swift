@@ -181,6 +181,7 @@ public struct ConversationSerializer {
         
         MessageSerializer.shared.getMessages(withIdentifiers: messages) { (returnedMessages,
                                                                            getMessagesStatus) in
+            
             if let messages = returnedMessages {
                 let deSerializedConversation = Conversation(identifier: identifier,
                                                             messages: messages,

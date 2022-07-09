@@ -38,6 +38,8 @@ public struct TranslatorService {
             subservices[.google] = GoogleTranslator()
         case .yandex:
             subservices[.yandex] = YandexTranslator()
+        case .random:
+            subservices[.random] = [DeepLTranslator(), GoogleTranslator()].randomElement()!
         default:
             subservices[.azure] = AzureTranslator()
         }
@@ -53,7 +55,7 @@ public struct TranslatorService {
                                 using: TranslationPlatform? = nil,
                                 completion: @escaping(_ returnedTranslations: [Translation]?,
                                                       _ errorDescriptors: [String: TranslationInput]?) -> Void) {
-        guard languagePair.to != "en" else {
+        guard !(languagePair.from == "en" && languagePair.to == "en") else {
             var translations = [Translation]()
             
             for input in inputs {
@@ -117,7 +119,7 @@ public struct TranslatorService {
                           using: TranslationPlatform? = nil,
                           completion: @escaping(_ returnedTranslation: Translation?,
                                                 _ errorDescriptor: String?) -> Void) {
-        guard languagePair.to != "en" else {
+        guard !(languagePair.from == "en" && languagePair.to == "en") else {
             let translation = Translation(input: input,
                                           output: input.original,
                                           languagePair: languagePair)

@@ -51,6 +51,16 @@ extension Array where Element == String {
         
         return bools.allSatisfy({$0 == true})
     }
+    
+    func count(of: String) -> Int {
+        var count = 0
+        
+        for string in self {
+            count += string == of ? 1 : 0
+        }
+        
+        return count
+    }
 }
 
 //==================================================//
