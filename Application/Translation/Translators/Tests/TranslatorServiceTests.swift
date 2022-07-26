@@ -40,12 +40,17 @@ final class TranslatorServiceTests: XCTestCase {
                 return
             }
             
-            if let error = errorDescriptor {
+            guard let translation = returnedTranslation else {
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
                 XCTFail(error)
-            } else if let translation = returnedTranslation {
-                print(translation.output)
-                expectation.fulfill()
+                return
             }
+            
+            print(translation.output)
+            expectation.fulfill()
         }
         
         wait(for: [expectation], timeout: 10)
@@ -63,14 +68,22 @@ final class TranslatorServiceTests: XCTestCase {
                                       languagePair: pair)
         
         TranslationSerializer.uploadTranslation(translation) { (errorDescriptor) in
-            if let error = errorDescriptor {
-                XCTFail(error)
-            } else {
+            guard let error = errorDescriptor else {
                 TranslationSerializer.removeTranslation(for: input,
                                                         languagePair: pair) { (errorDescriptor) in
-                    expectation.fulfill()
+                    guard let error = errorDescriptor else {
+                        expectation.fulfill()
+                        return
+                    }
+                    
+                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                               metadata: [#file, #function, #line])
                 }
+                
+                return
             }
+            
+            XCTFail(error)
         }
         
         wait(for: [expectation], timeout: 10)
@@ -86,9 +99,16 @@ final class TranslatorServiceTests: XCTestCase {
                                          requiresHUD: false,
                                          using: .google) { (returnedTranslation,
                                                             errorDescriptor) in
-            if let translation = returnedTranslation {
-                XCTAssertEqual(translation.output, "")
+            guard let translation = returnedTranslation else {
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
+                XCTFail(error)
+                return
             }
+            
+            XCTAssertEqual(translation.output, "")
         }
     }
     
@@ -106,11 +126,12 @@ final class TranslatorServiceTests: XCTestCase {
                                                                            to: "pt"))
         
         TranslationSerializer.uploadTranslations([spanishTranslation, portugueseTranslation]) { (errorDescriptor) in
-            if let error = errorDescriptor {
-                XCTFail(error)
-            } else {
+            guard let error = errorDescriptor else {
                 expectation.fulfill()
+                return
             }
+            
+            XCTFail(error)
         }
         
         wait(for: [expectation], timeout: 10)
@@ -124,19 +145,18 @@ final class TranslatorServiceTests: XCTestCase {
                                                             to: "ru"),
                                          using: .yandex) { (returnedTranslation,
                                                             errorDescriptor) in
-            guard returnedTranslation != nil || errorDescriptor != nil else {
-                XCTFail("An unknown error occurred.")
+            guard let translation = returnedTranslation else {
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
+                XCTFail(error)
                 return
             }
             
-            if let error = errorDescriptor {
-                XCTFail(error)
-            }
+            print(translation.output)
+            expectation.fulfill()
             
-            if let translation = returnedTranslation {
-                print(translation.output)
-                expectation.fulfill()
-            }
         }
         
         wait(for: [expectation], timeout: 10)

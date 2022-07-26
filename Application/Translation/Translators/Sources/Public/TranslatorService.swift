@@ -83,7 +83,6 @@ public struct TranslatorService {
                       with: languagePair,
                       requiresHUD: requiresHUD ?? nil,
                       using: using ?? .google) { (returnedTranslation, errorDescriptor) in
-                
                 if let translation = returnedTranslation {
                     translations.append(translation)
                 }
@@ -198,25 +197,26 @@ public struct TranslatorService {
                                                 completion: { (returnedString,
                                                                errorDescriptor) in
                                                     
-                                                    if let string = returnedString {
-                                                        var finalInput = input
-                                                        if input.value() == input.alternate {
-                                                            finalInput = TranslationInput(input.alternate!,
-                                                                                          alternate: nil)
-                                                        }
-                                                        
-                                                        let translation = Translation(input: finalInput,
-                                                                                      output: string.matchingCapitalization(of: input.value()),
-                                                                                      languagePair: languagePair)
-                                                        
-                                                        TranslationSerializer.uploadTranslation(translation)
-                                                        TranslationArchiver.addToArchive(translation)
-                                                        
-                                                        completion(translation, nil)
-                                                    } else {
+                                                    guard let string = returnedString else {
                                                         #warning("Account for this")
-                                                        completion(nil, errorDescriptor ?? nil)
+                                                        completion(nil, errorDescriptor ?? "An unknown error occurred." /*nil*/)
+                                                        return
                                                     }
+                                                    
+                                                    var finalInput = input
+                                                    if input.value() == input.alternate {
+                                                        finalInput = TranslationInput(input.alternate!,
+                                                                                      alternate: nil)
+                                                    }
+                                                    
+                                                    let translation = Translation(input: finalInput,
+                                                                                  output: string.matchingCapitalization(of: input.value()),
+                                                                                  languagePair: languagePair)
+                                                    
+                                                    TranslationSerializer.uploadTranslation(translation)
+                                                    TranslationArchiver.addToArchive(translation)
+                                                    
+                                                    completion(translation, nil)
                                                     
                                                     if let required = requiresHUD,
                                                        required {

@@ -52,28 +52,27 @@ public class AzureTranslator: Translatorable {
             return
         }
         
-        if let translationRequest = getTranslationRequest(text,
-                                                          from: from,
-                                                          to: to) {
-            executeTranslationRequest(translationRequest) { (data, response, error) in
-                if let error = error {
-                    completion(nil, Logger.errorInfo(error))
-                } else if let data = data {
-                    let parsedData = self.parseJsonData(data)
-                    
-                    if let translationResult = parsedData.parsedText {
-                        completion(translationResult, nil)
-                    } else {
-                        if let error = parsedData.errorDescriptor {
-                            completion(nil, error)
-                        }
-                        
-                        completion(nil, "An unknown error occurred.")
-                    }
-                }
-            }
-        } else {
+        guard let translationRequest = getTranslationRequest(text,
+                                                             from: from,
+                                                             to: to) else {
             completion(nil, "Unable to create Azure translation request.")
+            return
+        }
+        
+        executeTranslationRequest(translationRequest) { (data, response, error) in
+            guard let data = data else {
+                completion(nil, error == nil ? "An unknown error occurred." : Logger.errorInfo(error!))
+                return
+            }
+            
+            let parsedData = self.parseJsonData(data)
+            
+            guard let translationResult = parsedData.parsedText else {
+                completion(nil, parsedData.errorDescriptor ?? "An unknown error occurred.")
+                return
+            }
+            
+            completion(translationResult, nil)
         }
     }
     

@@ -488,17 +488,19 @@ extension UILabel {
             if textWillFit(alternate: labelText, minimumSize: minimumSize) {
                 font = font.withSize(fontSizeThatFits(labelText))
             } else {
-                if let labelText = alternateText {
-                    if textWillFit(alternate: labelText, minimumSize: minimumSize) {
-                        font = font.withSize(fontSizeThatFits(labelText))
-                    } else {
-                        Logger.log("Neither the original nor alternate strings fit.",
-                                   metadata: [#file, #function, #line])
-                    }
-                } else {
+                guard let labelText = alternateText else {
                     Logger.log("Original string didn't fit, no alternate provided.",
                                metadata: [#file, #function, #line])
+                    return
                 }
+                
+                guard textWillFit(alternate: labelText, minimumSize: minimumSize) else {
+                    Logger.log("Neither the original nor alternate strings fit.",
+                               metadata: [#file, #function, #line])
+                    return
+                }
+                
+                font = font.withSize(fontSizeThatFits(labelText))
             }
         }
     }
@@ -560,14 +562,17 @@ extension UITextView {
             if textWillFit(alternate: labelText, minimumSize: minimumSize) {
                 font = font!.withSize(fontSizeThatFits(labelText))
             } else {
-                if let labelText = alternateText {
-                    if textWillFit(alternate: labelText, minimumSize: minimumSize) {
-                        font = font!.withSize(fontSizeThatFits(labelText))
-                    } else {
-                        Logger.log("Neither the original nor alternate strings fit.",
-                                   metadata: [#file, #function, #line])
-                    }
+                guard let labelText = alternateText else {
+                    return
                 }
+                
+                guard textWillFit(alternate: labelText, minimumSize: minimumSize) else {
+                    Logger.log("Neither the original nor alternate strings fit.",
+                               metadata: [#file, #function, #line])
+                    return
+                }
+                
+                font = font!.withSize(fontSizeThatFits(labelText))
             }
         }
     }

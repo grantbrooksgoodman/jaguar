@@ -150,22 +150,22 @@ extension ChatPageViewCoordinator: MessagesDataSource {
         if indexPath.section == lastMessageIndex && messageArray[lastMessageIndex].fromAccountIdentifier == currentUser!.identifier {
             let boldAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 12), .foregroundColor: UIColor.gray]
             
-            if let readDate = messageArray[lastMessageIndex].readDate {
-                let readString = "Read \(readDate.formattedString())"
-                let attributedReadString = NSMutableAttributedString(string: readString)
-                
-                let readLength = "Read".count
-                
-                let regularAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12), .foregroundColor: UIColor.lightGray]
-                
-                attributedReadString.addAttributes(boldAttributes, range: NSRange(location: 0, length: readLength))
-                
-                attributedReadString.addAttributes(regularAttributes, range: NSRange(location: readLength, length: attributedReadString.length - readLength))
-                
-                return attributedReadString
-            } else {
+            guard let readDate = messageArray[lastMessageIndex].readDate else {
                 return NSAttributedString(string: "Delivered", attributes: boldAttributes)
             }
+            
+            let readString = "Read \(readDate.formattedString())"
+            let attributedReadString = NSMutableAttributedString(string: readString)
+            
+            let readLength = "Read".count
+            
+            let regularAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12), .foregroundColor: UIColor.lightGray]
+            
+            attributedReadString.addAttributes(boldAttributes, range: NSRange(location: 0, length: readLength))
+            
+            attributedReadString.addAttributes(regularAttributes, range: NSRange(location: readLength, length: attributedReadString.length - readLength))
+            
+            return attributedReadString
         }
         
         return nil

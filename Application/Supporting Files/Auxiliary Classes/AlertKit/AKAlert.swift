@@ -151,19 +151,18 @@ public class AKAlert {
                                                requiresHUD: true,
                                                using: .google) { (returnedTranslations,
                                                                   errorDescriptors) in
-            if let translations = returnedTranslations {
-                self.title = translations.first(where: { $0.input.value() == self.title })?.output ?? self.title
-                self.message = translations.first(where: { $0.input.value() == self.message })?.output ?? self.message
-                self.cancelButtonTitle = translations.first(where: { $0.input.value() == self.cancelButtonTitle })?.output ?? self.cancelButtonTitle
-                
-                for action in self.actions {
-                    action.title = translations.first(where: { $0.input.value() == action.title })?.output ?? action.title
-                }
+            guard let translations = returnedTranslations else {
+                Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
+                return
             }
             
-            if let errors = errorDescriptors {
-                Logger.log(errors.keys.joined(separator: "\n"),
-                           metadata: [#file, #function, #line])
+            self.title = translations.first(where: { $0.input.value() == self.title })?.output ?? self.title
+            self.message = translations.first(where: { $0.input.value() == self.message })?.output ?? self.message
+            self.cancelButtonTitle = translations.first(where: { $0.input.value() == self.cancelButtonTitle })?.output ?? self.cancelButtonTitle
+            
+            for action in self.actions {
+                action.title = translations.first(where: { $0.input.value() == action.title })?.output ?? action.title
             }
             
             if !leftDispatchGroup {

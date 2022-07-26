@@ -101,9 +101,11 @@ public class User {
         GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { (returnedConversations, errorDescriptor) in
             
             guard let updatedConversations = returnedConversations as? [String] else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
                            metadata: [#file, #function, #line])
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, error)
                 return
             }
             
@@ -115,9 +117,11 @@ public class User {
             } else {
                 ConversationSerializer().getConversations(withIdentifiers: conversations) { (returnedConversations, errorDescriptor) in
                     guard let conversations = returnedConversations else {
-                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                        let error = errorDescriptor ?? "An unknown error occurred."
+                        
+                        Logger.log(error,
                                    metadata: [#file, #function, #line])
-                        completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                        completion(nil, error)
                         return
                     }
                     

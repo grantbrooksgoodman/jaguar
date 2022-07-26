@@ -175,30 +175,29 @@ public class AKTextFieldAlert: AKAlert {
                                                requiresHUD: true,
                                                using: .google) { (returnedTranslations,
                                                                   errorDescriptors) in
-            if let translations = returnedTranslations {
-                #warning("Remove this once functionality expanded.")
-                //self.title = translations.first(where: { $0.input.value() == self.title })?.output ?? self.title
-                self.title = self.title.removingOccurrences(of: ["*"])
-                
-                self.message = translations.first(where: { $0.input.value() == self.message })?.output ?? self.message
-                self.cancelButtonTitle = translations.first(where: { $0.input.value() == self.cancelButtonTitle })?.output ?? self.cancelButtonTitle
-                
-                if self.textFieldAttributes[.placeholderText] != nil {
-                    self.textFieldAttributes[.placeholderText] = translations.first(where: { $0.input.value() == (self.textFieldAttributes[.placeholderText] as! String) })?.output ?? (self.textFieldAttributes[.placeholderText] as! String)
-                }
-                
-                if self.textFieldAttributes[.sampleText] != nil {
-                    self.textFieldAttributes[.sampleText] = translations.first(where: { $0.input.value() == (self.textFieldAttributes[.sampleText] as! String) })?.output ?? (self.textFieldAttributes[.sampleText] as! String)
-                }
-                
-                for action in self.actions {
-                    action.title = translations.first(where: { $0.input.value() == action.title })?.output ?? action.title
-                }
+            guard let translations = returnedTranslations else {
+                Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
+                return
             }
             
-            if let errors = errorDescriptors {
-                Logger.log(errors.keys.joined(separator: "\n"),
-                           metadata: [#file, #function, #line])
+            #warning("Remove this once functionality expanded.")
+            //self.title = translations.first(where: { $0.input.value() == self.title })?.output ?? self.title
+            self.title = self.title.removingOccurrences(of: ["*"])
+            
+            self.message = translations.first(where: { $0.input.value() == self.message })?.output ?? self.message
+            self.cancelButtonTitle = translations.first(where: { $0.input.value() == self.cancelButtonTitle })?.output ?? self.cancelButtonTitle
+            
+            if self.textFieldAttributes[.placeholderText] != nil {
+                self.textFieldAttributes[.placeholderText] = translations.first(where: { $0.input.value() == (self.textFieldAttributes[.placeholderText] as! String) })?.output ?? (self.textFieldAttributes[.placeholderText] as! String)
+            }
+            
+            if self.textFieldAttributes[.sampleText] != nil {
+                self.textFieldAttributes[.sampleText] = translations.first(where: { $0.input.value() == (self.textFieldAttributes[.sampleText] as! String) })?.output ?? (self.textFieldAttributes[.sampleText] as! String)
+            }
+            
+            for action in self.actions {
+                action.title = translations.first(where: { $0.input.value() == action.title })?.output ?? action.title
             }
             
             if !leftDispatchGroup {

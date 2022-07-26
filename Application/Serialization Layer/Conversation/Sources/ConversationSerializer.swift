@@ -97,22 +97,22 @@ public struct ConversationSerializer {
                                 completion: @escaping(_ returnedConversation: Conversation?,
                                                       _ errorDescriptor: String?) -> Void) {
         Database.database().reference().child("allConversations").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
-            if let returnedSnapshotAsDictionary = returnedSnapshot.value as? NSDictionary,
-               let asData = returnedSnapshotAsDictionary as? [String: Any] {
-                var mutableData = asData
-                
-                mutableData["identifier"] = withIdentifier
-                
-                self.deSerializeConversation(fromData: mutableData) { (returnedConversation,
-                                                                       errorDescriptor) in
-                    if let conversation = returnedConversation {
-                        completion(conversation, nil)
-                    } else {
-                        completion(nil, errorDescriptor!)
-                    }
-                }
-            } else {
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  var data = snapshot as? [String: Any] else {
                 completion(nil, "No conversation exists with the identifier \"\(withIdentifier)\".")
+                return
+            }
+            
+            data["identifier"] = withIdentifier
+            
+            self.deSerializeConversation(fromData: data) { (returnedConversation,
+                                                            errorDescriptor) in
+                guard let conversation = returnedConversation else {
+                    completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                    return
+                }
+                
+                completion(conversation, nil)
             }
         }) { (error) in
             completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
@@ -186,17 +186,17 @@ public struct ConversationSerializer {
         
         MessageSerializer.shared.getMessages(withIdentifiers: messages) { (returnedMessages,
                                                                            getMessagesStatus) in
-            
-            if let messages = returnedMessages {
-                let deSerializedConversation = Conversation(identifier: identifier,
-                                                            messages: messages,
-                                                            lastModifiedDate: lastModifiedDate,
-                                                            participantIdentifiers: participants)
-                
-                completion(deSerializedConversation, nil)
-            } else if let status = getMessagesStatus {
-                completion(nil, status)
+            guard let messages = returnedMessages else {
+                completion(nil, getMessagesStatus ?? "An unknown error occurred.")
+                return
             }
+            
+            let deSerializedConversation = Conversation(identifier: identifier,
+                                                        messages: messages,
+                                                        lastModifiedDate: lastModifiedDate,
+                                                        participantIdentifiers: participants)
+            
+            completion(deSerializedConversation, nil)
         }
     }
 }

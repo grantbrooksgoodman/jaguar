@@ -74,12 +74,13 @@ public class Conversation {
         
         UserSerializer.shared.getUser(withIdentifier: otherUserIdentifier) { (returnedUser,
                                                                               errorDescriptor) in
-            if let user = returnedUser {
-                self.otherUser = user
-                completion(nil)
-            } else {
+            guard let user = returnedUser else {
                 completion(errorDescriptor ?? "An unknown error occurred.")
+                return
             }
+            
+            self.otherUser = user
+            completion(nil)
         }
     }
     

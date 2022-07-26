@@ -35,11 +35,12 @@ public struct GeneralSerializer {
     
     public static func setValue(onKey: String, withData: Any, completion: @escaping (Error?) -> Void) {
         Database.database().reference().child(onKey).setValue(withData) { returnedError, _ in
-            if let error = returnedError {
-                completion(error)
-            } else {
+            guard let error = returnedError else {
                 completion(nil)
+                return
             }
+            
+            completion(error)
         }
     }
     
@@ -53,11 +54,12 @@ public struct GeneralSerializer {
      */
     public static func updateValue(onKey: String, withData: [String: Any], completion: @escaping (Error?) -> Void) {
         Database.database().reference().child(onKey).updateChildValues(withData, withCompletionBlock: { returnedError, _ in
-            if let error = returnedError {
-                completion(error)
-            } else {
+            guard let error = returnedError else {
                 completion(nil)
+                return
             }
+            
+            completion(error)
         })
     }
 }

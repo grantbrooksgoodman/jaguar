@@ -36,11 +36,12 @@ public struct UserSerializer {
         
         GeneralSerializer.updateValue(onKey: "/allUsers/\(identifier)",
                                       withData: dataBundle) { (returnedError) in
-            if let error = returnedError {
-                completion(Logger.errorInfo(error))
-            } else {
+            guard let error = returnedError else {
                 completion(nil)
+                return
             }
+            
+            completion(Logger.errorInfo(error))
         }
     }
     
@@ -52,37 +53,39 @@ public struct UserSerializer {
                          completion: @escaping(_ returnedUser: User?,
                                                _ errorDescriptor: String?) -> Void) {
         Database.database().reference().child("allUsers").observeSingleEvent(of: .value, with: { (returnedSnapshot) in
-            if let returnedSnapshotAsDictionary = returnedSnapshot.value as? NSDictionary,
-               let asData = returnedSnapshotAsDictionary as? [String: Any] {
-                guard asData.count > 0 else {
-                    completion(nil, "Couldn't get users.")
-                    return
-                }
-                
-                var found = false
-                
-                for user in asData {
-                    if var userData = user.value as? [String: Any],
-                       let phoneNumberString = userData["phoneNumber"] as? String,
-                       phoneNumberString.digits == byPhoneNumber.digits {
-                        userData["identifier"] = user.key
-                        
-                        found = true
-                        UserSerializer.shared.deSerializeUser(fromData: userData) { (returnedUser,
-                                                                                     errorDescriptor) in
-                            if let error = errorDescriptor {
-                                completion(nil, error)
-                            } else if let foundUser = returnedUser {
-                                completion(foundUser, nil)
-                            }
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  let data = snapshot as? [String: Any] else {
+                completion(nil, "No user exists with the provided phone number.")
+                return
+            }
+            
+            guard data.count > 0 else {
+                completion(nil, "Couldn't get users.")
+                return
+            }
+            
+            var found = false
+            
+            for user in data {
+                if var userData = user.value as? [String: Any],
+                   let phoneNumberString = userData["phoneNumber"] as? String,
+                   phoneNumberString.digits == byPhoneNumber.digits {
+                    userData["identifier"] = user.key
+                    
+                    found = true
+                    UserSerializer.shared.deSerializeUser(fromData: userData) { (returnedUser,
+                                                                                 errorDescriptor) in
+                        guard let foundUser = returnedUser else {
+                            completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                            return
                         }
+                        
+                        completion(foundUser, nil)
                     }
                 }
-                
-                if !found {
-                    completion(nil, "No user exists with the provided phone number.")
-                }
-            } else {
+            }
+            
+            if !found {
                 completion(nil, "No user exists with the provided phone number.")
             }
         }) { (error) in
@@ -94,22 +97,22 @@ public struct UserSerializer {
                         completion: @escaping(_ returnedUser: User?,
                                               _ errorDescriptor: String?) -> Void) {
         Database.database().reference().child("allUsers").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
-            if let returnedSnapshotAsDictionary = returnedSnapshot.value as? NSDictionary,
-               let asData = returnedSnapshotAsDictionary as? [String: Any] {
-                var mutableData = asData
-                
-                mutableData["identifier"] = withIdentifier
-                
-                self.deSerializeUser(fromData: mutableData) { (returnedUser,
-                                                               errorDescriptor) in
-                    if let user = returnedUser {
-                        completion(user, nil)
-                    } else {
-                        completion(nil, errorDescriptor ?? "An unknown error occurred.")
-                    }
-                }
-            } else {
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  var data = snapshot as? [String: Any] else {
                 completion(nil, "No user exists with the identifier \"\(withIdentifier)\".")
+                return
+            }
+            
+            data["identifier"] = withIdentifier
+            
+            self.deSerializeUser(fromData: data) { (returnedUser,
+                                                    errorDescriptor) in
+                guard let user = returnedUser else {
+                    completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                    return
+                }
+                
+                completion(user, nil)
             }
         }) { (error) in
             completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")

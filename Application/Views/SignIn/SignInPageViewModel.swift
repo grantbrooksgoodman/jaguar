@@ -51,19 +51,22 @@ public class SignInPageViewModel: ObservableObject {
                                                requiresHUD: false,
                                                using: .google) { (returnedTranslations,
                                                                   errorDescriptors) in
-            if let translations = returnedTranslations {
-                guard let matchedTranslations = translations.matchedTo(self.inputs) else {
-                    self.state = .failed("Couldn't match translations with inputs.")
-                    return
-                }
+            guard let translations = returnedTranslations else {
+                let error = errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred."
                 
-                self.state = .loaded(translations: matchedTranslations)
-            } else if let errors = errorDescriptors {
-                Logger.log(errors.keys.joined(separator: "\n"),
+                Logger.log(error,
                            metadata: [#file, #function, #line])
                 
-                self.state = .failed(errors.keys.joined(separator: "\n"))
+                self.state = .failed(error)
+                return
             }
+            
+            guard let matchedTranslations = translations.matchedTo(self.inputs) else {
+                self.state = .failed("Couldn't match translations with inputs.")
+                return
+            }
+            
+            self.state = .loaded(translations: matchedTranslations)
         }
     }
     
@@ -79,11 +82,12 @@ public class SignInPageViewModel: ObservableObject {
                                                                  verificationCode: verificationCode)
         
         Auth.auth().signIn(with: credential) { (returnedResult, returnedError) in
-            if let result = returnedResult {
-                completion(result.user.uid, nil)
-            } else if let error = returnedError {
-                completion(nil, error)
+            guard let result = returnedResult else {
+                completion(nil, returnedError)
+                return
             }
+            
+            completion(result.user.uid, nil)
         }
     }
     

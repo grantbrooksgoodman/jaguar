@@ -102,19 +102,20 @@ public struct VerifyNumberPageView: View {
             if returnedUser == nil {
                 viewModel.verifyPhoneNumber("+\(phoneNumber)") { (returnedIdentifier,
                                                                   returnedError) in
-                    if let identifier = returnedIdentifier {
-                        viewRouter.currentPage = .signUp_authCode(identifier: identifier,
-                                                                  phoneNumber: phoneNumber,
-                                                                  region: selectedRegionCode ?? selectedRegion)
-                        selectedRegionCode = nil
-                    } else if let error = returnedError {
-                        let akError = AKError(Logger.errorInfo(error),
+                    guard let identifier = returnedIdentifier else {
+                        let akError = AKError(returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!),
                                               metadata: [#file, #function, #line],
                                               isReportable: true)
                         
                         AKErrorAlert(error: akError,
                                      networkDependent: true).present()
+                        return
                     }
+                    
+                    viewRouter.currentPage = .signUp_authCode(identifier: identifier,
+                                                              phoneNumber: phoneNumber,
+                                                              region: selectedRegionCode ?? selectedRegion)
+                    selectedRegionCode = nil
                 }
             } else {
                 previousLanguageCode = languageCode

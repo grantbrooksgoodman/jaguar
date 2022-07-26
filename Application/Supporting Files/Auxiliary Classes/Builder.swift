@@ -136,41 +136,40 @@ class Build {
                                                requiresHUD: true,
                                                using: .google) { (returnedTranslations,
                                                                   errorDescriptors) in
-            if let translations = returnedTranslations {
-                let alertController = UIAlertController(title: translations.first(where: { $0.input.value() == projectTitle })?.output ?? projectTitle,
-                                                        message: translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay,
-                                                        preferredStyle: .alert)
-                
-                alertController.addAction(UIAlertAction(title: Localizer.preLocalizedString(for: .dismiss) ?? "Dismiss",
-                                                        style: .cancel,
-                                                        handler: nil))
-                
-                guard timebombActive else {
-                    alertController.message = translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay
-                    politelyPresent(viewController: alertController)
-                    
-                    return
-                }
-                
-                let mainAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 13)]
-                let alternateAttributes: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.red]
-                
-                let expiryInfo = informationDictionary["expiryInformationString"]!
-                let dateComponent = expiryInfo.components(separatedBy: "expire on ")[1].components(separatedBy: ".")[0]
-                
-                let attributed = attributedString(translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay,
-                                                  mainAttributes: mainAttributes,
-                                                  alternateAttributes: alternateAttributes,
-                                                  alternateAttributeRange: [dateComponent])
-                alertController.setValue(attributed, forKey: "attributedMessage")
-                
-                politelyPresent(viewController: alertController)
+            guard let translations = returnedTranslations else {
+                Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
+                return
             }
             
-            if let errors = errorDescriptors {
-                Logger.log(errors.keys.joined(separator: "\n"),
-                           metadata: [#file, #function, #line])
+            let alertController = UIAlertController(title: translations.first(where: { $0.input.value() == projectTitle })?.output ?? projectTitle,
+                                                    message: translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay,
+                                                    preferredStyle: .alert)
+            
+            alertController.addAction(UIAlertAction(title: Localizer.preLocalizedString(for: .dismiss) ?? "Dismiss",
+                                                    style: .cancel,
+                                                    handler: nil))
+            
+            guard timebombActive else {
+                alertController.message = translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay
+                politelyPresent(viewController: alertController)
+                
+                return
             }
+            
+            let mainAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 13)]
+            let alternateAttributes: [NSAttributedString.Key: Any] = [.foregroundColor: UIColor.red]
+            
+            let expiryInfo = informationDictionary["expiryInformationString"]!
+            let dateComponent = expiryInfo.components(separatedBy: "expire on ")[1].components(separatedBy: ".")[0]
+            
+            let attributed = attributedString(translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay,
+                                              mainAttributes: mainAttributes,
+                                              alternateAttributes: alternateAttributes,
+                                              alternateAttributeRange: [dateComponent])
+            alertController.setValue(attributed, forKey: "attributedMessage")
+            
+            politelyPresent(viewController: alertController)
         }
     }
     

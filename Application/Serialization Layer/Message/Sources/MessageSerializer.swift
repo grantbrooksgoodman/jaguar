@@ -72,9 +72,7 @@ public struct MessageSerializer {
                 
                 GeneralSerializer.updateValue(onKey: "/allConversations/\(conversationIdentifier)",
                                               withData: ["messages": messages.filter({$0 != "!"})]) { (returnedError) in
-                    if let error = returnedError {
-                        completion(nil, Logger.errorInfo(error))
-                    } else {
+                    guard let error = returnedError else {
                         let message = Message(identifier: generatedKey,
                                               fromAccountIdentifier: fromAccountWithIdentifier,
                                               languagePair: translation.languagePair,
@@ -83,7 +81,11 @@ public struct MessageSerializer {
                                               sentDate: Date())
                         
                         completion(message, nil)
+                        
+                        return
                     }
+                    
+                    completion(nil, Logger.errorInfo(error))
                 }
             } else {
                 completion(nil, errorDescriptor ?? "An unknown error occurred.")
@@ -99,27 +101,26 @@ public struct MessageSerializer {
                            completion: @escaping(_ returnedMessage: Message?,
                                                  _ errorDescriptor: String?) -> Void) {
         Database.database().reference().child("allMessages").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
-            if let returnedSnapshotAsDictionary = returnedSnapshot.value as? NSDictionary,
-               let asData = returnedSnapshotAsDictionary as? [String: Any] {
-                var mutableData = asData
-                
-                mutableData["identifier"] = withIdentifier
-                
-                self.deSerializeMessage(fromData: mutableData) { (returnedMessage,
-                                                                  errorDescriptor) in
-                    guard returnedMessage != nil || errorDescriptor != nil else {
-                        completion(nil, "An unknown error occurred.")
-                        return
-                    }
-                    
-                    if let error = errorDescriptor { 
-                        completion(nil, error)
-                    } else if let message = returnedMessage {
-                        completion(message, nil)
-                    }
-                }
-            } else {
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  var data = snapshot as? [String: Any] else {
                 completion(nil, "No message exists with the identifier \"\(withIdentifier)\".")
+                return
+            }
+            
+            data["identifier"] = withIdentifier
+            
+            self.deSerializeMessage(fromData: data) { (returnedMessage,
+                                                       errorDescriptor) in
+                guard let message = returnedMessage else {
+                    let error = errorDescriptor ?? "An unknown error occurred."
+                    
+                    Logger.log(error,
+                               metadata: [#file, #function, #line])
+                    completion(nil, error)
+                    return
+                }
+                
+                completion(message, nil)
             }
         }) { (error) in
             completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
@@ -211,25 +212,25 @@ public struct MessageSerializer {
             TranslationSerializer.findTranslation(withReference: translationReference,
                                                   languagePair: languagePair) { (returnedTranslation,
                                                                                  errorDescriptor) in
-                guard returnedTranslation != nil || errorDescriptor != nil else {
-                    completion(nil, "An unknown error occurred.")
+                guard let translation = returnedTranslation else {
+                    let error = errorDescriptor ?? "An unknown error occurred."
+                    
+                    Logger.log(error,
+                               metadata: [#file, #function, #line])
+                    completion(nil, error)
                     return
                 }
                 
-                if let error = errorDescriptor {
-                    completion(nil, error)
-                } else if let translation = returnedTranslation {
-                    let readDate = secondaryDateFormatter.date(from: readDateString) ?? nil
-                    
-                    let deSerializedMessage = Message(identifier: identifier,
-                                                      fromAccountIdentifier: fromAccountIdentifier,
-                                                      languagePair: languagePair,
-                                                      translation: translation,
-                                                      readDate: readDate,
-                                                      sentDate: sentDate)
-                    
-                    completion(deSerializedMessage, nil)
-                }
+                let readDate = secondaryDateFormatter.date(from: readDateString) ?? nil
+                
+                let deSerializedMessage = Message(identifier: identifier,
+                                                  fromAccountIdentifier: fromAccountIdentifier,
+                                                  languagePair: languagePair,
+                                                  translation: translation,
+                                                  readDate: readDate,
+                                                  sentDate: sentDate)
+                
+                completion(deSerializedMessage, nil)
             }
             
             return

@@ -105,11 +105,11 @@ public struct RegionMenu: View {
         let currentLocale = Locale(identifier: languageCode)
         let regionName = currentLocale.localizedString(forRegionCode: forRegionCode)
         
-        if let name = regionName {
-            return "\(name) (+\(callingCodeDictionary[forRegionCode]!))"
-        } else {
+        guard let name = regionName else {
             return "+\(callingCodeDictionary[forRegionCode]!)"
         }
+        
+        return "\(name) (+\(callingCodeDictionary[forRegionCode]!))"
     }
     
     private func regionTitleArray() -> [String] {
