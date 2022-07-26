@@ -49,7 +49,7 @@ public class SignInPageViewModel: ObservableObject {
                                                languagePair: LanguagePair(from: "en",
                                                                           to: languageCode),
                                                requiresHUD: false,
-                                               using: .random) { (returnedTranslations,
+                                               using: .google) { (returnedTranslations,
                                                                   errorDescriptors) in
             if let translations = returnedTranslations {
                 guard let matchedTranslations = translations.matchedTo(self.inputs) else {
@@ -59,8 +59,8 @@ public class SignInPageViewModel: ObservableObject {
                 
                 self.state = .loaded(translations: matchedTranslations)
             } else if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
-                    metadata: [#file, #function, #line])
+                Logger.log(errors.keys.joined(separator: "\n"),
+                           metadata: [#file, #function, #line])
                 
                 self.state = .failed(errors.keys.joined(separator: "\n"))
             }

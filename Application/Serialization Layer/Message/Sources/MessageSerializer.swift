@@ -40,8 +40,8 @@ public struct MessageSerializer {
         data["sentDate"] = secondaryDateFormatter.string(from: Date())
         
         guard let generatedKey = Database.database().reference().child("/allMessages/").childByAutoId().key else {
-            log("Unable to generate key for new message.",
-                metadata: [#file, #function, #line])
+            Logger.log("Unable to generate key for new message.",
+                       metadata: [#file, #function, #line])
             
             completion(nil, "Unable to generate key for new message.")
             return
@@ -50,7 +50,7 @@ public struct MessageSerializer {
         GeneralSerializer.updateValue(onKey: "/allMessages/\(generatedKey)",
                                       withData: data) { (returnedError) in
             if let error = returnedError {
-                completion(nil, errorInfo(error))
+                completion(nil, Logger.errorInfo(error))
             }
         }
         
@@ -73,7 +73,7 @@ public struct MessageSerializer {
                 GeneralSerializer.updateValue(onKey: "/allConversations/\(conversationIdentifier)",
                                               withData: ["messages": messages.filter({$0 != "!"})]) { (returnedError) in
                     if let error = returnedError {
-                        completion(nil, errorInfo(error))
+                        completion(nil, Logger.errorInfo(error))
                     } else {
                         let message = Message(identifier: generatedKey,
                                               fromAccountIdentifier: fromAccountWithIdentifier,
@@ -122,7 +122,7 @@ public struct MessageSerializer {
                 completion(nil, "No message exists with the identifier \"\(withIdentifier)\".")
             }
         }) { (error) in
-            completion(nil, "Unable to retrieve the specified data. (\(errorInfo(error)))")
+            completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
         }
     }
     
@@ -133,8 +133,8 @@ public struct MessageSerializer {
         var errorDescriptors = [String]()
         
         if withIdentifiers == ["!"] {
-            log("Null/first message processed.",
-                metadata: [#file, #function, #line])
+            Logger.log("Null/first message processed.",
+                       metadata: [#file, #function, #line])
             completion([], nil)
         } else {
             guard !withIdentifiers.isEmpty else {

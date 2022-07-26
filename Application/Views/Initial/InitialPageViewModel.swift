@@ -44,7 +44,7 @@ public class InitialPageViewModel: ObservableObject {
                                                languagePair: LanguagePair(from: "en",
                                                                           to: languageCode),
                                                requiresHUD: false,
-                                               using: .random) { (returnedTranslations,
+                                               using: .google) { (returnedTranslations,
                                                                   errorDescriptors) in
             if let translations = returnedTranslations {
                 guard let matchedTranslations = translations.matchedTo(self.inputs) else {
@@ -54,7 +54,7 @@ public class InitialPageViewModel: ObservableObject {
                 
                 self.state = .loaded(translations: matchedTranslations)
             } else if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
+                Logger.log(errors.keys.joined(separator: "\n"),
                     metadata: [#file, #function, #line])
                 
                 self.state = .failed(errors.keys.joined(separator: "\n"))

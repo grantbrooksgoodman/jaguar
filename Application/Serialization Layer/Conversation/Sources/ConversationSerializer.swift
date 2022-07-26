@@ -37,8 +37,8 @@ public struct ConversationSerializer {
         data["lastModified"] = secondaryDateFormatter.string(from: Date())
         
         guard let generatedKey = Database.database().reference().child("/allConversations/").childByAutoId().key else {
-            log("Unable to generate key for new conversation.",
-                metadata: [#file, #function, #line])
+            Logger.log("Unable to generate key for new conversation.",
+                       metadata: [#file, #function, #line])
             
             completion(nil, "Unable to generate key for new conversation.")
             return
@@ -47,7 +47,7 @@ public struct ConversationSerializer {
         GeneralSerializer.updateValue(onKey: "/allConversations/\(generatedKey)",
                                       withData: data) { (returnedError) in
             if let error = returnedError {
-                completion(nil, errorInfo(error))
+                completion(nil, Logger.errorInfo(error))
             } else {
                 var finalErrorDescriptor = ""
                 
@@ -115,7 +115,7 @@ public struct ConversationSerializer {
                 completion(nil, "No conversation exists with the identifier \"\(withIdentifier)\".")
             }
         }) { (error) in
-            completion(nil, "Unable to retrieve the specified data. (\(errorInfo(error)))")
+            completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
         }
     }
     
@@ -125,12 +125,17 @@ public struct ConversationSerializer {
         var conversations = [Conversation]()
         var errorDescriptors = [String]()
         
-        guard !withIdentifiers.isEmpty else {
+        guard withIdentifiers != ["!"] else {
+            completion([], nil)
+            return
+        }
+        
+        guard !withIdentifiers.filter({ $0 != "!" }).isEmpty else {
             completion(nil, "No identifiers passed!")
             return
         }
         
-        for identifier in withIdentifiers {
+        for identifier in withIdentifiers.filter({ $0 != "!" }) {
             getConversation(withIdentifier: identifier) { (returnedConversation,
                                                            errorDescriptor) in
                 if let conversation = returnedConversation {

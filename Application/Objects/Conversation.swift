@@ -82,4 +82,18 @@ public class Conversation {
             }
         }
     }
+    
+    public func sortedFilteredMessages() -> [Message] {
+        var filteredMessages = [Message]()
+        
+        //Filters for duplicates and blank messages.
+        for message in messages {
+            if !filteredMessages.contains(where: { $0.identifier == message.identifier }) && message.identifier != "!" {
+                filteredMessages.append(message)
+            }
+        }
+        
+        //Sorts by «sentDate».
+        return filteredMessages.sorted(by: { $0.sentDate < $1.sentDate })
+    }
 }

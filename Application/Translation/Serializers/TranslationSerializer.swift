@@ -25,15 +25,15 @@ public struct TranslationSerializer {
         GeneralSerializer.updateValue(onKey: "allTranslations/\(languagePair.asString())",
                                       withData: dictionary) { (returnedError) in
             if let error = returnedError {
-                log("Couldn't upload translation.\n\(errorInfo(error))",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Couldn't upload translation.\n\(Logger.errorInfo(error))",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
-                completion(errorInfo(error))
+                completion(Logger.errorInfo(error))
             } else {
-                log("Successfully uploaded translation.",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Successfully uploaded translation.",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
                 completion(nil)
             }
@@ -73,15 +73,15 @@ public struct TranslationSerializer {
         GeneralSerializer.getValues(atPath: "/allTranslations/en-\(languageCode)") { (returnedValues, errorDescriptor) in
             if let values = returnedValues as? [String: String] {
                 guard let decodedValues = values.hashDecoded() else {
-                    log("Unable to decode values.",
-                        metadata: [#file, #function, #line])
+                    Logger.log("Unable to decode values.",
+                               metadata: [#file, #function, #line])
                     completion("Unable to decode values.")
                     return
                 }
                 
-                log("Successfully downloaded translation archive.",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Successfully downloaded translation archive.",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
                 let languagePair = LanguagePair(from: "en",
                                                 to: languageCode)
@@ -95,11 +95,11 @@ public struct TranslationSerializer {
                     translationArchive.append(translation)
                 }
             } else if let error = errorDescriptor {
-                log(error, metadata: [#file, #function, #line])
+                Logger.log(error, metadata: [#file, #function, #line])
                 completion(error)
             } else {
-                log("No online translation archive for this language pair.",
-                    metadata: [#file, #function, #line])
+                Logger.log("No online translation archive for this language pair.",
+                           metadata: [#file, #function, #line])
                 
                 completion("No online translation archive for this language pair.")
             }
@@ -187,9 +187,9 @@ public struct TranslationSerializer {
         
         dispatchGroup.notify(queue: .main) {
             if translationDictionary.keys.count == `for`.count {
-                if didError && verboseFunctionExposure {
-                    log("At least one translation could not be found.",
-                        metadata: [#file, #function, #line])
+                if didError && Logger.exposureLevel == .verbose {
+                    Logger.log("At least one translation could not be found.",
+                               metadata: [#file, #function, #line])
                 }
                 
                 if Array(translationDictionary.values).filter({$0 != "!"}).count == 0 {
@@ -198,9 +198,9 @@ public struct TranslationSerializer {
                     completion(translationDictionary)
                 }
             } else {
-                log("Mismatched translation input/output.",
-                    isFatal: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Mismatched translation input/output.",
+                           with: .fatalAlert,
+                           metadata: [#file, #function, #line])
                 completion(nil)
             }
         }
@@ -216,15 +216,15 @@ public struct TranslationSerializer {
         GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
                                       withData: [input.value().compressedHash: NSNull()]) { (returnedError) in
             if let error = returnedError {
-                log("Couldn't remove translation.\n\(errorInfo(error))",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Couldn't remove translation.\n\(Logger.errorInfo(error))",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
-                completion(errorInfo(error))
+                completion(Logger.errorInfo(error))
             } else {
-                log("Successfully removed translation.",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Successfully removed translation.",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
                 completion(nil)
             }
@@ -242,15 +242,15 @@ public struct TranslationSerializer {
         GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
                                       withData: nulledDictionary) { (returnedError) in
             if let error = returnedError {
-                log("Couldn't remove translations.\n\(errorInfo(error))",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Couldn't remove translations.\n\(Logger.errorInfo(error))",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
-                completion(errorInfo(error))
+                completion(Logger.errorInfo(error))
             } else {
-                log("Successfully removed translations.",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Successfully removed translations.",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
                 completion(nil)
             }
@@ -280,15 +280,15 @@ public struct TranslationSerializer {
         GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
                                       withData: dictionary) { (returnedError) in
             if let error = returnedError {
-                log("Couldn't upload translations.\n\(errorInfo(error))",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Couldn't upload translations.\n\(Logger.errorInfo(error))",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
-                completion(errorInfo(error))
+                completion(Logger.errorInfo(error))
             } else {
-                log("Successfully uploaded translations.",
-                    verbose: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Successfully uploaded translations.",
+                           verbose: true,
+                           metadata: [#file, #function, #line])
                 
                 completion(nil)
             }

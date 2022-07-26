@@ -173,7 +173,7 @@ class BuildInfoController: UIViewController {
                                                                      .foregroundColor: UIColor.white,
                                                                      .underlineStyle: NSUnderlineStyle.single.rawValue]
         
-        let sendFeedbackAttributedString = NSMutableAttributedString(string: sendFeedbackDictionary[languageCode] ?? "Send Feedback", attributes: sendFeedbackAttributes)
+        let sendFeedbackAttributedString = NSMutableAttributedString(string: Localizer.preLocalizedString(for: .sendFeedback) ?? "Send Feedback", attributes: sendFeedbackAttributes)
         
         sendFeedbackButton.setAttributedTitle(sendFeedbackAttributedString, for: .normal)
         
@@ -381,8 +381,8 @@ private class BuildInfoWindow: UIWindow {
             }
             
             if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
-                    metadata: [#file, #function, #line])
+                Logger.log(errors.keys.joined(separator: "\n"),
+                           metadata: [#file, #function, #line])
             }
             
             if !leftDispatchGroup {

@@ -24,6 +24,7 @@ public class Message {
     public var fromAccountIdentifier: String!
     
     //Other Declarations
+    public var isDisplayingAlternate = false
     public var languagePair: LanguagePair!
     public var translation: Translation!
     

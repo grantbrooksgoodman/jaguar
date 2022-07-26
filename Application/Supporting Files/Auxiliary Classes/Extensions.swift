@@ -225,25 +225,27 @@ extension String {
     ///Function that returns a day of the week for a given date string.
     func dayOfWeek() -> String {
         guard let fromDate = masterDateFormatter.date(from: self) else {
-            log("String is not a valid date.", errorCode: nil, isFatal: true, metadata: [#file, #function, #line])
+            Logger.log("String is not a valid date.",
+                       with: .fatalAlert,
+                       metadata: [#file, #function, #line])
             return "NULL"
         }
         
         switch Calendar.current.component(.weekday, from: fromDate) {
         case 1:
-            return "Sunday"
+            return Localizer.preLocalizedString(for: .sunday) ?? "Sunday"
         case 2:
-            return "Monday"
+            return Localizer.preLocalizedString(for: .monday) ?? "Monday"
         case 3:
-            return "Tuesday"
+            return Localizer.preLocalizedString(for: .tuesday) ?? "Tuesday"
         case 4:
-            return "Wednesday"
+            return Localizer.preLocalizedString(for: .wednesday) ?? "Wednesday"
         case 5:
-            return "Thursday"
+            return Localizer.preLocalizedString(for: .thursday) ?? "Thursday"
         case 6:
-            return "Friday"
+            return Localizer.preLocalizedString(for: .friday) ?? "Friday"
         case 7:
-            return "Saturday"
+            return Localizer.preLocalizedString(for: .saturday) ?? "Saturday"
         default:
             return "NULL"
         }
@@ -304,14 +306,18 @@ extension String {
     
     var alphabeticalPosition: Int {
         guard count == 1 else {
-            log("String length is greater than 1.", errorCode: nil, isFatal: true, metadata: [#file, #function, #line])
+            Logger.log("String length is greater than 1.",
+                       with: .fatalAlert,
+                       metadata: [#file, #function, #line])
             return -1
         }
         
         let alphabetArray = Array("abcdefghijklmnopqrstuvwxyz")
         
         guard alphabetArray.contains(Character(lowercased())) else {
-            log("The character is non-alphabetical.", errorCode: nil, isFatal: true, metadata: [#file, #function, #line])
+            Logger.log("The character is non-alphabetical.",
+                       with: .fatalAlert,
+                       metadata: [#file, #function, #line])
             return -1
         }
         
@@ -486,10 +492,12 @@ extension UILabel {
                     if textWillFit(alternate: labelText, minimumSize: minimumSize) {
                         font = font.withSize(fontSizeThatFits(labelText))
                     } else {
-                        log("Neither the original nor alternate strings fit.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+                        Logger.log("Neither the original nor alternate strings fit.",
+                                   metadata: [#file, #function, #line])
                     }
                 } else {
-                    log("Original string didn't fit, no alternate provided.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+                    Logger.log("Original string didn't fit, no alternate provided.",
+                               metadata: [#file, #function, #line])
                 }
             }
         }
@@ -556,7 +564,8 @@ extension UITextView {
                     if textWillFit(alternate: labelText, minimumSize: minimumSize) {
                         font = font!.withSize(fontSizeThatFits(labelText))
                     } else {
-                        log("Neither the original nor alternate strings fit.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+                        Logger.log("Neither the original nor alternate strings fit.",
+                                   metadata: [#file, #function, #line])
                     }
                 }
             }

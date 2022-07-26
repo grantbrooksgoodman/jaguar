@@ -72,8 +72,7 @@ public struct SignInPageView: View {
                         .keyboardType(.numberPad)
                 } else {
                     HStack(alignment: .center) {
-                        RegionMenu(selectedRegion: $selectedRegion,
-                                   initialRegion: selectedRegion)
+                        RegionMenu(selectedRegion: $selectedRegion)
                             .padding(.leading, 20)
                             .padding(.trailing, 5)
                         
@@ -88,6 +87,7 @@ public struct SignInPageView: View {
                     if verified {
                         authenticateUser()
                     } else {
+                        selectedRegionCode = selectedRegion
                         verifyPhoneNumber()
                     }
                 } label: {
@@ -130,9 +130,9 @@ public struct SignInPageView: View {
         viewModel.authenticateUser(identifier: verificationIdentifier,
                                    verificationCode: verificationCode) { (userID, returnedError) in
             guard let identifier = userID else {
-                let errorDescriptor = returnedError == nil ? "An unknown error occurred." : errorInfo(returnedError!)
-                log(errorDescriptor,
-                    metadata: [#file, #function, #line])
+                let errorDescriptor = returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!)
+                Logger.log(errorDescriptor,
+                           metadata: [#file, #function, #line])
                 
                 let akError = AKError(errorDescriptor,
                                       metadata: [#file, #function, #line],
@@ -155,13 +155,13 @@ public struct SignInPageView: View {
                                                              returnedError) in
             
             guard let identifier = returnedIdentifier else {
-                let error = returnedError == nil ? "An unknown error occurred." : errorInfo(returnedError!)
+                let error = returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!)
                 let akError = AKError(error,
                                       metadata: [#file, #function, #line],
                                       isReportable: false)
                 
-                log(error,
-                    metadata: [#file, #function, #line])
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
                 AKErrorAlert(message: viewModel.simpleErrorString(error),
                              error: akError,
                              networkDependent: true).present()
@@ -170,6 +170,7 @@ public struct SignInPageView: View {
             }
             
             verificationIdentifier = identifier
+            selectedRegionCode = nil
         }
     }
 }

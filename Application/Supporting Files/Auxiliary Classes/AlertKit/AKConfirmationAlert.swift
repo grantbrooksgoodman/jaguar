@@ -133,8 +133,8 @@ public class AKConfirmationAlert: AKAlert {
             }
             
             if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
-                    metadata: [#file, #function, #line])
+                Logger.log(errors.keys.joined(separator: "\n"),
+                           metadata: [#file, #function, #line])
             }
             
             if !leftDispatchGroup {

@@ -48,6 +48,10 @@ public struct PhoneNumberTextField: View {
     /* MARK: - Private Functions */
     
     private func placeholderText() -> String {
+        guard region != "US" else {
+            return "(555) 555-5555"
+        }
+        
         let phoneNumberKit = PhoneNumberKit()
         
         if let regionMetadata = phoneNumberKit.metadata(for: region),

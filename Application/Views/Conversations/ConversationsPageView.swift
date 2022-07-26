@@ -12,8 +12,15 @@ import SwiftUI
 /* Third-party Frameworks */
 import MessageKit
 
+//==================================================//
+
+/* MARK: - Top-level Variable Declarations */
+
+//Other Declarations
 public var conversations: [Conversation] = []
 public var updated = false
+
+//==================================================//
 
 public struct ConversationsPageView: View {
     
@@ -24,6 +31,8 @@ public struct ConversationsPageView: View {
     //Other Declarations
     @StateObject public var viewModel: ConversationsPageViewModel
     @StateObject public var viewRouter: ViewRouter
+    
+    @State private var showingPopover = false
     
     //==================================================//
     
@@ -37,7 +46,7 @@ public struct ConversationsPageView: View {
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations,
                      let openConversations):
-            var conversationsToUse = conversations.count == 0 ? openConversations : conversations
+            var conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.lastModifiedDate < $1.lastModifiedDate }) : conversations.sorted(by: { $0.lastModifiedDate < $1.lastModifiedDate })
             
             NavigationView {
                 List {
@@ -46,9 +55,9 @@ public struct ConversationsPageView: View {
                                                           set: { conversationsToUse[index] = $0 })
                         let conversation = conversationsToUse[index]
                         let phoneNumber = conversation.otherUser!.phoneNumber!
-                        #warning("HANDLE REGION HERE")
-                        let cellTitle = ContactsServer.fetchContactName(forNumber: phoneNumber) ?? phoneNumber.callingCodeFormatted(region: conversation.otherUser!.region)
                         
+                        #warning("HANDLE REGION HERE")
+                        let cellTitle = getCellTitle(forUser: conversation.otherUser!)
                         let lastMessage = conversation.messages.last
                         
                         HStack {
@@ -80,9 +89,16 @@ public struct ConversationsPageView: View {
                 .toolbar {
                     ToolbarItem(placement: .navigationBarTrailing) {
                         Button(action: {
-                            promptForNumber()
+                            showingPopover = true
                         }) {
                             Label("Compose", systemImage: "square.and.pencil")
+                        }
+                        .sheet(isPresented: $showingPopover) {
+                            EmbeddedContactPickerView()
+                                .onDisappear {
+                                    startConversation()
+                                }
+                            //.interactiveDismissDisabled(true)
                         }
                     }
                 }
@@ -102,122 +118,123 @@ public struct ConversationsPageView: View {
     
     //==================================================//
     
-    /* MARK: - Other Views */
-    
-    public struct ContactImageView: View {
-        
-        //==================================================//
-        
-        /* MARK: - Struct-level Variable Declarations */
-        
-        public var uiImage: UIImage?
-        
-        //==================================================//
-        
-        /* MARK: - View Body */
-        
-        public var body: some View {
-            if let image = uiImage {
-                Image(uiImage: image)
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-                    .font(.system(size: 50))
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(10)
-                    .clipShape(Circle())
-                    .padding(.top, 10)
-            } else {
-                Image(systemName: "person.crop.circle.fill")
-                    .font(.system(size: 50))
-                    .frame(width: 50, height: 50)
-                    .cornerRadius(10)
-                    .foregroundColor(Color.gray)
-                    .padding(.top, 10)
-            }
-        }
-    }
-    
-    //==================================================//
-    
     /* MARK: - Functions */
-    
-    public func promptForNumber() {
-        let textFieldAlert = AKTextFieldAlert(message: "Enter a number to chat with.",
-                                              actions: [AKAction(title: "Done", style: .preferred)],
-                                              textFieldAttributes: [.keyboardType: UIKeyboardType.phonePad])
-        
-        textFieldAlert.present { (returnedString, actionID) in
-            if actionID != -1 {
-                guard let string = returnedString,
-                      string.digits == string else {
-                    let error = AKError("Invalid phone number.",
-                                        metadata: [#file, #function, #line],
-                                        isReportable: true)
-                    
-                    AKErrorAlert(message: "The phone number entered was invalid.",
-                                 error: error,
-                                 networkDependent: false).present()
-                    return
-                }
-                
-                self.findUser(withNumber: string)
-            }
-        }
-    }
-    
-    public func findUser(withNumber: String) {
-        UserSerializer.shared.findUser(byPhoneNumber: withNumber) { (returnedUser,
-                                                                     errorDescriptor) in
-            guard returnedUser != nil || errorDescriptor != nil else {
-                log("An unknown error occurred.",
-                    metadata: [#file, #function, #line])
-                return
-            }
-            
-            if let error = errorDescriptor {
-                log(error,
-                    metadata: [#file, #function, #line])
-            } else if let user = returnedUser {
-                self.createConversation(withUser: user)
-            }
-        }
-    }
     
     public func createConversation(withUser: User) {
         ConversationSerializer.shared.createConversation(initialMessageIdentifier: "!",
                                                          participantIdentifiers: [currentUserID,
                                                                                   withUser.identifier]) { (returnedIdentifier, errorDescriptor) in
-            guard returnedIdentifier != nil || errorDescriptor != nil else {
-                log("An unknown error occurred.",
-                    metadata: [#file, #function, #line])
-                
+            
+            guard let identifier = returnedIdentifier else {
+                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
                 return
             }
             
-            if let error = errorDescriptor {
-                log(error, metadata: [#file, #function, #line])
-            } else if let identifier = returnedIdentifier {
-                currentUser!.deSerializeConversations { (returnedConversations,
-                                                         errorDescriptor) in
-                    if let error = errorDescriptor {
-                        log(error, metadata: [#file, #function, #line])
-                    } else if let deSerializedConversations = returnedConversations {
-                        updated = true
-                        conversations = deSerializedConversations
-                        
-                        for (index, conversation) in conversations.enumerated() {
-                            conversation.setOtherUser { (errorDescriptor) in
-                                log(errorDescriptor ?? "Set other user.",
-                                    metadata: [#file, #function, #line])
-                                if index == conversations.count - 1 {
-                                    viewModel.load()
-                                }
+            currentUser!.deSerializeConversations { (returnedConversations,
+                                                     errorDescriptor) in
+                if let error = errorDescriptor {
+                    Logger.log(error, metadata: [#file, #function, #line])
+                } else if let deSerializedConversations = returnedConversations {
+                    updated = true
+                    conversations = deSerializedConversations
+                    
+                    for (index, conversation) in conversations.enumerated() {
+                        conversation.setOtherUser { (errorDescriptor) in
+                            Logger.log(errorDescriptor ?? "Set other user.",
+                                       metadata: [#file, #function, #line])
+                            if index == conversations.count - 1 {
+                                viewModel.load()
                             }
                         }
                     }
                 }
+            }
+            
+            print("new conversation with id: \(identifier)")
+        }
+    }
+    
+    public func getCellTitle(forUser: User) -> String {
+        let phoneNumber = forUser.phoneNumber!
+        var cellTitle = phoneNumber.callingCodeFormatted(region: forUser.region)
+        
+        if let name = ContactsServer.fetchContactName(forNumber: phoneNumber) {
+            cellTitle = "\(name.givenName) \(name.familyName)"
+        }
+        
+        return cellTitle
+    }
+    
+    public func startConversation() {
+        guard let contact = selectedContact else {
+            Logger.log("Contact selection was not processed.",
+                       metadata: [#file, #function, #line])
+            return
+        }
+        
+        let dispatchGroup = DispatchGroup()
+        var foundUser: User?
+        
+        for (index, phoneNumber) in contact.phoneNumbers.enumerated() {
+            dispatchGroup.enter()
+            
+            #warning("ACCOUNT FOR NOT HAVING PREFIX CODE!!")
+            UserSerializer.shared.findUser(byPhoneNumber: phoneNumber.value.stringValue.digits) { (returnedUser, errorDescriptor) in
+                dispatchGroup.leave()
                 
-                print("new conversation with id: \(identifier)")
+                guard let user = returnedUser else {
+                    if index == contact.phoneNumbers.count - 1 {
+                        let noUserString = "No user exists with the provided phone number."
+                        
+                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                                   with: errorDescriptor == noUserString ? .none : .errorAlert,
+                                   metadata: [#file, #function, #line])
+                        
+                        if errorDescriptor == noUserString {
+                            let alert = AKAlert(message: "\(noUserString)\n\nWould you like to send them an invite to sign up?",
+                                                actions: [AKAction(title: "Send Invite",
+                                                                   style: .preferred)])
+                            alert.present { (actionID) in
+                                if actionID != -1 {
+                                    print("wants to invite")
+                                }
+                            }
+                        }
+                    }
+                    
+                    return
+                }
+                
+                foundUser = user
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            if let user = foundUser {
+                guard user.phoneNumber.digits != currentUser!.phoneNumber.digits else {
+                    Logger.log("Cannot start a conversation with yourself.",
+                               with: .errorAlert,
+                               metadata: [#file, #function, #line])
+                    return
+                }
+                
+                currentUser!.deSerializeConversations(completion: { (returnedConversations,
+                                                                     errorDescriptor) in
+                    guard let conversations = returnedConversations else {
+                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                                   metadata: [#file, #function, #line])
+                        return
+                    }
+                    
+                    if conversations.contains(where: { $0.participantIdentifiers.contains(user.identifier) }) {
+                        Logger.log("Conversation with this user alreasdy exists.",
+                                   with: .errorAlert,
+                                   metadata: [#file, #function, #line])
+                    } else {
+                        self.createConversation(withUser: user)
+                    }
+                })
             }
         }
     }

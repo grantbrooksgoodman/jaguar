@@ -45,8 +45,8 @@ public class ConversationsPageViewModel: ObservableObject {
         self.updateConversations { (returnedConversations,
                                     errorDescriptor) in
             guard let conversations = returnedConversations else {
-                log(errorDescriptor ?? "An unknown error occurred.",
-                    metadata: [#file, #function, #line])
+                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
                 return
             }
             
@@ -54,7 +54,7 @@ public class ConversationsPageViewModel: ObservableObject {
                                                    languagePair: LanguagePair(from: "en",
                                                                               to: languageCode),
                                                    requiresHUD: false,
-                                                   using: .random) { (returnedTranslations,
+                                                   using: .google) { (returnedTranslations,
                                                                       errorDescriptors) in
                 if let translations = returnedTranslations {
                     guard let matchedTranslations = translations.matchedTo(self.inputs) else {
@@ -65,8 +65,8 @@ public class ConversationsPageViewModel: ObservableObject {
                     self.state = .loaded(translations: matchedTranslations,
                                          conversations: conversations)
                 } else if let errors = errorDescriptors {
-                    log(errors.keys.joined(separator: "\n"),
-                        metadata: [#file, #function, #line])
+                    Logger.log(errors.keys.joined(separator: "\n"),
+                               metadata: [#file, #function, #line])
                     
                     self.state = .failed(errors.keys.joined(separator: "\n"))
                 }
@@ -121,7 +121,7 @@ public class ConversationsPageViewModel: ObservableObject {
         }
     }
     
-    func randomLanguageCode() -> String {
-        return ["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()!
-    }
+    //    func randomLanguageCode() -> String {
+    //        return ["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()!
+    //    }
 }

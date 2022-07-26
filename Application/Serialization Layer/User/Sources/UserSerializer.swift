@@ -24,13 +24,6 @@ public struct UserSerializer {
     
     /* MARK: - Creation Functions */
     
-    public func createAccount(languageCode: String) {
-        Auth.auth().languageCode = languageCode
-        
-        //        Auth.auth().createUser(withEmail: self.createUserController.eMailTextField.text!, password: self.createUserController.passwordTextField.text!, completion: { (wrappedReturnedUser, wrappedReturnedError)
-        
-    }
-    
     public func createUser(_ identifier: String,
                            languageCode: String,
                            phoneNumber: String,
@@ -44,7 +37,7 @@ public struct UserSerializer {
         GeneralSerializer.updateValue(onKey: "/allUsers/\(identifier)",
                                       withData: dataBundle) { (returnedError) in
             if let error = returnedError {
-                completion(errorInfo(error))
+                completion(Logger.errorInfo(error))
             } else {
                 completion(nil)
             }
@@ -93,7 +86,7 @@ public struct UserSerializer {
                 completion(nil, "No user exists with the provided phone number.")
             }
         }) { (error) in
-            completion(nil, "Unable to retrieve the specified data. (\(errorInfo(error)))")
+            completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
         }
     }
     
@@ -119,7 +112,7 @@ public struct UserSerializer {
                 completion(nil, "No user exists with the identifier \"\(withIdentifier)\".")
             }
         }) { (error) in
-            completion(nil, "Unable to retrieve the specified data. (\(errorInfo(error)))")
+            completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
         }
     }
     

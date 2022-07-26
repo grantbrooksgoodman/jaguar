@@ -57,7 +57,7 @@ public class AzureTranslator: Translatorable {
                                                           to: to) {
             executeTranslationRequest(translationRequest) { (data, response, error) in
                 if let error = error {
-                    completion(nil, errorInfo(error))
+                    completion(nil, Logger.errorInfo(error))
                 } else if let data = data {
                     let parsedData = self.parseJsonData(data)
                     
@@ -104,8 +104,8 @@ public class AzureTranslator: Translatorable {
         let apiUrlString = "https://\(hostUrlString)/translate?api-version=3.0&from=" + from + "&to=" + to
         
         guard let requestURL = URL(string: apiUrlString) else {
-            log("Unable to convert API URL string to URL.",
-                metadata: [#file, #function, #line])
+            Logger.log("Unable to convert API URL string to URL.",
+                       metadata: [#file, #function, #line])
             return nil
         }
         

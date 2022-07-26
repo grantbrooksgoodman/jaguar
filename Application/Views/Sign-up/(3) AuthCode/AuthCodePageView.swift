@@ -84,9 +84,9 @@ public struct AuthCodePageView: View {
                         } else if let error = returnedError {
                             errored = true
                             errorDescriptor = (error as NSError).localizedDescription
-                            log(errorInfo(error),
-                                metadata: [#file, #function, #line])
-                            let error = AKError(errorInfo(error),
+                            Logger.log(Logger.errorInfo(error),
+                                       metadata: [#file, #function, #line])
+                            let error = AKError(Logger.errorInfo(error),
                                                 metadata: [#file, #function, #line],
                                                 isReportable: false)
                             AKErrorAlert(message: viewModel.simpleErrorString(errorDescriptor),

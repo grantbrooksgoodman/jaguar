@@ -74,7 +74,7 @@ public struct TranslatorService {
         var translations = [Translation]()
         var errors = [String: TranslationInput]()
         
-        openStream(metadata: [#file, #function, #line], message: nil)
+        Logger.openStream(metadata: [#file, #function, #line])
         
         for (index, input) in inputs.enumerated() {
             dispatchGroup.enter()
@@ -92,22 +92,24 @@ public struct TranslatorService {
                     errors[error] = input
                 }
                 
-                logToStream(line: #line, message: "Translated item \(index + 1) of \(inputs.count).")
+                Logger.logToStream("Translated item \(index + 1) of \(inputs.count).",
+                                   line: #line)
                 
                 dispatchGroup.leave()
             }
         }
         
         dispatchGroup.notify(queue: .main) {
-            closeStream(onLine: #line, message: "All strings should be translated; complete.")
+            Logger.closeStream(message: "All strings should be translated; complete.",
+                               onLine: #line)
             
             if translations.count + errors.count == inputs.count {
                 completion(translations.count == 0 ? nil : translations,
                            errors.count == 0 ? nil : errors)
             } else {
-                log("Mismatched translation input/output.",
-                    isFatal: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("Mismatched translation input/output.",
+                           with: .fatalAlert,
+                           metadata: [#file, #function, #line])
                 completion(nil, nil)
             }
         }
@@ -137,7 +139,20 @@ public struct TranslatorService {
             return
         }
         
-        let serviceToUse = using ?? .google
+        let deepLSupport = ["bg", "zh", "cs",
+                            "da", "nl", "en",
+                            "et", "fi", "fr",
+                            "de", "el", "hu",
+                            "id", "it", "ja",
+                            "lv", "lt", "pl",
+                            "pt", "ro", "ru",
+                            "sk", "sl", "es",
+                            "sv", "tr"]
+        
+        var serviceToUse = using ?? .google
+        if (serviceToUse == .deepL || serviceToUse == .random) && !deepLSupport.contains(languagePair.to) {
+            serviceToUse = .google
+        }
         
         if let archivedTranslation = TranslationArchiver.getFromArchive(input,
                                                                         languagePair: languagePair) {
@@ -154,8 +169,8 @@ public struct TranslatorService {
                                               languagePair: languagePair) { (returnedString,
                                                                              errorDescriptor) in
             if let translatedString = returnedString {
-                log("No need to use translator; found uploaded string.",
-                    metadata: [#file, #function, #line])
+                Logger.log("No need to use translator; found uploaded string.",
+                           metadata: [#file, #function, #line])
                 
                 var finalInput = input
                 if input.value() == input.alternate {

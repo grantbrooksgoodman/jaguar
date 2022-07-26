@@ -102,7 +102,7 @@ class Build {
     //                main.sendFeedbackButton.alpha = 1
     //            }
     //        } else { /* Couldn't unwrap some or all of the required information. */
-    //            log("Unable to unwrap required information.", errorCode: nil, isFatal: true, metadata: [#file, #function, #line])
+    //            Logger.log("Unable to unwrap required information.", errorCode: nil, with: .fatalAlert, metadata: [#file, #function, #line])
     //        }
     //    }
     
@@ -141,7 +141,7 @@ class Build {
                                                         message: translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay,
                                                         preferredStyle: .alert)
                 
-                alertController.addAction(UIAlertAction(title: dismissDictionary[languageCode] ?? "Dismiss",
+                alertController.addAction(UIAlertAction(title: Localizer.preLocalizedString(for: .dismiss) ?? "Dismiss",
                                                         style: .cancel,
                                                         handler: nil))
                 
@@ -168,8 +168,8 @@ class Build {
             }
             
             if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
-                    metadata: [#file, #function, #line])
+                Logger.log(errors.keys.joined(separator: "\n"),
+                           metadata: [#file, #function, #line])
             }
         }
     }
@@ -198,7 +198,7 @@ class Build {
             //If the message could not be sent.
             if result == .failed {
                 //Display an errorAlertController telling the user the message could not be sent.
-                let error = AKError((error != nil ? errorInfo(error!) : nil),
+                let error = AKError((error != nil ? Logger.errorInfo(error!) : nil),
                                     metadata: [#file, #function, #line],
                                     isReportable: true)
                 
@@ -258,10 +258,10 @@ class Build {
     //                                                                     .underlineStyle: NSUnderlineStyle.single.rawValue]
     //
     //        //An attributed string.
-    //        let sendFeedbackAttributedString = NSMutableAttributedString(string: sendFeedbackDictionary[languageCode] ?? "Send Feedback", attributes: sendFeedbackAttributes)
+    //        let sendFeedbackAttributedString = NSMutableAttributedString(string: Localizer.preLocalizedString(for: .sendFeedback) ?? "Send Feedback", attributes: sendFeedbackAttributes)
     //
     //        //Scales sendFeedbackButton's titleLabel to a minimum size of 9 if it needs adjustment.
-    //        viewController.sendFeedbackButton.titleLabel!.scaleToMinimum(alternateText: nil, originalText: sendFeedbackDictionary[languageCode] ?? "Send Feedback", minimumSize: 9)
+    //        viewController.sendFeedbackButton.titleLabel!.scaleToMinimum(alternateText: nil, originalText: Localizer.preLocalizedString(for: .sendFeedback) ?? "Send Feedback", minimumSize: 9)
     //
     //        //Sets sendFeedbackButton's attributed title.
     //        viewController.sendFeedbackButton.setAttributedTitle(sendFeedbackAttributedString, for: .normal)

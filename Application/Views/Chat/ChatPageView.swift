@@ -11,64 +11,18 @@ import Foundation
 import SwiftUI
 
 /* Third-party Frameworks */
+import Firebase
 import InputBarAccessoryView
 import MessageKit
+
+#warning("FIX DUPLICATE MESSAGE ALTERNATE BUG")
 
 //==================================================//
 
 /* MARK: - Top-level Variable Declarations */
 
 public var shouldReloadData = false
-
-//==================================================//
-
-/* MARK: - View Controller Declaration */
-
-public final class MessageSwiftUIVC: MessagesViewController {
-    
-    //==================================================//
-    
-    /* MARK: - Class-level Variable Declarations */
-    
-    var reloadTimer: Timer?
-    
-    //==================================================//
-    
-    /* MARK: - Overridden Functions */
-    
-    public override func viewDidAppear(_ animated: Bool) {
-        super.viewDidAppear(animated)
-        
-        becomeFirstResponder()
-        messagesCollectionView.scrollToLastItem(animated: true)
-        
-        reloadTimer = Timer.scheduledTimer(timeInterval: 1,
-                                           target: self,
-                                           selector: #selector(reloadData),
-                                           userInfo: nil, repeats: true)
-    }
-    
-    public override func viewWillDisappear(_ animated: Bool) {
-        reloadTimer?.invalidate()
-        reloadTimer = nil
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Other Functions */
-    
-    @objc public func reloadData() {
-        if shouldReloadData {
-            self.messagesCollectionView.reloadData()
-            self.messagesCollectionView.scrollToLastItem(animated: true)
-            shouldReloadData = false
-        }
-    }
-}
-
-//==================================================//
-
-/* MARK: - UIViewControllerRepresentable Declaration */
+public var topLevelMessages: [Message]!
 
 public struct ChatPageView: UIViewControllerRepresentable {
     
@@ -83,12 +37,12 @@ public struct ChatPageView: UIViewControllerRepresentable {
     
     /* MARK: - Public Functions */
     
-    public func makeCoordinator() -> Coordinator {
-        return Coordinator(conversation: $conversation)
+    public func makeCoordinator() -> ChatPageViewCoordinator {
+        return ChatPageViewCoordinator(conversation: $conversation)
     }
     
     public func makeUIViewController(context: Context) -> MessagesViewController {
-        let messagesVC = MessageSwiftUIVC()
+        let messagesVC = ChatPageViewController()
         
         messagesVC.messagesCollectionView.messagesDisplayDelegate = context.coordinator
         messagesVC.messagesCollectionView.messagesLayoutDelegate = context.coordinator
@@ -97,6 +51,29 @@ public struct ChatPageView: UIViewControllerRepresentable {
         messagesVC.scrollsToLastItemOnKeyboardBeginsEditing = true // default false
         //messagesVC.maintainPositionOnInputBarHeightChanged = true // default false
         messagesVC.showMessageTimestampOnSwipeLeft = true // default false
+        
+        conversation.messages = conversation.sortedFilteredMessages()
+        topLevelMessages = conversation.messages
+        
+        let inputBar = messagesVC.messageInputBar
+        
+        inputBar.contentView.clipsToBounds = true
+        inputBar.contentView.layer.cornerRadius = 15
+        inputBar.contentView.layer.borderWidth = 0.5
+        inputBar.contentView.layer.borderColor = UIColor.systemGray.cgColor
+        
+        inputBar.sendButton.setImage(UIImage(named: "Send"), for: .normal)
+        inputBar.sendButton.setImage(UIImage(named: "Send (Highlighted)"), for: .highlighted)
+        
+        inputBar.inputTextView.textContainerInset = UIEdgeInsets(top: 5,
+                                                                 left: 5,
+                                                                 bottom: 5,
+                                                                 right: 0)
+        let localizedString = Localizer.preLocalizedString(for: .newMessage)
+        
+        inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
+        
+        setUpObserver()
         
         return messagesVC
     }
@@ -118,30 +95,35 @@ public struct ChatPageView: UIViewControllerRepresentable {
         }
     }
     
-    //==================================================//
-    
-    /* MARK: - Coordinator Class Declaration */
-    
-    public final class Coordinator {
-        
-        //==================================================//
-        
-        /* MARK: - Class-level Variable Declarations */
-        
-        public let formatter: DateFormatter = {
-            let formatter = DateFormatter()
-            formatter.dateStyle = .medium
-            return formatter
-        }()
-        
-        public var conversation: Binding<Conversation>
-        
-        //==================================================//
-        
-        /* MARK: - Constructor Function */
-        
-        public init(conversation: Binding<Conversation>) {
-            self.conversation = conversation
+    private func setUpObserver() {
+        Database.database().reference().child("allConversations/\(conversation.identifier!)/messages").observe(.childAdded) { (returnedSnapshot) in
+            
+            guard let identifier = returnedSnapshot.value as? String,
+                  !conversation.messages.contains(where: { $0.identifier == identifier }) else {
+                return
+            }
+            
+            MessageSerializer.shared.getMessage(withIdentifier: identifier) { (returnedMessage,
+                                                                               errorDescriptor) in
+                guard let message = returnedMessage else {
+                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                               metadata: [#file, #function, #line])
+                    return
+                }
+                
+                guard message.fromAccountIdentifier != currentUserID else {
+                    return
+                }
+                
+                print("Appending message with ID: \(message.identifier!)")
+                conversation.messages.append(message)
+                conversation.messages = conversation.sortedFilteredMessages()
+                
+                shouldReloadData = true
+            }
+        } withCancel: { (error) in
+            Logger.log(error,
+                       metadata: [#file, #function, #line])
         }
     }
 }
@@ -152,122 +134,68 @@ public struct ChatPageView: UIViewControllerRepresentable {
 
 /**/
 
-/* MARK: MessagesDataSource */
-extension ChatPageView.Coordinator: MessagesDataSource {
-    
-    public func currentSender() -> SenderType {
-        return Sender(senderId: currentUserID, displayName: "??")
+/* MARK: Date */
+extension Date {
+    func amountOfSeconds(from date: Date) -> Int {
+        return Calendar.current.dateComponents([.second], from: date, to: self).second ?? 0
     }
     
-    public func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
-        return conversation.messages.wrappedValue.count
-    }
-    
-    public func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageType {
-        return conversation.messages.wrappedValue[indexPath.section]
-    }
-}
-
-/* MARK: MessageType */
-extension Message: MessageType {
-    
-    public struct Sender: SenderType {
-        public let senderId: String
-        public let displayName: String
-    }
-    
-    public var kind: MessageKind {
-        return .text(fromAccountIdentifier != currentUserID ? translation.output : translation.input.value())
-    }
-    
-    public var messageId: String {
-        return identifier
-    }
-    
-    public var sender: SenderType {
-        return Sender(senderId: fromAccountIdentifier, displayName: "??")
-    }
-}
-
-//extension TranslationPlatform {
-//    func asString() -> String {
-//        switch self {
-//        case .azure:
-//            return "Azure"
-//        case .deepL:
-//            return "DeepL"
-//        case .google:
-//            return "Google"
-//        case .yandex:
-//            return "Yandex"
-//        case .random:
-//            return "Random"
-//        }
-//    }
-//}
-
-/* MARK: InputBarAccessoryViewDelegate */
-extension ChatPageView.Coordinator: InputBarAccessoryViewDelegate {
-    
-    public func inputBar(_ inputBar: InputBarAccessoryView, didPressSendButtonWith text: String) {
-        inputBar.sendButton.startAnimating()
-        inputBar.inputTextView.text = ""
-        inputBar.inputTextView.placeholder = "Sending..."
-        inputBar.inputTextView.tintColor = .clear
+    func separatorDateString() -> NSAttributedString {
+        let dateDifference = currentCalendar.startOfDay(for: Date()).distance(to: currentCalendar.startOfDay(for: self))
         
-        TranslatorService.main.translate(TranslationInput(text),
-                                         with: LanguagePair(from: currentUser!.languageCode,
-                                                            to: conversation.wrappedValue.otherUser!.languageCode),
-                                         using: .random) { (returnedTranslation, errorDescriptor) in
-            inputBar.sendButton.stopAnimating()
-            inputBar.inputTextView.placeholder = "Aa"
-            inputBar.inputTextView.tintColor = .systemBlue
+        let timeString = DateFormatter.localizedString(from: self,
+                                                       dateStyle: .none,
+                                                       timeStyle: .short)
+        
+        let overYearFormatter = DateFormatter()
+        overYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "MMM dd yyyy, " : "dd MMM yyyy, "
+        
+        let overYearString = overYearFormatter.string(from: self)
+        
+        let regularFormatter = DateFormatter()
+        regularFormatter.dateFormat = "yyyy-MM-dd"
+        
+        let underYearFormatter = DateFormatter()
+        underYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "E MMM d, " : "E d MMM, "
+        
+        let underYearString = underYearFormatter.string(from: self)
+        
+        if dateDifference == 0 {
+            let separatorString = Localizer.preLocalizedString(for: .today) ?? "Today"
             
-            guard returnedTranslation != nil || errorDescriptor != nil else {
-                log("An unknown error occurred.",
-                    metadata: [#file, #function, #line])
-                
-                AKAlert(message: "An unknown error occurred.",
-                        cancelButtonTitle: "OK").present()
-                return
-            }
+            return messagesAttributedString("\(separatorString) \(timeString)", separationIndex: separatorString.count)
+        } else if dateDifference == -86400 {
+            let separatorString = Localizer.preLocalizedString(for: .yesterday) ?? "Yesterday"
             
-            if let error = errorDescriptor {
-                log(error,
-                    metadata: [#file, #function, #line])
-                AKAlert(message: error,
-                        cancelButtonTitle: "OK").present()
-            } else if let translation = returnedTranslation {
-                MessageSerializer.shared.createMessage(fromAccountWithIdentifier: currentUserID,
-                                                       inConversationWithIdentifier: self.conversation.wrappedValue.identifier,
-                                                       translation: translation) { (returnedMessage,
-                                                                                    errorDescriptor) in
-                    guard returnedMessage != nil || errorDescriptor != nil else {
-                        log("An unknown error occurred.",
-                            metadata: [#file, #function, #line])
-                        AKAlert(title: "Couldn't Send Message",
-                                message: "An unknown error occurred.",
-                                cancelButtonTitle: "OK").present()
-                        return
-                    }
-                    
-                    if let error = errorDescriptor {
-                        log(error,
-                            metadata: [#file, #function, #line])
-                        AKAlert(title: "Couldn't Send Message",
-                                message: error,
-                                cancelButtonTitle: "OK").present()
-                    } else if let message = returnedMessage {
-                        self.conversation.messages.wrappedValue?.append(message)
-                        shouldReloadData = true
-                    }
-                }
+            return messagesAttributedString("\(separatorString) \(timeString)", separationIndex: separatorString.count)
+        } else if dateDifference >= -604800 {
+            let fromDateDay = regularFormatter.string(from: self).dayOfWeek()
+            
+            if fromDateDay != regularFormatter.string(from: Date()).dayOfWeek() {
+                return messagesAttributedString("\(fromDateDay) \(timeString)", separationIndex: fromDateDay.count)
+            } else {
+                return messagesAttributedString(underYearString + timeString, separationIndex: underYearString.components(separatedBy: ",")[0].count + 1)
             }
+        } else if dateDifference < -604800 && dateDifference > -31540000 {
+            return messagesAttributedString(underYearString + timeString, separationIndex: underYearString.components(separatedBy: ",")[0].count + 1)
         }
+        
+        return messagesAttributedString(overYearString + timeString, separationIndex: overYearString.components(separatedBy: ",")[0].count + 1)
     }
 }
 
-/* MARK: MessagesLayoutDelegate, MessagesDisplayDelegate */
-extension ChatPageView.Coordinator: MessagesLayoutDelegate, MessagesDisplayDelegate {
+/* MARK: UIFont */
+extension UIFont {
+    func withTraits(traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
+        let descriptor = fontDescriptor.withSymbolicTraits(traits)
+        return UIFont(descriptor: descriptor!, size: 0) //size 0 means keep the size as it is
+    }
     
+    func bold() -> UIFont {
+        return withTraits(traits: .traitBold)
+    }
+    
+    func italic() -> UIFont {
+        return withTraits(traits: .traitItalic)
+    }
 }

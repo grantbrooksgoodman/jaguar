@@ -65,11 +65,11 @@ public final class AKCore {
     }
     
     private func presentConnectionAlert() {
-        let alertController = UIAlertController(title: noInternetTitleDictionary[languageCode] ?? "Internet Connection Offline",
-                                                message: noInternetMessageDictionary[languageCode] ?? "The internet connection appears to be offline.\n\nPlease connect to the internet and try again.",
+        let alertController = UIAlertController(title: Localizer.preLocalizedString(for: .noInternetTitle) ?? "Internet Connection Offline",
+                                                message: Localizer.preLocalizedString(for: .noInternetMessage) ?? "The internet connection appears to be offline.\n\nPlease connect to the internet and try again.",
                                                 preferredStyle: .alert)
         
-        let dismissAction = UIAlertAction(title: dismissDictionary[languageCode] ?? "OK",
+        let dismissAction = UIAlertAction(title: Localizer.preLocalizedString(for: .dismiss) ?? "OK",
                                           style: .cancel)
         
         alertController.addAction(dismissAction)
@@ -129,8 +129,8 @@ public final class AKCore {
             }
             
             if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
-                    metadata: [#file, #function, #line])
+                Logger.log(errors.keys.joined(separator: "\n"),
+                           metadata: [#file, #function, #line])
             }
         }
     }
@@ -150,7 +150,8 @@ public final class AKCore {
      */
     private func code(for type: ReportType, metadata: [Any]) -> String? {
         guard validateMetadata(metadata) else {
-            log("Improperly formatted metadata.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+            Logger.log("Improperly formatted metadata.",
+                       metadata: [#file, #function, #line])
             return nil
         }
         
@@ -164,7 +165,8 @@ public final class AKCore {
         let functionTitle = rawFunctionTitle.components(separatedBy: "(")[0].lowercased()
         
         guard let cipheredFilename = filename.lowercased().ciphered(by: 14).randomlyCapitalized(with: lineNumber) else {
-            log("Unable to unwrap ciphered filename.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+            Logger.log("Unable to unwrap ciphered filename.",
+                       metadata: [#file, #function, #line])
             return nil
         }
         
@@ -173,7 +175,8 @@ public final class AKCore {
         
         if type == .error {
             guard let cipheredFunctionName = functionTitle.lowercased().ciphered(by: 14).randomlyCapitalized(with: lineNumber) else {
-                log("Unable to unwrap ciphered function name.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+                Logger.log("Unable to unwrap ciphered function name.",
+                           metadata: [#file, #function, #line])
                 return nil
             }
             
@@ -229,12 +232,15 @@ public final class AKCore {
                 translatedPrompt = translations.first(where: { $0.input.value() == translatedPrompt })?.output ?? translatedPrompt
                 
                 guard self.validateMetadata(metadata) else {
-                    log("Improperly formatted metadata.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+                    Logger.log("Improperly formatted metadata.",
+                               metadata: [#file, #function, #line])
                     return
                 }
                 
                 guard let code = AKCore.shared.code(for: type, metadata: metadata) else {
-                    log("Unable to generate code.", errorCode: nil, isFatal: true, metadata: [#file, #function, #line])
+                    Logger.log("Unable to generate code.",
+                               with: .fatalAlert,
+                               metadata: [#file, #function, #line])
                     return
                 }
                 
@@ -254,8 +260,8 @@ public final class AKCore {
             }
             
             if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
-                    metadata: [#file, #function, #line])
+                Logger.log(errors.keys.joined(separator: "\n"),
+                           metadata: [#file, #function, #line])
             }
         }
     }

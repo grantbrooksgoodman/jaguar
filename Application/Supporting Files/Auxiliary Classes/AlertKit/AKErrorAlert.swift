@@ -50,22 +50,27 @@ public class AKErrorAlert: AKAlert {
     
     public override func present(completion: @escaping (Int) -> Void = { _ in }) {
         translateStrings {
-            guard validateMetadata(self.error.metadata) else {
-                log("Improperly formatted metadata.", errorCode: nil, isFatal: false, metadata: [#file, #function, #line])
+            guard self.error.metadata.count == 3,
+                  self.error.metadata[0] is String,
+                  self.error.metadata[1] is String,
+                  self.error.metadata[2] is Int else {
+                Logger.log("Improperly formatted metadata.",
+                           metadata: [#file, #function, #line])
                 return
             }
             
             var alertController: UIAlertController!
             
             guard self.title.lowercasedTrimmingWhitespace == "" else {
-                log("AKErrorAlerts may not have custom titles.",
-                    isFatal: true,
-                    metadata: [#file, #function, #line])
+                Logger.log("AKErrorAlerts may not have custom titles.",
+                           with: .fatalAlert,
+                           metadata: [#file, #function, #line])
                 return
             }
             
-            alertController = UIAlertController(title: self.message.appending("\n\n[\(self.error.code)]"),
-                                                message: nil,
+            #warning("Decide on if you want to keep this.")
+            alertController = UIAlertController(title: self.message /*self.message.appending("\n\n[\(self.error.code)]")*/,
+                                                message: "\n[\(self.error.code)]",
                                                 preferredStyle: .alert)
             
             for action in self.actions {
@@ -140,8 +145,8 @@ public class AKErrorAlert: AKAlert {
             }
             
             if let errors = errorDescriptors {
-                log(errors.keys.joined(separator: "\n"),
-                    metadata: [#file, #function, #line])
+                Logger.log(errors.keys.joined(separator: "\n"),
+                           metadata: [#file, #function, #line])
             }
             
             if !leftDispatchGroup {

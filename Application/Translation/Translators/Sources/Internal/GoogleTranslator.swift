@@ -63,7 +63,9 @@ public class GoogleTranslator: NSObject, Translatorable {
         } else {
             let parsedText = text.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)!
             
-            let url = URL(string: "https://translate.google.com/?sl=\(from)&tl=\(to)&text=\(parsedText)&op=translate")!
+            let toLanguage = to == "he" ? "iw" : to == "zh" ? "zh-CN" : to
+            
+            let url = URL(string: "https://translate.google.com/?sl=\(from)&tl=\(toLanguage)&text=\(parsedText)&op=translate")!
             
             TranslatorService.main.removeCookies()
             
@@ -104,7 +106,7 @@ public class GoogleTranslator: NSObject, Translatorable {
                     return
                 }
                 
-                self.errorDescriptor = errorInfo(error)
+                self.errorDescriptor = Logger.errorInfo(error)
                 self.conditionallyLeaveGroup()
             } else if let text = data as? String,
                       text.lowercasedTrimmingWhitespace != "" {

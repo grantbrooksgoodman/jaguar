@@ -104,7 +104,7 @@ public class DeepLTranslator: NSObject, Translatorable {
                     return
                 }
                 
-                self.errorDescriptor = errorInfo(error)
+                self.errorDescriptor = Logger.errorInfo(error)
                 self.conditionallyLeaveGroup()
             } else if let text = data as? String,
                       text.lowercasedTrimmingWhitespace != "" {

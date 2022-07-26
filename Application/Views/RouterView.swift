@@ -1,5 +1,5 @@
 //
-//  ContentView.swift
+//  RouterView.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 23/04/2022.
@@ -26,7 +26,6 @@ public enum Page {
                 fromSignUp: Bool) //Add region for sign in from sign up flow
     case conversations
 }
-
 
 //==================================================//
 
@@ -83,7 +82,7 @@ public struct RouterView: View {
                      let fromSignUp):
             SignInPageView(viewModel: SignInPageViewModel(),
                            viewRouter: viewRouter,
-                           phoneNumberString: phoneNumber ?? callingCode,
+                           phoneNumberString: phoneNumber ?? "",
                            fromSignUp: fromSignUp)
                 .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
                 .zIndex(1)

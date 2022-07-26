@@ -101,8 +101,8 @@ public class User {
         GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { (returnedConversations, errorDescriptor) in
             
             guard let updatedConversations = returnedConversations as? [String] else {
-                log(errorDescriptor ?? "An unknown error occurred.",
-                    metadata: [#file, #function, #line])
+                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
                 completion(nil, errorDescriptor ?? "An unknown error occurred.")
                 return
             }
@@ -115,8 +115,8 @@ public class User {
             } else {
                 ConversationSerializer().getConversations(withIdentifiers: conversations) { (returnedConversations, errorDescriptor) in
                     guard let conversations = returnedConversations else {
-                        log(errorDescriptor ?? "An unknown error occurred.",
-                            metadata: [#file, #function, #line])
+                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                                   metadata: [#file, #function, #line])
                         completion(nil, errorDescriptor ?? "An unknown error occurred.")
                         return
                     }
@@ -132,8 +132,8 @@ public class User {
         GeneralSerializer.setValue(onKey: "/allUsers/\(identifier!)/lastActive",
                                    withData: secondaryDateFormatter.string(from: Date())) { (returnedError) in
             if let error = returnedError {
-                log("Update last active date failed! \(errorInfo(error))",
-                    metadata: [#file, #function, #line])
+                Logger.log("Update last active date failed! \(Logger.errorInfo(error))",
+                           metadata: [#file, #function, #line])
             }
         }
     }
@@ -211,7 +211,7 @@ extension String {
             formattedNumber = phoneNumberKit.format(parsed, toType: .international)
             formattedNumber = formattedNumber.removingOccurrences(of: ["+"])
         } catch {
-            //            log("Couldn't format number to international.",
+            //            Logger.log("Couldn't format number to international.",
             //                verbose: true,
             //                metadata: [#file, #function, #line])
         }
@@ -243,7 +243,7 @@ extension String {
             formattedNumber = phoneNumberKit.format(parsed, toType: .international)
             formattedNumber = formattedNumber.removingOccurrences(of: ["+"])
         } catch {
-            //            log("Couldn't format number to international.",
+            //            Logger.log("Couldn't format number to international.",
             //                verbose: true,
             //                metadata: [#file, #function, #line])
         }

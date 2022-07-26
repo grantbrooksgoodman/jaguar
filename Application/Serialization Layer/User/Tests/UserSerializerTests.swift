@@ -64,7 +64,7 @@ final class UserSerializerTests: XCTestCase {
         UserSerializer().getUser(withIdentifier: "r2wM8ue2FmWryaOyjSgYZtFP4CH3") { (returnedUser,
                                                                                     errorDescriptor) in
             if let error = errorDescriptor {
-                log(error, metadata: [#file, #function, #line])
+                Logger.log(error, metadata: [#file, #function, #line])
             } else {
                 if let user = returnedUser {
                     user.deSerializeConversations { (returnedConversations,

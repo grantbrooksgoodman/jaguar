@@ -17,7 +17,6 @@ public struct RegionMenu: View {
     /* MARK: - Struct-level Variable Declarations */
     
     @Binding public var selectedRegion: String
-    public var initialRegion: String?
     
     //==================================================//
     
@@ -56,7 +55,7 @@ public struct RegionMenu: View {
                         .shadow(radius: 2)
                         .padding(.all, -3))
         .onAppear(perform: {
-            selectedRegion = initialRegion ?? Locale.current.regionCode ?? "US"
+            selectedRegion = selectedRegionCode ?? Locale.current.regionCode ?? "US"
         })
     }
     

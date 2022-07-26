@@ -16,9 +16,9 @@ public struct TranslationArchiver {
     /* MARK: - Addition/Retrieval Functions */
     
     public static func addToArchive(_ translation: Translation) {
-        log("Added translation to local archive.",
-            verbose: true,
-            metadata: [#file, #function, #line])
+        Logger.log("Added translation to local archive.",
+                   verbose: true,
+                   metadata: [#file, #function, #line])
         
         translationArchive.append(translation)
     }
@@ -29,9 +29,9 @@ public struct TranslationArchiver {
         let matches = translations.filter({$0.input.value() == input.value()})
         
         if matches.first != nil {
-            log("Found translation in local archive.",
-                verbose: true,
-                metadata: [#file, #function, #line])
+            Logger.log("Found translation in local archive.",
+                       verbose: true,
+                       metadata: [#file, #function, #line])
         }
         
         return matches.first
@@ -42,11 +42,11 @@ public struct TranslationArchiver {
         let translations = translationArchive.filter({ $0.languagePair.to == languagePair.to })
         let matches = translations.filter({ $0.input.value().compressedHash == withReference })
         
-        if matches.first != nil {
-            log("Found translation BY REFERENCE in local archive.",
-                verbose: true,
-                metadata: [#file, #function, #line])
-        }
+        //        if matches.first != nil {
+        //            Logger.log("Found translation BY REFERENCE in local archive.",
+        //                verbose: true,
+        //                metadata: [#file, #function, #line])
+        //        }
         
         return matches.first
     }
@@ -70,10 +70,10 @@ public struct TranslationArchiver {
             completion(decodedTranslations, nil)
             return
         } catch let error {
-            log(errorInfo(error),
-                metadata: [#file, #function, #line])
+            Logger.log(Logger.errorInfo(error),
+                       metadata: [#file, #function, #line])
             
-            completion(nil, errorInfo(error))
+            completion(nil, Logger.errorInfo(error))
         }
     }
     
@@ -85,10 +85,10 @@ public struct TranslationArchiver {
             UserDefaults.standard.setValue(encodedTranslations, forKey: "translationArchive")
             completion(nil)
         } catch let error {
-            log(errorInfo(error),
-                metadata: [#file, #function, #line])
+            Logger.log(Logger.errorInfo(error),
+                       metadata: [#file, #function, #line])
             
-            completion(errorInfo(error))
+            completion(Logger.errorInfo(error))
         }
     }
 }

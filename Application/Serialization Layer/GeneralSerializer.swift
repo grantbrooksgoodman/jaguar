@@ -29,7 +29,7 @@ public struct GeneralSerializer {
         Database.database().reference().child(atPath).observeSingleEvent(of: .value) { (returnedSnapshot) in
             completion(returnedSnapshot.value, nil)
         } withCancel: { (returnedError) in
-            completion(nil, errorInfo(returnedError))
+            completion(nil, Logger.errorInfo(returnedError))
         }
     }
     

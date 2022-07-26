@@ -53,8 +53,7 @@ public struct VerifyNumberPageView: View {
                     .padding(.vertical, 5)
                 
                 HStack(alignment: .center) {
-                    RegionMenu(selectedRegion: $selectedRegion/*,
-                               initialRegion: selectedRegion*/)
+                    RegionMenu(selectedRegion: $selectedRegion)
                         .padding(.leading, 20)
                         .padding(.trailing, 5)
                     
@@ -67,6 +66,7 @@ public struct VerifyNumberPageView: View {
                 Button {
                     let compiledNumber = "\(callingCodeDictionary[selectedRegion]!)\(phoneNumberString.digits)".digits
                     
+                    selectedRegionCode = selectedRegion
                     verifyUser(phoneNumber: compiledNumber)
                 } label: {
                     Text(translations["continue"]!.output)
@@ -105,9 +105,10 @@ public struct VerifyNumberPageView: View {
                     if let identifier = returnedIdentifier {
                         viewRouter.currentPage = .signUp_authCode(identifier: identifier,
                                                                   phoneNumber: phoneNumber,
-                                                                  region: selectedRegion)
+                                                                  region: selectedRegionCode ?? selectedRegion)
+                        selectedRegionCode = nil
                     } else if let error = returnedError {
-                        let akError = AKError(errorInfo(error),
+                        let akError = AKError(Logger.errorInfo(error),
                                               metadata: [#file, #function, #line],
                                               isReportable: true)
                         

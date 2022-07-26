@@ -99,7 +99,7 @@ public class YandexTranslator: NSObject, Translatorable {
                     return
                 }
                 
-                self.errorDescriptor = errorInfo(error)
+                self.errorDescriptor = Logger.errorInfo(error)
                 self.conditionallyLeaveGroup()
             } else if let text = data as? String,
                       text.lowercasedTrimmingWhitespace != "" {
@@ -125,8 +125,8 @@ extension YandexTranslator: WKNavigationDelegate {
     public func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
         if webView.url!.absoluteString.hasPrefix("https://translate.yandex.com/showcaptcha") {
             errorDescriptor = "Can't use Yandex Translate right now; try again later."
-            log(errorDescriptor,
-                metadata: [#file, #function, #line])
+            Logger.log(errorDescriptor,
+                       metadata: [#file, #function, #line])
             conditionallyLeaveGroup()
         } else {
             evaluateJavaScript()
