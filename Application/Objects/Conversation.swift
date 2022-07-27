@@ -17,7 +17,7 @@ public class Conversation {
     
     //Arrays
     public var messages: [Message]!
-    public var participantIdentifiers: [String]!
+    public var participantIdentifiers: [(id: String, typing: Bool)]!
     
     //Other Declarations
     public var identifier: String!
@@ -32,7 +32,7 @@ public class Conversation {
     public init(identifier: String,
                 messages: [Message],
                 lastModifiedDate: Date,
-                participantIdentifiers: [String]) {
+                participantIdentifiers: [(id: String, typing: Bool)]) {
         self.identifier = identifier
         self.messages = messages
         self.lastModifiedDate = lastModifiedDate
@@ -63,14 +63,24 @@ public class Conversation {
         
         data["identifier"] = identifier
         data["messages"] = messageIdentifiers() ?? ["!"] //failsafe. should NEVER return nil
-        data["participants"] = participantIdentifiers
+        data["participants"] = serializedParticipants(from: participantIdentifiers)
         data["lastModified"] = secondaryDateFormatter.string(from: lastModifiedDate)
         
         return data
     }
     
+    public func serializedParticipants(from: [(id: String, typing: Bool)]) -> [String] {
+        var participants = [String]()
+        
+        for participant in from {
+            participants.append("\(participant.id) | \(participant.typing)")
+        }
+        
+        return participants
+    }
+    
     public func setOtherUser(completion: @escaping(_ errorDescriptor: String?) -> Void) {
-        let otherUserIdentifier = self.participantIdentifiers.filter({$0 != currentUserID})[0]
+        let otherUserIdentifier = self.participantIdentifiers.filter({ $0.id != currentUserID })[0].id
         
         UserSerializer.shared.getUser(withIdentifier: otherUserIdentifier) { (returnedUser,
                                                                               errorDescriptor) in

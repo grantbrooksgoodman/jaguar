@@ -19,8 +19,11 @@ public final class ChatPageViewController: MessagesViewController {
     
     /* MARK: - Class-level Variable Declarations */
     
-    //Other Declarations
+    //Timers
     var reloadTimer: Timer?
+    var typingIndicatorTimer: Timer?
+    
+    //Other Declarations
     var selectedCell: TextMessageCell?
     
     //==================================================//
@@ -61,17 +64,35 @@ public final class ChatPageViewController: MessagesViewController {
                                            target: self,
                                            selector: #selector(reloadData),
                                            userInfo: nil, repeats: true)
+        
+        typingIndicatorTimer = Timer.scheduledTimer(timeInterval: 1,
+                                                    target: self,
+                                                    selector: #selector(updateTypingIndicator),
+                                                    userInfo: nil, repeats: true)
     }
     
     public override func viewWillDisappear(_ animated: Bool) {
         reloadTimer?.invalidate()
         reloadTimer = nil
         
+        typingIndicatorTimer?.invalidate()
+        typingIndicatorTimer = nil
+        
         Database.database().reference().removeAllObservers()
     }
     
     public override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
+        if let typingIndicatorCell = super.collectionView(collectionView, cellForItemAt: indexPath) as? TypingIndicatorCell {
+            return typingIndicatorCell
+        }
+        
         let currentCell = super.collectionView(collectionView, cellForItemAt: indexPath) as! MessageCollectionViewCell
+        
+        currentCell.tag = indexPath.section
+        
+        guard topLevelMessages.count > indexPath.section else {
+            return currentCell
+        }
         
         if topLevelMessages[indexPath.section].isDisplayingAlternate,
            let cell = currentCell as? TextMessageCell {
@@ -82,8 +103,6 @@ public final class ChatPageViewController: MessagesViewController {
                 cell.messageLabel.frame.size.width = cell.messageLabel.intrinsicContentSize.width
             }
         }
-        
-        currentCell.tag = indexPath.section
         
         return currentCell
     }
@@ -148,6 +167,14 @@ public final class ChatPageViewController: MessagesViewController {
             self.messagesCollectionView.reloadData()
             self.messagesCollectionView.scrollToLastItem(animated: true)
             shouldReloadData = false
+        }
+    }
+    
+    @objc private func updateTypingIndicator() {
+        if let indicator = typingIndicator {
+            self.setTypingIndicatorViewHidden(!indicator, animated: true)
+            self.messagesCollectionView.scrollToLastItem(animated: true)
+            typingIndicator = nil
         }
     }
     

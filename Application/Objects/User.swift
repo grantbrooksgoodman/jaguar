@@ -50,6 +50,41 @@ public class User {
     
     /* MARK: - Other Functions */
     
+    public func update(isTyping: Bool,
+                       inConversationWithID: String,
+                       completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+        GeneralSerializer.getValues(atPath: "/allConversations/\(inConversationWithID)") { (returnedValues, errorDescriptor) in
+            guard let values = returnedValues as? [String: Any] else {
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
+                completion(error)
+                return
+            }
+            
+            guard let participants = values["participants"] as? [String] else {
+                completion("Couldn't deserialize participants.")
+                return
+            }
+            
+            let otherUserID = participants.filter({$0.components(separatedBy: " | ")[0] != self.identifier! }).first!
+            let updatedParticipants = ["\(self.identifier!) | \(isTyping)", otherUserID]
+            
+            GeneralSerializer.setValue(onKey: "/allConversations/\(inConversationWithID)/participants",
+                                       withData: updatedParticipants) { (returnedError) in
+                guard let error = returnedError else {
+                    Logger.log("Updated typing status.",
+                               metadata: [#file, #function, #line])
+                    completion(nil)
+                    return
+                }
+                
+                completion(Logger.errorInfo(error))
+            }
+        }
+    }
+    
     public func updateConversationData(completion: @escaping(_ returnedConversations: [Conversation]?,
                                                              _ errorDescriptor: String?) -> Void = { _,_  in }) {
         guard let openConversations = openConversations else {

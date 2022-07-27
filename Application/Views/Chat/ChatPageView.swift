@@ -15,13 +15,15 @@ import Firebase
 import InputBarAccessoryView
 import MessageKit
 
-#warning("FIX DUPLICATE MESSAGE ALTERNATE BUG")
-
 //==================================================//
 
 /* MARK: - Top-level Variable Declarations */
 
+//Boolean Declarations
 public var shouldReloadData = false
+public var typingIndicator: Bool?
+
+//Other Declarations
 public var topLevelMessages: [Message]!
 
 public struct ChatPageView: UIViewControllerRepresentable {
@@ -73,7 +75,8 @@ public struct ChatPageView: UIViewControllerRepresentable {
         
         inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
         
-        setUpObserver()
+        setUpNewMessageObserver()
+        setUpTypingIndicatorObserver()
         
         return messagesVC
     }
@@ -85,17 +88,9 @@ public struct ChatPageView: UIViewControllerRepresentable {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Observer Functions */
     
-    private func scrollToBottom(_ uiViewController: MessagesViewController) {
-        DispatchQueue.main.async {
-            // The initialized state variable allows us to start at the bottom with the initial messages without seeing the initial scroll flash by
-            uiViewController.messagesCollectionView.scrollToLastItem(animated: self.initialized)
-            self.initialized = true
-        }
-    }
-    
-    private func setUpObserver() {
+    private func setUpNewMessageObserver() {
         Database.database().reference().child("allConversations/\(conversation.identifier!)/messages").observe(.childAdded) { (returnedSnapshot) in
             
             guard let identifier = returnedSnapshot.value as? String,
@@ -124,6 +119,32 @@ public struct ChatPageView: UIViewControllerRepresentable {
         } withCancel: { (error) in
             Logger.log(error,
                        metadata: [#file, #function, #line])
+        }
+    }
+    
+    private func setUpTypingIndicatorObserver() {
+        Database.database().reference().child("/allConversations/\(conversation.identifier!)/participants").observe(.childChanged) { (returnedSnapshot) in
+            guard let updatedTyper = returnedSnapshot.value as? String,
+                  updatedTyper.components(separatedBy: " | ")[0] != currentUserID else {
+                return
+            }
+            
+            typingIndicator = updatedTyper.components(separatedBy: " | ")[1] == "true"
+        } withCancel: { (returnedError) in
+            Logger.log(returnedError,
+                       metadata: [#file, #function, #line])
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Other Functions */
+    
+    private func scrollToBottom(_ uiViewController: MessagesViewController) {
+        DispatchQueue.main.async {
+            // The initialized state variable allows us to start at the bottom with the initial messages without seeing the initial scroll flash by
+            uiViewController.messagesCollectionView.scrollToLastItem(animated: self.initialized)
+            self.initialized = true
         }
     }
 }

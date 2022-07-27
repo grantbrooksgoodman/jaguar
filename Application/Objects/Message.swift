@@ -52,14 +52,28 @@ public class Message {
     
     ///Serializes the **Message's** metadata.
     public func serialize() -> [String: Any] {
-        var dataBundle: [String: Any] = [:]
+        var data: [String: Any] = [:]
         
-        dataBundle["fromAccount"] = fromAccountIdentifier
-        dataBundle["languagePair"] = languagePair.asString()
-        dataBundle["translationReference"] = translation.serialize().key
-        dataBundle["readDate"] = (readDate == nil ? "!" : masterDateFormatter.string(from: readDate!))
-        dataBundle["sentDate"] = masterDateFormatter.string(from: sentDate)
+        data["fromAccount"] = fromAccountIdentifier
+        data["languagePair"] = languagePair.asString()
+        data["translationReference"] = translation.serialize().key
+        data["readDate"] = (readDate == nil ? "!" : masterDateFormatter.string(from: readDate!))
+        data["sentDate"] = secondaryDateFormatter.string(from: sentDate)
         
-        return dataBundle
+        return data
+    }
+    
+    public func updateReadDate(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+        readDate = Date()
+        
+        GeneralSerializer.setValue(onKey: "/allMessages/\(identifier!)/readDate",
+                                   withData: secondaryDateFormatter.string(from: readDate!)) { (returnedError) in
+            guard let error = returnedError else {
+                completion(nil)
+                return
+            }
+            
+            completion(Logger.errorInfo(error))
+        }
     }
 }

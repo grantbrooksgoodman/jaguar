@@ -237,7 +237,7 @@ public class ConversationsPageViewModel: ObservableObject {
                         return
                     }
                     
-                    if conversations.contains(where: { $0.participantIdentifiers.contains(user.identifier) }) {
+                    if conversations.contains(where: { $0.participantIdentifiers.contains(where: { $0.id == user.identifier }) }) {
                         Logger.log("Conversation with this user alreasdy exists.",
                                    with: .errorAlert,
                                    metadata: [#file, #function, #line])

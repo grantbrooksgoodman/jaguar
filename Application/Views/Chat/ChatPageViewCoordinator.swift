@@ -99,6 +99,10 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          textViewTextDidChangeTo text: String) {
+        let isTyping = text.lowercasedTrimmingWhitespace != ""
+        currentUser!.update(isTyping: isTyping,
+                            inConversationWithID: conversation.identifier.wrappedValue)
+        
         let lines = Int(inputBar.inputTextView.contentSize.height / inputBar.inputTextView.font.lineHeight)
         let currentText = inputBar.inputTextView.text!
         
@@ -186,7 +190,15 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     }
     
     public func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageType {
-        return conversation.messages.wrappedValue[indexPath.section]
+        let messages = conversation.messages.wrappedValue!
+        
+        if indexPath.section == messages.count - 1 &&
+            messages[indexPath.section].fromAccountIdentifier != currentUserID &&
+            messages[indexPath.section].readDate == nil {
+            messages[indexPath.section].updateReadDate()
+        }
+        
+        return messages[indexPath.section]
     }
 }
 

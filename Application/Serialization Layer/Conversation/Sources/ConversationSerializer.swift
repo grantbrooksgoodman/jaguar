@@ -32,8 +32,14 @@ public struct ConversationSerializer {
         
         var data: [String: Any] = [:]
         
+        var participants = [String]()
+        
+        for identifier in participantIdentifiers {
+            participants.append("\(identifier) | false")
+        }
+        
         data["messages"] = [initialMessageIdentifier]
-        data["participants"] = participantIdentifiers
+        data["participants"] = participants
         data["lastModified"] = secondaryDateFormatter.string(from: Date())
         
         guard let generatedKey = Database.database().reference().child("/allConversations/").childByAutoId().key else {
@@ -174,6 +180,17 @@ public struct ConversationSerializer {
             return
         }
         
+        var deSerializedParticipants = [(id: String, typing: Bool)]()
+        for participant in participants {
+            guard participant.components(separatedBy: " | ").count == 2 else {
+                completion(nil, "Unable to fully deserialize «participants».")
+                return
+            }
+            
+            let components = participant.components(separatedBy: " | ")
+            deSerializedParticipants.append((components[0], components[1] == "true" ? true : false))
+        }
+        
         guard let lastModifiedString = fromData["lastModified"] as? String else {
             completion(nil, "Unable to deserialize «lastModifiedString».")
             return
@@ -194,7 +211,7 @@ public struct ConversationSerializer {
             let deSerializedConversation = Conversation(identifier: identifier,
                                                         messages: messages,
                                                         lastModifiedDate: lastModifiedDate,
-                                                        participantIdentifiers: participants)
+                                                        participantIdentifiers: deSerializedParticipants)
             
             completion(deSerializedConversation, nil)
         }

@@ -29,13 +29,13 @@ public struct UserSerializer {
                            phoneNumber: String,
                            region: String,
                            completion: @escaping(_ errorDescriptor: String?) -> Void) {
-        let dataBundle = ["languageCode": languageCode,
+        let data = ["languageCode": languageCode,
                           "phoneNumber": phoneNumber.digits,
                           "region": region,
                           "openConversations": ["!"]] as [String: Any]
         
         GeneralSerializer.updateValue(onKey: "/allUsers/\(identifier)",
-                                      withData: dataBundle) { (returnedError) in
+                                      withData: data) { (returnedError) in
             guard let error = returnedError else {
                 completion(nil)
                 return
