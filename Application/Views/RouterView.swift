@@ -105,8 +105,8 @@ public struct RouterView: View {
 
 /* MARK: - Previews */
 
-public struct RouterView_Previews: PreviewProvider {
-    public static var previews: some View {
-        RouterView(viewRouter: ViewRouter())
-    }
-}
+//public struct RouterView_Previews: PreviewProvider {
+//    public static var previews: some View {
+//        RouterView(viewRouter: ViewRouter())
+//    }
+//}

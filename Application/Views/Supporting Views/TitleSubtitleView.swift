@@ -10,6 +10,9 @@
 import Foundation
 import SwiftUI
 
+/* Third-party Frameworks */
+import Translator
+
 public struct TitleSubtitleView: View {
     
     //==================================================//

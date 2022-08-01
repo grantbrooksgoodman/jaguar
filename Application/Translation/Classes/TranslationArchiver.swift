@@ -9,6 +9,9 @@
 /* First-party Frameworks */
 import Foundation
 
+/* Third-party Frameworks */
+import Translator
+
 public struct TranslationArchiver {
     
     //==================================================//

@@ -10,6 +10,9 @@
 import CryptoKit
 import Foundation
 
+/* Third-party Frameworks */
+import Translator
+
 public struct TranslationSerializer {
     
     //==================================================//

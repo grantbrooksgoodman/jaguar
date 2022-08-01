@@ -11,7 +11,9 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import Firebase
+import FirebaseAuth
 import PhoneNumberKit
+import Translator
 
 public class VerifyNumberPageViewModel: ObservableObject {
     
@@ -46,14 +48,12 @@ public class VerifyNumberPageViewModel: ObservableObject {
     public func load() {
         state = .loading
         
-        TranslatorService.main.getTranslations(for: Array(inputs.values),
-                                               languagePair: LanguagePair(from: "en",
-                                                                          to: languageCode),
-                                               requiresHUD: false,
-                                               using: .google) { (returnedTranslations,
-                                                                  errorDescriptors) in
+        let dataModel = PageViewDataModel(inputs: inputs)
+        
+        dataModel.translateStrings { (returnedTranslations,
+                                      errorDescriptor) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred."
+                let error = errorDescriptor ?? "An unknown error occurred."
                 
                 Logger.log(error,
                            metadata: [#file, #function, #line])
@@ -62,12 +62,7 @@ public class VerifyNumberPageViewModel: ObservableObject {
                 return
             }
             
-            guard let matchedTranslations = translations.matchedTo(self.inputs) else {
-                self.state = .failed("Couldn't match translations with inputs.")
-                return
-            }
-            
-            self.state = .loaded(translations: matchedTranslations)
+            self.state = .loaded(translations: translations)
         }
     }
     
@@ -90,12 +85,43 @@ public class VerifyNumberPageViewModel: ObservableObject {
     
     public func verifyPhoneNumber(_ string: String,
                                   completion: @escaping (_ returnedIdentifier: String?,
-                                                         _ returnedError: Error?) -> Void) {
+                                                         _ errorDescriptor: String?) -> Void) {
         Auth.auth().languageCode = languageCode
         PhoneAuthProvider.provider().verifyPhoneNumber(string,
                                                        uiDelegate: nil) { (returnedIdentifier,
                                                                            returnedError) in
-            completion(returnedIdentifier, returnedError)
+            completion(returnedIdentifier,
+                       returnedError == nil ? nil : Logger.errorInfo(returnedError!))
+        }
+    }
+    
+    public func verifyUser(phoneNumber: String,
+                           completion: @escaping (_ returnedIdentifier: String?,
+                                                  _ errorDescriptor: String?,
+                                                  _ hasAccount: Bool) -> Void) {
+        UserSerializer.shared.findUser(byPhoneNumber: phoneNumber) { (returnedUser, _) in
+            if returnedUser == nil {
+                self.verifyPhoneNumber("+\(phoneNumber)") { (returnedIdentifier,
+                                                             errorDescriptor) in
+                    guard let identifier = returnedIdentifier else {
+                        completion(nil,
+                                   errorDescriptor ?? "An unknown error occurred.",
+                                   false)
+                        return
+                    }
+                    
+                    completion(identifier,
+                               nil,
+                               false)
+                }
+            } else {
+                previousLanguageCode = languageCode
+                languageCode = returnedUser!.languageCode
+                
+                completion(nil,
+                           nil,
+                           true)
+            }
         }
     }
 }

@@ -11,6 +11,7 @@ import Foundation
 
 /* Third-party Frameworks */
 import Firebase
+import FirebaseDatabase
 
 public struct UserSerializer {
     
@@ -30,9 +31,9 @@ public struct UserSerializer {
                            region: String,
                            completion: @escaping(_ errorDescriptor: String?) -> Void) {
         let data = ["languageCode": languageCode,
-                          "phoneNumber": phoneNumber.digits,
-                          "region": region,
-                          "openConversations": ["!"]] as [String: Any]
+                    "phoneNumber": phoneNumber.digits,
+                    "region": region,
+                    "openConversations": ["!"]] as [String: Any]
         
         GeneralSerializer.updateValue(onKey: "/allUsers/\(identifier)",
                                       withData: data) { (returnedError) in

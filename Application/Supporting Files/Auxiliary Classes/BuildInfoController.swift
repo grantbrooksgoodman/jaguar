@@ -8,6 +8,9 @@
 /* First-party Frameworks */
 import UIKit
 
+/* Third-party Frameworks */
+import Translator
+
 class BuildInfoController: UIViewController {
     
     //==================================================//
@@ -362,12 +365,12 @@ private class BuildInfoWindow: UIWindow {
         inputsToTranslate = inputsToTranslate.filter({$0.value().lowercasedTrimmingWhitespace != ""})
         
         dispatchGroup.enter()
-        TranslatorService.main.getTranslations(for: inputsToTranslate,
-                                               languagePair: LanguagePair(from: "en",
-                                                                          to: languageCode),
-                                               requiresHUD: true,
-                                               using: .google) { (returnedTranslations,
-                                                                  errorDescriptors) in
+        FirebaseTranslator.shared.getTranslations(for: inputsToTranslate,
+                                                  languagePair: LanguagePair(from: "en",
+                                                                             to: languageCode),
+                                                  requiresHUD: true,
+                                                  using: .google) { (returnedTranslations,
+                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
                 Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])

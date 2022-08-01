@@ -2,13 +2,16 @@
 //  String+.swift
 //  Jaguar
 //
-//  Created by Grant Brooks Goodman on 30/04/2022.
+//  Created by Grant Brooks Goodman on 31/07/2022.
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
 /* First-party Frameworks */
 import CryptoKit
 import Foundation
+
+/* Third-party Frameworks */
+import Translator
 
 public extension String {
     /* MARK: - Functions */
@@ -36,39 +39,6 @@ public extension String {
         }
         
         return decoded
-    }
-    
-    func inconsideratelyMatchingCapitalization(of: String) -> String {
-        let comparatorSplit = `of`.components(separatedBy: " ")
-        let selfSplit = components(separatedBy: " ")
-        
-        guard comparatorSplit.count != 0 && comparatorSplit[0] != "" else {
-            return self
-        }
-        
-        var newString = ""
-        
-        for (index, word) in selfSplit.enumerated() {
-            if index >= comparatorSplit.count {
-                newString += "\(word) "
-            } else {
-                if comparatorSplit[index].characterArray[0].isUppercase {
-                    newString += "\(word.firstUppercase) "
-                } else {
-                    newString += "\(word.firstLowercase) "
-                }
-            }
-        }
-        
-        return newString.trimmingTrailingWhitespace
-    }
-    
-    func matchingCapitalization(of: String) -> String {
-        guard self.components(separatedBy: " ").count == `of`.components(separatedBy: " ").count else {
-            return self
-        }
-        
-        return inconsideratelyMatchingCapitalization(of: `of`)
     }
     
     //--------------------------------------------------//

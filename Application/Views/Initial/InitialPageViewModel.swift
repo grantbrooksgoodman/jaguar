@@ -9,6 +9,9 @@
 /* First-party Frameworks */
 import Foundation
 
+/* Third-party Frameworks */
+import Translator
+
 public class InitialPageViewModel: ObservableObject {
     
     //==================================================//
@@ -40,27 +43,21 @@ public class InitialPageViewModel: ObservableObject {
     public func load() {
         state = .loading
         
-        TranslatorService.main.getTranslations(for: Array(inputs.values),
-                                               languagePair: LanguagePair(from: "en",
-                                                                          to: languageCode),
-                                               requiresHUD: false,
-                                               using: .google) { (returnedTranslations,
-                                                                  errorDescriptors) in
+        let dataModel = PageViewDataModel(inputs: inputs)
+        
+        dataModel.translateStrings { (returnedTranslations,
+                                      errorDescriptor) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred."
+                let error = errorDescriptor ?? "An unknown error occurred."
                 
                 Logger.log(error,
                            metadata: [#file, #function, #line])
+                
                 self.state = .failed(error)
                 return
             }
             
-            guard let matchedTranslations = translations.matchedTo(self.inputs) else {
-                self.state = .failed("Couldn't match translations with inputs.")
-                return
-            }
-            
-            self.state = .loaded(translations: matchedTranslations)
+            self.state = .loaded(translations: translations)
         }
     }
 }

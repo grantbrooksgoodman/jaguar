@@ -11,7 +11,9 @@ import Foundation
 
 /* Third-party Frameworks */
 import Firebase
+import FirebaseDatabase
 import MessageKit
+import Translator
 
 public final class ChatPageViewController: MessagesViewController {
     

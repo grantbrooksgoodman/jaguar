@@ -13,6 +13,7 @@ import SwiftUI
 /* Third-party Frameworks */
 import InputBarAccessoryView
 import MessageKit
+import Translator
 
 public final class ChatPageViewCoordinator {
     
@@ -64,9 +65,9 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         //        self.conversation.messages.wrappedValue?.append(message)
         //        shouldReloadData = true
         
-        TranslatorService.main.translate(TranslationInput(text),
-                                         with: languagePair,
-                                         using: .google) { (returnedTranslation, errorDescriptor) in
+        FirebaseTranslator.shared.translate(TranslationInput(text),
+                                            with: languagePair,
+                                            using: .google) { (returnedTranslation, errorDescriptor) in
             inputBar.sendButton.stopAnimating()
             inputBar.inputTextView.placeholder = " New Message"
             inputBar.inputTextView.tintColor = .systemBlue
@@ -94,7 +95,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                 topLevelMessages = wrappedConversation.messages
                 shouldReloadData = true
             }
-                                         }
+                                            }
     }
     
     public func inputBar(_ inputBar: InputBarAccessoryView,

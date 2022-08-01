@@ -98,31 +98,11 @@ public struct VerifyNumberPageView: View {
     /* MARK: - Private Functions */
     
     private func verifyUser(phoneNumber: String) {
-        UserSerializer.shared.findUser(byPhoneNumber: phoneNumber) { (returnedUser, _) in
-            if returnedUser == nil {
-                viewModel.verifyPhoneNumber("+\(phoneNumber)") { (returnedIdentifier,
-                                                                  returnedError) in
-                    guard let identifier = returnedIdentifier else {
-                        let akError = AKError(returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!),
-                                              metadata: [#file, #function, #line],
-                                              isReportable: true)
-                        
-                        AKErrorAlert(error: akError,
-                                     networkDependent: true).present()
-                        return
-                    }
-                    
-                    viewRouter.currentPage = .signUp_authCode(identifier: identifier,
-                                                              phoneNumber: phoneNumber,
-                                                              region: selectedRegionCode ?? selectedRegion)
-                    selectedRegionCode = nil
-                }
-            } else {
-                previousLanguageCode = languageCode
-                languageCode = returnedUser!.languageCode
-                
-                let alert = AKAlert(message: "It appears you already have an account. Please sign in instead.",
-                                    actions: [AKAction(title: "Sign In", style: .preferred)])
+        viewModel.verifyUser(phoneNumber: phoneNumber) { (returnedIdentifier,
+                                                          errorDescriptor,
+                                                          hasAccount) in
+            guard !hasAccount else {
+                let alert = AKAlert(message: "It appears you already have an account. Please sign in instead.", actions: [AKAction(title: "Sign In", style: .preferred)])
                 
                 alert.present() { actionID in
                     guard actionID == -1 else {
@@ -133,7 +113,24 @@ public struct VerifyNumberPageView: View {
                     
                     languageCode = previousLanguageCode
                 }
+                
+                return
             }
+            
+            guard let identifier = returnedIdentifier else {
+                let akError = AKError(errorDescriptor ?? "An unknown error occurred.",
+                                      metadata: [#file, #function, #line],
+                                      isReportable: true)
+                
+                AKErrorAlert(error: akError,
+                             networkDependent: true).present()
+                return
+            }
+            
+            viewRouter.currentPage = .signUp_authCode(identifier: identifier,
+                                                      phoneNumber: phoneNumber,
+                                                      region: selectedRegionCode ?? selectedRegion)
+            selectedRegionCode = nil
         }
     }
 }

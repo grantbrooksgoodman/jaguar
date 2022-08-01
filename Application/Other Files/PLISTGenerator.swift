@@ -9,6 +9,9 @@
 /* First-party Frameworks */
 import Foundation
 
+/* Third-party Frameworks */
+import Translator
+
 public struct PLISTGenerator {
     public static func createPLIST(from dictionary: [String: String]) {
         let fileManager = FileManager.default
@@ -38,10 +41,10 @@ public struct PLISTGenerator {
         for (index, languageCode) in toLanguages.enumerated() {
             dispatchGroup.enter()
             
-            TranslatorService.main.translate(TranslationInput(text),
-                                             with: LanguagePair(from: "en",
-                                                                to: languageCode),
-                                             using: .random) { (returnedTranslation, errorDescriptor) in
+            FirebaseTranslator.shared.translate(TranslationInput(text),
+                                                with: LanguagePair(from: "en",
+                                                                   to: languageCode),
+                                                using: .random) { (returnedTranslation, errorDescriptor) in
                 dispatchGroup.leave()
                 
                 guard let translation = returnedTranslation else {

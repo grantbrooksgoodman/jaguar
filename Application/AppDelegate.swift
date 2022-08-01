@@ -14,8 +14,10 @@ import UIKit
 
 /* Third-party Frameworks */
 import Firebase
+import FirebaseAuth
 import PKHUD
 import Reachability
+import Translator
 
 //==================================================//
 

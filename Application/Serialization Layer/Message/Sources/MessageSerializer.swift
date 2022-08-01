@@ -11,6 +11,8 @@ import Foundation
 
 /* Third-party Frameworks */
 import Firebase
+import FirebaseDatabase
+import Translator
 
 public struct MessageSerializer {
     

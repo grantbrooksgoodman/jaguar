@@ -11,6 +11,7 @@ import Foundation
 
 /* Third-party Frameworks */
 import Firebase
+import FirebaseDatabase
 
 public struct ConversationSerializer {
     

@@ -10,6 +10,9 @@
 import Foundation
 import UIKit
 
+/* Third-party Frameworks */
+import Translator
+
 /**
  The core functions of **AlertKit**.
  */
@@ -84,15 +87,15 @@ public final class AKCore {
         let fatalExceptionInput = TranslationInput("Fatal Exception")
         let undocumentedErrorInput = TranslationInput("Unfortunately, a fatal error has occurred. It is not possible to continue working normally – exit the application to prevent further error or possible data corruption.\n\nAn error descriptor has been copied to the clipboard.")
         
-        TranslatorService.main.getTranslations(for: [undocumentedErrorInput,
-                                                     fatalExceptionInput,
-                                                     exitApplicationInput,
-                                                     continueExecutionInput],
-                                               languagePair: LanguagePair(from: "en",
-                                                                          to: languageCode),
-                                               requiresHUD: true,
-                                               using: .google) { (returnedTranslations,
-                                                                  errorDescriptors) in
+        FirebaseTranslator.shared.getTranslations(for: [undocumentedErrorInput,
+                                                        fatalExceptionInput,
+                                                        exitApplicationInput,
+                                                        continueExecutionInput],
+                                                  languagePair: LanguagePair(from: "en",
+                                                                             to: languageCode),
+                                                  requiresHUD: true,
+                                                  using: .google) { (returnedTranslations,
+                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
                 Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])
@@ -118,13 +121,13 @@ public final class AKCore {
                 UIPasteboard.general.string = "[\(code)]"
                 fatalError()
             }
-                                                
-                                                let continueExecutionAction = UIAlertAction(title: translations.first(where: { $0.input.value() == continueExecutionInput.value() })?.output ?? continueExecutionInput.value(),
-                                                                                            style: .destructive) { _ in
-                                                    UIPasteboard.general.string = "[\(code)]"
-                                                }
-                                                
-                                                alertController.addAction(exitAction)
+                                                    
+                                                    let continueExecutionAction = UIAlertAction(title: translations.first(where: { $0.input.value() == continueExecutionInput.value() })?.output ?? continueExecutionInput.value(),
+                                                                                                style: .destructive) { _ in
+                                                        UIPasteboard.general.string = "[\(code)]"
+                                                    }
+                                                    
+                                                    alertController.addAction(exitAction)
             
             if buildType != .generalRelease {
                 alertController.addAction(continueExecutionAction)
@@ -219,13 +222,13 @@ public final class AKCore {
         var translatedBody = body
         var translatedPrompt = prompt
         
-        TranslatorService.main.getTranslations(for: [TranslationInput(body),
-                                                     TranslationInput(prompt)],
-                                               languagePair: LanguagePair(from: "en",
-                                                                          to: languageCode),
-                                               requiresHUD: true,
-                                               using: .google) { (returnedTranslations,
-                                                                  errorDescriptors) in
+        FirebaseTranslator.shared.getTranslations(for: [TranslationInput(body),
+                                                        TranslationInput(prompt)],
+                                                  languagePair: LanguagePair(from: "en",
+                                                                             to: languageCode),
+                                                  requiresHUD: true,
+                                                  using: .google) { (returnedTranslations,
+                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
                 Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])

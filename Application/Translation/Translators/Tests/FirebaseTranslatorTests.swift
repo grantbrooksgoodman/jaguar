@@ -1,5 +1,5 @@
 //
-//  TranslatorServiceTests.swift
+//  FirebaseTranslatorTests.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 29/04/2022.
@@ -10,7 +10,9 @@
 import Foundation
 import XCTest
 
-final class TranslatorServiceTests: XCTestCase {
+import Translator
+
+final class FirebaseTranslatorTests: XCTestCase {
     
     //==================================================//
     
@@ -31,15 +33,10 @@ final class TranslatorServiceTests: XCTestCase {
     func testTranslateToEnglish() {
         let expectation = XCTestExpectation(description: "No error returned")
         
-        TranslatorService.main.translate(TranslationInput("Hola mi amigo."),
-                                         with: LanguagePair(from: "es",
-                                                            to: "en")) { (returnedTranslation,
-                                                                          errorDescriptor) in
-            guard returnedTranslation != nil || errorDescriptor != nil else {
-                XCTFail("An unknown error occurred.")
-                return
-            }
-            
+        FirebaseTranslator.shared.translate(TranslationInput("Hola mi amigo."),
+                                            with: LanguagePair(from: "es",
+                                                               to: "en")) { (returnedTranslation,
+                                                                             errorDescriptor) in
             guard let translation = returnedTranslation else {
                 let error = errorDescriptor ?? "An unknown error occurred."
                 
@@ -71,7 +68,7 @@ final class TranslatorServiceTests: XCTestCase {
             guard let error = errorDescriptor else {
                 TranslationSerializer.removeTranslation(for: input,
                                                         languagePair: pair) { (errorDescriptor) in
-                    guard let error = errorDescriptor else {
+                    guard errorDescriptor != nil else {
                         expectation.fulfill()
                         return
                     }
@@ -94,11 +91,10 @@ final class TranslatorServiceTests: XCTestCase {
         let sampleLanguagePair = LanguagePair(from: "es",
                                               to: "de")
         
-        TranslatorService.main.translate(blankInput,
-                                         with: sampleLanguagePair,
-                                         requiresHUD: false,
-                                         using: .google) { (returnedTranslation,
-                                                            errorDescriptor) in
+        FirebaseTranslator.shared.translate(blankInput,
+                                            with: sampleLanguagePair,
+                                            using: .google) { (returnedTranslation,
+                                                               errorDescriptor) in
             guard let translation = returnedTranslation else {
                 let error = errorDescriptor ?? "An unknown error occurred."
                 
@@ -140,11 +136,11 @@ final class TranslatorServiceTests: XCTestCase {
     func testYandexTranslator() {
         let expectation = XCTestExpectation(description: "No error returned")
         
-        TranslatorService.main.translate(TranslationInput("This is a test."),
-                                         with: LanguagePair(from: "en",
-                                                            to: "ru"),
-                                         using: .yandex) { (returnedTranslation,
-                                                            errorDescriptor) in
+        FirebaseTranslator.shared.translate(TranslationInput("This is a test."),
+                                            with: LanguagePair(from: "en",
+                                                               to: "ru"),
+                                            using: .yandex) { (returnedTranslation,
+                                                               errorDescriptor) in
             guard let translation = returnedTranslation else {
                 let error = errorDescriptor ?? "An unknown error occurred."
                 
@@ -156,7 +152,6 @@ final class TranslatorServiceTests: XCTestCase {
             
             print(translation.output)
             expectation.fulfill()
-            
         }
         
         wait(for: [expectation], timeout: 10)

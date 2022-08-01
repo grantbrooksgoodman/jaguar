@@ -11,6 +11,7 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import Firebase
+import Translator
 
 public class ConversationsPageViewModel: ObservableObject {
     
@@ -45,19 +46,20 @@ public class ConversationsPageViewModel: ObservableObject {
         self.updateConversations { (returnedConversations,
                                     errorDescriptor) in
             guard let conversations = returnedConversations else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
                            metadata: [#file, #function, #line])
+                self.state = .failed(error)
                 return
             }
             
-            TranslatorService.main.getTranslations(for: Array(self.inputs.values),
-                                                   languagePair: LanguagePair(from: "en",
-                                                                              to: languageCode),
-                                                   requiresHUD: false,
-                                                   using: .google) { (returnedTranslations,
-                                                                      errorDescriptors) in
+            let dataModel = PageViewDataModel(inputs: self.inputs)
+            
+            dataModel.translateStrings { (returnedTranslations,
+                                          errorDescriptor) in
                 guard let translations = returnedTranslations else {
-                    let error = errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred."
+                    let error = errorDescriptor ?? "An unknown error occurred."
                     
                     Logger.log(error,
                                metadata: [#file, #function, #line])
@@ -66,12 +68,7 @@ public class ConversationsPageViewModel: ObservableObject {
                     return
                 }
                 
-                guard let matchedTranslations = translations.matchedTo(self.inputs) else {
-                    self.state = .failed("Couldn't match translations with inputs.")
-                    return
-                }
-                
-                self.state = .loaded(translations: matchedTranslations,
+                self.state = .loaded(translations: translations,
                                      conversations: conversations)
             }
         }

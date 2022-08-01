@@ -9,6 +9,9 @@
 import MessageUI
 import UIKit
 
+/* Third-party Frameworks */
+import Translator
+
 class Build {
     
     //==================================================//
@@ -129,13 +132,13 @@ class Build {
         
         let projectTitle = "Project \(codeName)"
         
-        TranslatorService.main.getTranslations(for: [TranslationInput(messageToDisplay),
-                                                     TranslationInput(projectTitle)],
-                                               languagePair: LanguagePair(from: "en",
-                                                                          to: languageCode),
-                                               requiresHUD: true,
-                                               using: .google) { (returnedTranslations,
-                                                                  errorDescriptors) in
+        FirebaseTranslator.shared.getTranslations(for: [TranslationInput(messageToDisplay),
+                                                        TranslationInput(projectTitle)],
+                                                  languagePair: LanguagePair(from: "en",
+                                                                             to: languageCode),
+                                                  requiresHUD: true,
+                                                  using: .google) { (returnedTranslations,
+                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
                 Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])

@@ -12,6 +12,7 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import Firebase
+import FirebaseDatabase
 import InputBarAccessoryView
 import MessageKit
 

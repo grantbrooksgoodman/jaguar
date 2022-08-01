@@ -2,12 +2,15 @@
 //  Array+.swift
 //  Jaguar
 //
-//  Created by Grant Brooks Goodman on 30/04/2022.
+//  Created by Grant Brooks Goodman on 31/07/2022.
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
 /* First-party Frameworks */
 import Foundation
+
+/* Third-party Frameworks */
+import Translator
 
 public extension Array where Element == String {
     func asTranslationInputs() -> [TranslationInput] {

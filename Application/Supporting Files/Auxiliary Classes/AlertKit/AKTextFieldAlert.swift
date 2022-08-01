@@ -10,6 +10,9 @@
 import Foundation
 import UIKit
 
+/* Third-party Frameworks */
+import Translator
+
 /**
  A highly customizable instance of `UIAlertController` tailored for textual input.
  */
@@ -169,12 +172,12 @@ public class AKTextFieldAlert: AKAlert {
         inputsToTranslate = inputsToTranslate.filter({$0.value().lowercasedTrimmingWhitespace != ""})
         
         dispatchGroup.enter()
-        TranslatorService.main.getTranslations(for: inputsToTranslate,
-                                               languagePair: LanguagePair(from: "en",
-                                                                          to: languageCode),
-                                               requiresHUD: true,
-                                               using: .google) { (returnedTranslations,
-                                                                  errorDescriptors) in
+        FirebaseTranslator.shared.getTranslations(for: inputsToTranslate,
+                                                  languagePair: LanguagePair(from: "en",
+                                                                             to: languageCode),
+                                                  requiresHUD: true,
+                                                  using: .google) { (returnedTranslations,
+                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
                 Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])

@@ -9,6 +9,9 @@
 /* First-party Frameworks */
 import UIKit
 
+/* Third-party Frameworks */
+import Translator
+
 public class Message {
     
     //==================================================//
