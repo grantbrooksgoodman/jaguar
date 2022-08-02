@@ -6,9 +6,6 @@
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
-/* First-party Frameworks */
-import Foundation
-
 /* Third-party Frameworks */
 import Translator
 
@@ -37,7 +34,6 @@ public class PageViewDataModel {
         FirebaseTranslator.shared.getTranslations(for: Array(inputs.values),
                                                   languagePair: LanguagePair(from: "en",
                                                                              to: languageCode),
-                                                  requiresHUD: false,
                                                   using: .google) { (returnedTranslations,
                                                                      errorDescriptors) in
             guard let translations = returnedTranslations else {

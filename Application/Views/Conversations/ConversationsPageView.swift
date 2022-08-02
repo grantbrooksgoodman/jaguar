@@ -46,44 +46,16 @@ public struct ConversationsPageView: View {
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations,
                      let openConversations):
-            var conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.lastModifiedDate < $1.lastModifiedDate }) : conversations.sorted(by: { $0.lastModifiedDate < $1.lastModifiedDate })
+            //                        let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() }) : conversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() })
+            
+            let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }) : conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
             
             NavigationView {
                 List {
                     ForEach(0..<conversationsToUse.count, id: \.self, content: { index in
-                        let conversationBinding = Binding(get: { conversationsToUse[index] },
-                                                          set: { conversationsToUse[index] = $0 })
                         let conversation = conversationsToUse[index]
-                        let phoneNumber = conversation.otherUser!.phoneNumber!
                         
-                        #warning("HANDLE REGION HERE")
-                        let cellTitle = viewModel.getCellTitle(forUser: conversation.otherUser!)
-                        let lastMessage = conversation.messages.last
-                        
-                        HStack {
-                            ContactImageView(uiImage: ContactsServer.fetchContactThumbnail(forNumber: phoneNumber))
-                            
-                            VStack(alignment: .leading) {
-                                Text(cellTitle)
-                                    .bold()
-                                    .padding(.bottom, 0.01)
-                                
-                                Text(lastMessage?.translation.output ?? "")
-                                    .foregroundColor(.gray)
-                                    .font(Font.system(size: 12))
-                                    //.padding(.top, 0.01)
-                                    .lineLimit(2)
-                            }
-                            .padding(.top, 5)
-                            
-                            NavigationLink("",
-                                           destination: ChatPageView(conversation:
-                                                                        conversationBinding)
-                                            .navigationTitle(cellTitle)
-                                            .navigationBarTitleDisplayMode(.inline))
-                                .frame(width: 0)
-                        }
-                        .padding(.bottom, 10)
+                        MessageCell(conversation: conversation)
                     })
                 }
                 .toolbar {

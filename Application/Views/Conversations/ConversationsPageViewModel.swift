@@ -10,6 +10,7 @@
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import Firebase
 import Translator
 
@@ -23,7 +24,7 @@ public class ConversationsPageViewModel: ObservableObject {
         case idle
         case loading
         case failed(String)
-        case loaded(translations: [String: Translation],
+        case loaded(translations: [String: Translator.Translation],
                     conversations: [Conversation])
     }
     
@@ -32,7 +33,7 @@ public class ConversationsPageViewModel: ObservableObject {
     /* MARK: - Class-level Variable Declarations */
     
     //Other Declarations
-    private let inputs = ["messages": TranslationInput("Messages")]
+    private let inputs = ["messages": Translator.TranslationInput("Messages")]
     
     @Published private(set) var state = State.idle
     
@@ -76,9 +77,9 @@ public class ConversationsPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Other Functions */
+    /* MARK: - Private Functions */
     
-    public func createConversation(withUser: User) {
+    private func createConversation(withUser: User) {
         ConversationSerializer.shared.createConversation(initialMessageIdentifier: "!",
                                                          participantIdentifiers: [currentUserID,
                                                                                   withUser.identifier]) { (returnedIdentifier, errorDescriptor) in
@@ -115,7 +116,7 @@ public class ConversationsPageViewModel: ObservableObject {
         }
     }
     
-    public func getCellTitle(forUser: User) -> String {
+    private func getCellTitle(forUser: User) -> String {
         let phoneNumber = forUser.phoneNumber!
         var cellTitle = phoneNumber.callingCodeFormatted(region: forUser.region)
         
@@ -126,8 +127,8 @@ public class ConversationsPageViewModel: ObservableObject {
         return cellTitle
     }
     
-    func updateConversations(completion: @escaping(_ returnedConversations: [Conversation]?,
-                                                   _ errorDescriptor: String?) -> Void = { _,_  in }) {
+    private func updateConversations(completion: @escaping(_ returnedConversations: [Conversation]?,
+                                                           _ errorDescriptor: String?) -> Void = { _,_  in }) {
         guard let user = currentUser else {
             after(seconds: 1) {
                 self.updateConversations { (returnedConversations,
@@ -169,7 +170,7 @@ public class ConversationsPageViewModel: ObservableObject {
         }
     }
     
-    //    func randomLanguageCode() -> String {
+    //    private func randomLanguageCode() -> String {
     //        return ["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()!
     //    }
     

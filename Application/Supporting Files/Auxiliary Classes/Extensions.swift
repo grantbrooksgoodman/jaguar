@@ -6,7 +6,6 @@
 //
 
 /* First-party Frameworks */
-import Foundation
 import UIKit
 
 //==================================================//

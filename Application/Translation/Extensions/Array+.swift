@@ -6,23 +6,8 @@
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
-/* First-party Frameworks */
-import Foundation
-
 /* Third-party Frameworks */
 import Translator
-
-public extension Array where Element == String {
-    func asTranslationInputs() -> [TranslationInput] {
-        var inputs = [TranslationInput]()
-        
-        for value in self {
-            inputs.append(TranslationInput(value))
-        }
-        
-        return inputs
-    }
-}
 
 public extension Array where Element == Translation {
     func homogeneousLanguagePairs() -> Bool {

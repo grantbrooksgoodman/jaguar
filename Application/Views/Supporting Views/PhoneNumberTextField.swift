@@ -7,7 +7,6 @@
 //
 
 /* First-party Frameworks */
-import Foundation
 import SwiftUI
 
 /* Third-party Frameworks */

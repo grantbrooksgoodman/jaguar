@@ -7,9 +7,9 @@
 //
 
 /* First-party Frameworks */
-import Foundation
 import XCTest
 
+/* Third-party Frameworks */
 import Translator
 
 final class FirebaseTranslatorTests: XCTestCase {

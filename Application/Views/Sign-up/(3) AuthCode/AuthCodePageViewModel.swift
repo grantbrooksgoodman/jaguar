@@ -6,9 +6,6 @@
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
-/* First-party Frameworks */
-import Foundation
-
 /* Third-party Frameworks */
 import Firebase
 import FirebaseAuth

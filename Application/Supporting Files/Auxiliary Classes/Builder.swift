@@ -10,6 +10,7 @@ import MessageUI
 import UIKit
 
 /* Third-party Frameworks */
+import AlertKit
 import Translator
 
 class Build {

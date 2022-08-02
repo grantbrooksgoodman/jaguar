@@ -74,8 +74,6 @@ public class User {
             GeneralSerializer.setValue(onKey: "/allConversations/\(inConversationWithID)/participants",
                                        withData: updatedParticipants) { (returnedError) in
                 guard let error = returnedError else {
-                    Logger.log("Updated typing status.",
-                               metadata: [#file, #function, #line])
                     completion(nil)
                     return
                 }

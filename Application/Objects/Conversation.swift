@@ -107,4 +107,23 @@ public class Conversation {
         //Sorts by «sentDate».
         return filteredMessages.sorted(by: { $0.sentDate < $1.sentDate })
     }
+    
+    public func updateLastModified(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+        GeneralSerializer.setValue(onKey: "/allConversations/\(identifier!)/lastModified",
+                                   withData: secondaryDateFormatter.string(from: Date())) { (returnedError) in
+            guard returnedError == nil else {
+                let error = Logger.errorInfo(returnedError!)
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
+                completion(error)
+                return
+            }
+            
+            Logger.log("Updated last modified date.",
+                       verbose: true,
+                       metadata: [#file, #function, #line])
+            completion(nil)
+        }
+    }
 }

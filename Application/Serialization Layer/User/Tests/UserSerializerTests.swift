@@ -7,9 +7,9 @@
 //
 
 /* First-party Frameworks */
-import Foundation
 import XCTest
 
+/* Third-party Frameworks */
 import Firebase
 
 final class UserSerializerTests: XCTestCase {

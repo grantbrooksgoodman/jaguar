@@ -8,7 +8,6 @@
 
 /* First-party Frameworks */
 import ContactsUI
-import Foundation
 import SwiftUI
 
 public struct NewConversationPageView: View {

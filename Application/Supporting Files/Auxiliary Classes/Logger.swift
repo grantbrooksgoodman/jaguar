@@ -5,8 +5,8 @@
 //  Copyright © NEOTechnica Corporation. All rights reserved.
 //
 
-/* First-party Frameworks */
-import Foundation
+/* Third-party Frameworks */
+import AlertKit
 
 public struct Logger {
     
@@ -96,7 +96,9 @@ public struct Logger {
             AKErrorAlert(error: akError).present()
         case .fatalAlert:
             AKCore.shared.present(.fatalErrorAlert,
-                                  with: [text, [fileName, functionName, lineNumber]])
+                                  with: [text,
+                                         buildType != .generalRelease,
+                                         [fileName, functionName, lineNumber]])
         case .normalAlert:
             AKAlert(message: text,
                     cancelButtonTitle: "OK").present()
@@ -201,7 +203,9 @@ public struct Logger {
             AKErrorAlert(error: akError).present()
         case .fatalAlert:
             AKCore.shared.present(.fatalErrorAlert,
-                                  with: [text, [#file, #function, #line]])
+                                  with: [text,
+                                         buildType != .generalRelease,
+                                         [#file, #function, #line]])
         case .normalAlert:
             AKAlert(message: text,
                     cancelButtonTitle: "OK").present()

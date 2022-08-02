@@ -6,9 +6,6 @@
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
-/* First-party Frameworks */
-import Foundation
-
 /* Third-party Frameworks */
 import Translator
 
@@ -32,7 +29,7 @@ public class FirebaseTranslator: Translatorable {
                                 completion: @escaping(_ returnedTranslations: [Translation]?,
                                                       _ errorDescriptors: [String: TranslationInput]?) -> Void) {
         guard !(languagePair.from == "en" && languagePair.to == "en") else {
-            var translations = [Translation]()
+            var translations = [Translator.Translation]()
             
             for input in inputs {
                 let translation = Translation(input: input,
@@ -47,8 +44,8 @@ public class FirebaseTranslator: Translatorable {
         
         let dispatchGroup = DispatchGroup()
         
-        var translations = [Translation]()
-        var errors = [String: TranslationInput]()
+        var translations = [Translator.Translation]()
+        var errors = [String: Translator.TranslationInput]()
         
         Logger.openStream(metadata: [#file, #function, #line])
         
@@ -57,6 +54,7 @@ public class FirebaseTranslator: Translatorable {
             
             self.translate(input,
                            with: languagePair,
+                           requiresHUD: requiresHUD,
                            using: using ?? .google) { (returnedTranslation, errorDescriptor) in
                 if let translation = returnedTranslation {
                     translations.append(translation)
@@ -95,6 +93,7 @@ public class FirebaseTranslator: Translatorable {
     
     public func translate(_ input: TranslationInput,
                           with languagePair: LanguagePair,
+                          requiresHUD: Bool? = nil,
                           using: TranslationPlatform? = nil,
                           completion: @escaping (_ returnedTranslation: Translation?,
                                                  _ errorDescriptor: String?) -> Void) {
@@ -102,6 +101,11 @@ public class FirebaseTranslator: Translatorable {
                                                                         languagePair: languagePair) {
             completion(archivedTranslation, nil)
             return
+        }
+        
+        if let required = requiresHUD,
+           required {
+            showProgressHUD()
         }
         
         TranslationSerializer.findTranslation(for: input,
@@ -138,6 +142,11 @@ public class FirebaseTranslator: Translatorable {
                     TranslationArchiver.addToArchive(translation)
                     
                     completion(translation, nil)
+                    
+                    if let required = requiresHUD,
+                       required {
+                        hideHUD(delay: 0.2)
+                    }
                 }
             }
         }
@@ -153,9 +162,9 @@ public class FirebaseTranslator: Translatorable {
             return
         }
         
-        let input = TranslationInput(text)
-        let languagePair = LanguagePair(from: from,
-                                        to: to)
+        let input = Translator.TranslationInput(text)
+        let languagePair = Translator.LanguagePair(from: from,
+                                                   to: to)
         
         TranslatorService.shared.translate(input,
                                            with: languagePair) { (returnedTranslation,

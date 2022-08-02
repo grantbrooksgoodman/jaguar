@@ -9,9 +9,10 @@
 import UIKit
 
 /* Third-party Frameworks */
+import AlertKit
 import Translator
 
-class BuildInfoController: UIViewController {
+class BuildInfoController: UIViewController, AKExpiryAlertProvider {
     
     //==================================================//
     
@@ -127,17 +128,17 @@ class BuildInfoController: UIViewController {
                         }
                         
                         if actionID == sendFeedbackAction.identifier {
-                            AKCore.shared.fileReport(type: .feedback,
-                                                     body: "Appended below are various data points useful in analysing any potential problems within the application. Please do not edit the information contained in the lines below, with the exception of the last field, in which any general feedback is appreciated.",
-                                                     prompt: "General Feedback",
-                                                     extraInfo: nil,
-                                                     metadata: [currentFile, #function, #line])
+                            AKCore.shared.reportProvider().fileReport(type: .feedback,
+                                                                      body: "Appended below are various data points useful in analysing any potential problems within the application. Please do not edit the information contained in the lines below, with the exception of the last field, in which any general feedback is appreciated.",
+                                                                      prompt: "General Feedback",
+                                                                      extraInfo: nil,
+                                                                      metadata: [currentFile, #function, #line])
                         } else if actionID == reportBugAction.identifier {
-                            AKCore.shared.fileReport(type: .bug,
-                                                     body: "In the appropriate section, please describe the error encountered and the steps to reproduce it.",
-                                                     prompt: "Description/Steps to Reproduce",
-                                                     extraInfo: nil,
-                                                     metadata: [currentFile, #function, #line])
+                            AKCore.shared.reportProvider().fileReport(type: .bug,
+                                                                      body: "In the appropriate section, please describe the error encountered and the steps to reproduce it.",
+                                                                      prompt: "Description/Steps to Reproduce",
+                                                                      extraInfo: nil,
+                                                                      metadata: [currentFile, #function, #line])
                         }
                     }
         }
@@ -352,15 +353,15 @@ private class BuildInfoWindow: UIWindow {
         let dispatchGroup = DispatchGroup()
         var leftDispatchGroup = false
         
-        var inputsToTranslate = [TranslationInput(expiryTitle),
-                                 TranslationInput(expiryMessage),
-                                 TranslationInput(continueUseString),
-                                 TranslationInput(incorrectCodeTitle),
-                                 TranslationInput(incorrectCodeMessage),
-                                 TranslationInput(tryAgainString),
-                                 TranslationInput(exitApplicationString),
-                                 TranslationInput(timeExpiredTitle),
-                                 TranslationInput(timeExpiredMessage)]
+        var inputsToTranslate: [Translator.TranslationInput] = [TranslationInput(expiryTitle),
+                                                                TranslationInput(expiryMessage),
+                                                                TranslationInput(continueUseString),
+                                                                TranslationInput(incorrectCodeTitle),
+                                                                TranslationInput(incorrectCodeMessage),
+                                                                TranslationInput(tryAgainString),
+                                                                TranslationInput(exitApplicationString),
+                                                                TranslationInput(timeExpiredTitle),
+                                                                TranslationInput(timeExpiredMessage)]
         
         inputsToTranslate = inputsToTranslate.filter({$0.value().lowercasedTrimmingWhitespace != ""})
         

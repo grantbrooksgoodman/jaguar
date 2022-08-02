@@ -10,6 +10,7 @@
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import PhoneNumberKit
 
 public struct SignInPageView: View {

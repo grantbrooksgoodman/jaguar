@@ -7,7 +7,6 @@
 //
 
 /* First-party Frameworks */
-import Foundation
 import SwiftUI
 
 /* Third-party Frameworks */
@@ -137,6 +136,10 @@ public struct ChatPageView: UIViewControllerRepresentable {
         }
     }
     
+    private func setUpReadDateObserver() {
+        //        Database.database().reference().child("/allConversations/")
+    }
+    
     //==================================================//
     
     /* MARK: - Other Functions */
@@ -170,14 +173,18 @@ extension Date {
                                                        timeStyle: .short)
         
         let overYearFormatter = DateFormatter()
+        overYearFormatter.locale = Locale(identifier: languageCode)
         overYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "MMM dd yyyy, " : "dd MMM yyyy, "
+        
         
         let overYearString = overYearFormatter.string(from: self)
         
         let regularFormatter = DateFormatter()
+        regularFormatter.locale = Locale(identifier: languageCode)
         regularFormatter.dateFormat = "yyyy-MM-dd"
         
         let underYearFormatter = DateFormatter()
+        underYearFormatter.locale = Locale(identifier: languageCode)
         underYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "E MMM d, " : "E d MMM, "
         
         let underYearString = underYearFormatter.string(from: self)

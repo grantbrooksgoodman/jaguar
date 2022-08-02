@@ -8,7 +8,6 @@
 
 /* First-party Frameworks */
 import CryptoKit
-import Foundation
 
 /* Third-party Frameworks */
 import Translator
@@ -105,7 +104,7 @@ public struct TranslationSerializer {
                                               output: decodedValues[key]!,
                                               languagePair: languagePair)
                 
-                translationArchive.append(translation)
+                TranslationArchiver.addToArchive(translation)
             }
         }
     }

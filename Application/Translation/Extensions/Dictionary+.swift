@@ -6,20 +6,7 @@
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
-/* First-party Frameworks */
-import Foundation
-
-public extension Dictionary where Key == String, Value == String {
-    func hashEncoded() -> Dictionary {
-        var newDictionary = [String: String]()
-        
-        for key in keys {
-            newDictionary[key.compressedHash] = "\(key.alphaEncoded)–\(self[key]!.alphaEncoded)"
-        }
-        
-        return newDictionary
-    }
-    
+public extension Dictionary where Key == String, Value == String {    
     func hashDecoded() -> Dictionary? {
         var newDictionary = [String: String]()
         

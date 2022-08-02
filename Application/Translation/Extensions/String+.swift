@@ -8,7 +8,6 @@
 
 /* First-party Frameworks */
 import CryptoKit
-import Foundation
 
 /* Third-party Frameworks */
 import Translator

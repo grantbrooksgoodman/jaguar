@@ -8,7 +8,6 @@
 
 /* First-party Frameworks */
 import ContactsUI
-import Foundation
 
 public struct ContactInfo: Identifiable {
     public var id = UUID()

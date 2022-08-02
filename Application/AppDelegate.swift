@@ -13,6 +13,7 @@ import MessageUI
 import UIKit
 
 /* Third-party Frameworks */
+import AlertKit
 import Firebase
 import FirebaseAuth
 import PKHUD
@@ -27,6 +28,7 @@ import Translator
 var darkMode                              = false
 var isPresentingMailComposeViewController = false
 var prefersConsistentBuildInfo            = false
+var shouldShowHUD                         = true
 var timebombActive                        = true
 
 //DateFormatters
@@ -81,11 +83,6 @@ var currentUser: User?
 var selectedContact: CNContact?
 var statusBarStyle: UIStatusBarStyle = .default
 var touchTimer: Timer?
-var translationArchive = [Translation]() {
-    didSet {
-        TranslationArchiver.setArchive()
-    }
-}
 
 //==================================================//
 
@@ -154,30 +151,20 @@ var translationArchive = [Translation]() {
         buildInfoController = BuildInfoController()
         buildInfoController?.view.isHidden = true
         
+        let reportProvider = ReportProvider()
+        let translationProvider = TranslationProvider()
+        
+        AKCore.shared.setLanguageCode(languageCode)
+        AKCore.shared.register(expiryAlertProvider: buildInfoController!,
+                               reportProvider: reportProvider,
+                               translationProvider: translationProvider)
+        
         FirebaseApp.configure()
         FirebaseConfiguration.shared.setLoggerLevel(.min)
         
         //        UserDefaults.standard.setValue(nil, forKey: "translationArchive")
         
-        TranslationArchiver.getArchive { (returnedTranslations,
-                                          errorDescriptor) in
-            if let deSerialized = returnedTranslations {
-                if !deSerialized.contains(where: { $0.languagePair.to == languageCode }) {
-                    Logger.log("Different language codes, nuking translation archive.",
-                               metadata: [#file, #function, #line])
-                    
-                    UserDefaults.standard.setValue(nil, forKey: "translationArchive")
-                } else {
-                    translationArchive = deSerialized
-                }
-            } else if let error = errorDescriptor {
-                UserDefaults.standard.setValue(nil, forKey: "translationArchive")
-                
-                Logger.log(error, metadata: [#file, #function, #line])
-            }
-        }
-        
-        //                UserDefaults.standard.setValue(nil, forKey: "currentUserID")
+        //        UserDefaults.standard.setValue(nil, forKey: "currentUserID")
         
         if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
             currentUserID = userID
@@ -364,29 +351,34 @@ func hideHUD(delay: Double?, completion: @escaping() -> Void) {
 
 ///Shows the progress HUD.
 func showProgressHUD() {
-    DispatchQueue.main.async {
-        if !PKHUD.sharedHUD.isVisible {
-            PKHUD.sharedHUD.contentView = PKHUDProgressView()
-            PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+    if shouldShowHUD {
+        DispatchQueue.main.async {
+            if !PKHUD.sharedHUD.isVisible {
+                PKHUD.sharedHUD.contentView = PKHUDProgressView()
+                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+                //                shouldShowHUD = true
+            }
         }
     }
 }
 
 func showProgressHUD(text: String?, delay: Double?) {
-    if let delay = delay {
-        let millisecondDelay = Int(delay * 1000)
-        
-        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(millisecondDelay)) {
-            if !PKHUD.sharedHUD.isVisible {
-                PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
-                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+    if shouldShowHUD {
+        if let delay = delay {
+            let millisecondDelay = Int(delay * 1000)
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(millisecondDelay)) {
+                if !PKHUD.sharedHUD.isVisible {
+                    PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
+                    PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+                }
             }
-        }
-    } else {
-        DispatchQueue.main.async {
-            if !PKHUD.sharedHUD.isVisible {
-                PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
-                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+        } else {
+            DispatchQueue.main.async {
+                if !PKHUD.sharedHUD.isVisible {
+                    PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
+                    PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+                }
             }
         }
     }

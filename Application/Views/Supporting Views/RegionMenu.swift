@@ -7,7 +7,6 @@
 //
 
 /* First-party Frameworks */
-import Foundation
 import SwiftUI
 
 public struct RegionMenu: View {

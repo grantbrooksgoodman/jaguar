@@ -7,7 +7,6 @@
 //
 
 /* First-party Frameworks */
-import Foundation
 import SwiftUI
 
 /* Third-party Frameworks */
@@ -89,6 +88,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                                metadata: [#file, #function, #line])
                     return
                 }
+                
+                wrappedConversation.updateLastModified()
                 
                 wrappedConversation.messages.append(message)
                 wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
