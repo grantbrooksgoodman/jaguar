@@ -78,8 +78,11 @@ public struct TranslationSerializer {
             guard let values = returnedValues as? [String: String] else {
                 let error = errorDescriptor ?? "No online translation archive for this language pair."
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
+                if languageCode != "en" {
+                    Logger.log(error,
+                               metadata: [#file, #function, #line])
+                }
+                
                 completion(error)
                 return
             }

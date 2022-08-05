@@ -12,7 +12,7 @@ import UIKit
 /* Third-party Frameworks */
 import PhoneNumberKit
 
-public class User {
+public class User: Codable {
     
     //==================================================//
     
@@ -49,6 +49,45 @@ public class User {
     //==================================================//
     
     /* MARK: - Other Functions */
+    
+    public func deSerializeConversations(completion: @escaping(_ conversations: [Conversation]?,
+                                                               _ error: String?) -> Void) {
+        var conversations = openConversations ?? []
+        
+        GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { (returnedConversations, errorDescriptor) in
+            
+            guard let updatedConversations = returnedConversations as? [String] else {
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
+                completion(nil, error)
+                return
+            }
+            
+            conversations = updatedConversations
+            
+            if conversations == self.openConversations,
+               let DSOpenConversations = self.DSOpenConversations {
+                completion(DSOpenConversations, nil)
+            } else {
+                ConversationSerializer().getConversations(withIdentifiers: conversations) { (returnedConversations, errorDescriptor) in
+                    guard let conversations = returnedConversations else {
+                        let error = errorDescriptor ?? "An unknown error occurred."
+                        
+                        Logger.log(error,
+                                   metadata: [#file, #function, #line])
+                        completion(nil, error)
+                        return
+                    }
+                    
+                    self.DSOpenConversations = conversations
+                    ConversationArchiver.addToArchive(conversations)
+                    completion(conversations, nil)
+                }
+            }
+        }
+    }
     
     public func update(isTyping: Bool,
                        inConversationWithID: String,
@@ -123,44 +162,6 @@ public class User {
             dispatchGroup.notify(queue: .main) {
                 self.isUpdatingConversations = false
                 completion(conversations, errors.isEmpty ? nil : errors.joined(separator: "\n"))
-            }
-        }
-    }
-    
-    public func deSerializeConversations(completion: @escaping(_ conversations: [Conversation]?,
-                                                               _ error: String?) -> Void) {
-        var conversations = openConversations ?? []
-        
-        GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { (returnedConversations, errorDescriptor) in
-            
-            guard let updatedConversations = returnedConversations as? [String] else {
-                let error = errorDescriptor ?? "An unknown error occurred."
-                
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                completion(nil, error)
-                return
-            }
-            
-            conversations = updatedConversations
-            
-            if conversations == self.openConversations,
-               let DSOpenConversations = self.DSOpenConversations {
-                completion(DSOpenConversations, nil)
-            } else {
-                ConversationSerializer().getConversations(withIdentifiers: conversations) { (returnedConversations, errorDescriptor) in
-                    guard let conversations = returnedConversations else {
-                        let error = errorDescriptor ?? "An unknown error occurred."
-                        
-                        Logger.log(error,
-                                   metadata: [#file, #function, #line])
-                        completion(nil, error)
-                        return
-                    }
-                    
-                    self.DSOpenConversations = conversations
-                    completion(conversations, nil)
-                }
             }
         }
     }

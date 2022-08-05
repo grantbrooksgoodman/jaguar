@@ -28,7 +28,6 @@ import Translator
 var darkMode                              = false
 var isPresentingMailComposeViewController = false
 var prefersConsistentBuildInfo            = false
-var shouldShowHUD                         = true
 var timebombActive                        = true
 
 //DateFormatters
@@ -56,9 +55,21 @@ var currentUserID             = "" {
             }
             
             currentUser = user
+            
             languageCode = user.languageCode
+            AKCore.shared.setLanguageCode(languageCode)
+            
             TranslationSerializer.downloadTranslations()
-            currentUser!.updateConversationData()
+            currentUser!.updateConversationData { (returnedConversations,
+                                                   errorDescriptor) in
+                guard let conversations = returnedConversations else {
+                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                               metadata: [#file, #function, #line])
+                    return
+                }
+                
+                ConversationArchiver.addToArchive(conversations)
+            }
         }
     }
 }
@@ -78,7 +89,17 @@ let telephonyNetworkInfo = CTTelephonyNetworkInfo()
 
 var appStoreReleaseVersion = 0
 var buildType: Build.BuildType = .preAlpha
+var conversationArchive = [Conversation]() {
+    didSet {
+        ConversationArchiver.setArchive()
+    }
+}
 var currentCalendar = Calendar(identifier: .gregorian)
+var currentTimeLastCalled: Date! = Date() {
+    willSet {
+        print("\(newValue.amountOfSeconds(from: currentTimeLastCalled)) seconds from last call")
+    }
+}
 var currentUser: User?
 var selectedContact: CNContact?
 var statusBarStyle: UIStatusBarStyle = .default
@@ -107,7 +128,7 @@ var touchTimer: Timer?
     /* MARK: - Required Functions */
     
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        Logger.exposureLevel = .verbose
+        Logger.exposureLevel = .normal
         
         let tapGesture = UITapGestureRecognizer(target: self, action: nil)
         tapGesture.delegate = self
@@ -168,6 +189,26 @@ var touchTimer: Timer?
         
         if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
             currentUserID = userID
+        }
+        
+        ConversationArchiver.getArchive { (returnedTuple,
+                                           errorDescriptor) in
+            guard let tuple = returnedTuple else {
+                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
+                return
+            }
+            
+            if tuple.userID == currentUserID {
+                conversationArchive = tuple.conversations
+            } else {
+                Logger.log("Different user ID – nuking conversation archive.",
+                           metadata: [#file, #function, #line])
+                
+                conversationArchive = []
+                UserDefaults.standard.setValue(nil, forKey: "conversationArchive")
+                UserDefaults.standard.setValue(nil, forKey: "conversationArchiveUserID")
+            }
         }
         
         return true
@@ -351,34 +392,29 @@ func hideHUD(delay: Double?, completion: @escaping() -> Void) {
 
 ///Shows the progress HUD.
 func showProgressHUD() {
-    if shouldShowHUD {
-        DispatchQueue.main.async {
-            if !PKHUD.sharedHUD.isVisible {
-                PKHUD.sharedHUD.contentView = PKHUDProgressView()
-                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
-                //                shouldShowHUD = true
-            }
+    DispatchQueue.main.async {
+        if !PKHUD.sharedHUD.isVisible {
+            PKHUD.sharedHUD.contentView = PKHUDProgressView()
+            PKHUD.sharedHUD.show(onView: frontmostViewController.view)
         }
     }
 }
 
 func showProgressHUD(text: String?, delay: Double?) {
-    if shouldShowHUD {
-        if let delay = delay {
-            let millisecondDelay = Int(delay * 1000)
-            
-            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(millisecondDelay)) {
-                if !PKHUD.sharedHUD.isVisible {
-                    PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
-                    PKHUD.sharedHUD.show(onView: frontmostViewController.view)
-                }
+    if let delay = delay {
+        let millisecondDelay = Int(delay * 1000)
+        
+        DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(millisecondDelay)) {
+            if !PKHUD.sharedHUD.isVisible {
+                PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
+                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
             }
-        } else {
-            DispatchQueue.main.async {
-                if !PKHUD.sharedHUD.isVisible {
-                    PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
-                    PKHUD.sharedHUD.show(onView: frontmostViewController.view)
-                }
+        }
+    } else {
+        DispatchQueue.main.async {
+            if !PKHUD.sharedHUD.isVisible {
+                PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
+                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
             }
         }
     }
@@ -535,6 +571,16 @@ func politelyPresent(viewController: UIViewController) {
             })
         }
     }
+}
+
+func printCurrentTime() {
+    let timeFormatter = DateFormatter()
+    timeFormatter.dateFormat = "HH:mm:ss zzz"
+    
+    currentTimeLastCalled = Date()
+    
+    let timeString = timeFormatter.string(from: Date())
+    print(timeString)
 }
 
 ///Rounds the corners on any desired view.

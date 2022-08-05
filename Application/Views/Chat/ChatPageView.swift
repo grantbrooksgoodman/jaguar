@@ -76,6 +76,7 @@ public struct ChatPageView: UIViewControllerRepresentable {
         inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
         
         setUpNewMessageObserver()
+        setUpReadDateObserver()
         setUpTypingIndicatorObserver()
         
         return messagesVC
@@ -101,8 +102,12 @@ public struct ChatPageView: UIViewControllerRepresentable {
             MessageSerializer.shared.getMessage(withIdentifier: identifier) { (returnedMessage,
                                                                                errorDescriptor) in
                 guard let message = returnedMessage else {
-                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                               metadata: [#file, #function, #line])
+                    if let error = errorDescriptor,
+                       error != "Null/first message processed." {
+                        Logger.log(error,
+                                   metadata: [#file, #function, #line])
+                    }
+                    
                     return
                 }
                 
@@ -122,6 +127,41 @@ public struct ChatPageView: UIViewControllerRepresentable {
         }
     }
     
+    private func setUpReadDateObserver() {
+        #warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.")
+        Database.database().reference().child("/allMessages").observe(.childChanged) { (returnedSnapshot) in
+            guard let lastMessage = conversation.sortedFilteredMessages().last else {
+                Logger.log("Couldn't get last message.",
+                           metadata: [#file, #function, #line])
+                return
+            }
+            
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  let data = snapshot as? [String: Any] else {
+                Logger.log("Couldn't unwrap snapshot.",
+                           metadata: [#file, #function, #line])
+                return
+            }
+            
+            guard returnedSnapshot.key == lastMessage.identifier else {
+                return
+            }
+            
+            guard let readDateString = data["readDate"] as? String,
+                  let readDate = secondaryDateFormatter.date(from: readDateString) else {
+                Logger.log("Couldn't deserialize «readDate».",
+                           metadata: [#file, #function, #line])
+                return
+            }
+            
+            lastMessage.readDate = readDate
+            shouldReloadData = true
+        } withCancel: { (returnedError) in
+            Logger.log(returnedError,
+                       metadata: [#file, #function, #line])
+        }
+    }
+    
     private func setUpTypingIndicatorObserver() {
         Database.database().reference().child("/allConversations/\(conversation.identifier!)/participants").observe(.childChanged) { (returnedSnapshot) in
             guard let updatedTyper = returnedSnapshot.value as? String,
@@ -134,10 +174,6 @@ public struct ChatPageView: UIViewControllerRepresentable {
             Logger.log(returnedError,
                        metadata: [#file, #function, #line])
         }
-    }
-    
-    private func setUpReadDateObserver() {
-        //        Database.database().reference().child("/allConversations/")
     }
     
     //==================================================//

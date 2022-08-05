@@ -99,6 +99,11 @@ public struct MessageSerializer {
     public func getMessage(withIdentifier: String,
                            completion: @escaping(_ returnedMessage: Message?,
                                                  _ errorDescriptor: String?) -> Void) {
+        guard withIdentifier != "!" else {
+            completion(nil, "Null/first message processed.")
+            return
+        }
+        
         Database.database().reference().child("allMessages").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   var data = snapshot as? [String: Any] else {
@@ -134,6 +139,7 @@ public struct MessageSerializer {
         
         if withIdentifiers == ["!"] {
             Logger.log("Null/first message processed.",
+                       verbose: true,
                        metadata: [#file, #function, #line])
             completion([], nil)
         } else {
@@ -202,7 +208,12 @@ public struct MessageSerializer {
             return
         }
         
-        guard let sentDate = secondaryDateFormatter.date(from: sentDateString) else {
+        #warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
+        formatter.locale = Locale(identifier: "en_GB")
+        
+        guard let sentDate = formatter.date(from: sentDateString) else {
             completion(nil, "Unable to convert «sentDateString» to Date.")
             return
         }

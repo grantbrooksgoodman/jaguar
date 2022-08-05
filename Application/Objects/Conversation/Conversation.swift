@@ -9,15 +9,20 @@
 /* First-party Frameworks */
 import UIKit
 
-public class Conversation {
+public class Conversation: Codable {
     
     //==================================================//
     
     /* MARK: - Class-level Variable Declarations */
     
     //Arrays
-    public var messages: [Message]!
-    public var participantIdentifiers: [(id: String, typing: Bool)]!
+    public var messageIdentifiers: [String]!
+    public var messages: [Message]! {
+        didSet {
+            messageIdentifiers = getMessageIdentifiers()
+        }
+    }
+    public var participants: [Participant]!
     
     //Other Declarations
     public var identifier: String!
@@ -30,20 +35,22 @@ public class Conversation {
     /* MARK: - Constructor Function */
     
     public init(identifier: String,
+                messageIdentifiers: [String],
                 messages: [Message],
                 lastModifiedDate: Date,
-                participantIdentifiers: [(id: String, typing: Bool)]) {
+                participants: [Participant]) {
         self.identifier = identifier
+        self.messageIdentifiers = messageIdentifiers
         self.messages = messages
         self.lastModifiedDate = lastModifiedDate
-        self.participantIdentifiers = participantIdentifiers
+        self.participants = participants
     }
     
     //==================================================//
     
     /* MARK: - Other Functions */
     
-    public func messageIdentifiers() -> [String]? {
+    public func getMessageIdentifiers() -> [String]? {
         var identifierArray = [String]()
         
         for message in messages {
@@ -62,25 +69,46 @@ public class Conversation {
         var data: [String: Any] = [:]
         
         data["identifier"] = identifier
-        data["messages"] = messageIdentifiers() ?? ["!"] //failsafe. should NEVER return nil
-        data["participants"] = serializedParticipants(from: participantIdentifiers)
+        data["messages"] = messageIdentifiers/*()*/ ?? ["!"] //failsafe. should NEVER return nil
+        data["participants"] = serializedParticipants(from: participants)
         data["lastModified"] = secondaryDateFormatter.string(from: lastModifiedDate)
         
         return data
     }
     
-    public func serializedParticipants(from: [(id: String, typing: Bool)]) -> [String] {
+    public func serializedParticipants(from: [Participant]) -> [String] {
         var participants = [String]()
         
         for participant in from {
-            participants.append("\(participant.id) | \(participant.typing)")
+            participants.append("\(participant.userID!) | \(participant.isTyping!)")
         }
         
         return participants
     }
     
-    public func setOtherUser(completion: @escaping(_ errorDescriptor: String?) -> Void) {
-        let otherUserIdentifier = self.participantIdentifiers.filter({ $0.id != currentUserID })[0].id
+    #warning("Use this to speed up operations.")
+    public func setMessages(completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in } ) {
+        MessageSerializer.shared.getMessages(withIdentifiers: messageIdentifiers) { (returnedMessages,
+                                                                                     errorDescriptor) in
+            guard let messages = returnedMessages else {
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
+                completion(error)
+                return
+            }
+            
+            self.messages = messages
+            completion(nil)
+        }
+    }
+    
+    public func setOtherUser(completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
+        guard let otherUserIdentifier = self.participants.filter({ $0.userID != currentUserID })[0].userID else {
+            completion("Couldn't find other user ID.")
+            return
+        }
         
         UserSerializer.shared.getUser(withIdentifier: otherUserIdentifier) { (returnedUser,
                                                                               errorDescriptor) in

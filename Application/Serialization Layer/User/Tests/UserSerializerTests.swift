@@ -62,8 +62,8 @@ final class UserSerializerTests: XCTestCase {
     func testGetUser() {
         let expectation = XCTestExpectation(description: "No error returned")
         
-        UserSerializer().getUser(withIdentifier: "r2wM8ue2FmWryaOyjSgYZtFP4CH3") { (returnedUser,
-                                                                                    errorDescriptor) in
+        UserSerializer().getUser(withIdentifier: "") { (returnedUser,
+                                                        errorDescriptor) in
             guard let user = returnedUser else {
                 Logger.log(errorDescriptor ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])

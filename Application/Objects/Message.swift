@@ -12,7 +12,7 @@ import UIKit
 /* Third-party Frameworks */
 import Translator
 
-public class Message {
+public class Message: Codable {
     
     //==================================================//
     

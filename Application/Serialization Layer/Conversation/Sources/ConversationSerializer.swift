@@ -23,7 +23,7 @@ public struct ConversationSerializer {
     /* MARK: - Creation Functions */
     
     public func createConversation(initialMessageIdentifier: String,
-                                   participantIdentifiers: [String],
+                                   participants: [String],
                                    completion: @escaping(_ returnedIdentifier: String?,
                                                          _ errorDescriptor: String?) -> Void) {
         currentUser?.updateLastActiveDate()
@@ -32,7 +32,7 @@ public struct ConversationSerializer {
         
         var participants = [String]()
         
-        for identifier in participantIdentifiers {
+        for identifier in participants {
             participants.append("\(identifier) | false")
         }
         
@@ -57,7 +57,7 @@ public struct ConversationSerializer {
                 
                 let dispatchGroup = DispatchGroup()
                 
-                for userID in participantIdentifiers {
+                for userID in participants {
                     dispatchGroup.enter()
                     
                     GeneralSerializer.getValues(atPath: "/allUsers/\(userID)/openConversations") { (returnedOpenConversations, errorDescriptor) in
@@ -168,7 +168,7 @@ public struct ConversationSerializer {
             return
         }
         
-        guard let messages = fromData["messages"] as? [String] else {
+        guard let messageIdentifiers = fromData["messages"] as? [String] else {
             completion(nil, "Unable to deserialize «messages».")
             return
         }
@@ -178,7 +178,7 @@ public struct ConversationSerializer {
             return
         }
         
-        var deSerializedParticipants = [(id: String, typing: Bool)]()
+        var deSerializedParticipants = [Participant]()
         for participant in participants {
             guard participant.components(separatedBy: " | ").count == 2 else {
                 completion(nil, "Unable to fully deserialize «participants».")
@@ -186,7 +186,10 @@ public struct ConversationSerializer {
             }
             
             let components = participant.components(separatedBy: " | ")
-            deSerializedParticipants.append((components[0], components[1] == "true" ? true : false))
+            let participant = Participant(userID: components[0],
+                                          isTyping: components[1] == "true" ? true : false)
+            
+            deSerializedParticipants.append(participant)
         }
         
         guard let lastModifiedString = fromData["lastModified"] as? String else {
@@ -194,24 +197,39 @@ public struct ConversationSerializer {
             return
         }
         
-        guard let lastModifiedDate = secondaryDateFormatter.date(from: lastModifiedString) else {
+        #warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
+        formatter.locale = Locale(identifier: "en_GB")
+        
+        guard let lastModifiedDate = formatter.date(from: lastModifiedString) else {
             completion(nil, "Unable to convert «lastModified» to Date.")
             return
         }
         
-        MessageSerializer.shared.getMessages(withIdentifiers: messages) { (returnedMessages,
-                                                                           getMessagesStatus) in
-            guard let messages = returnedMessages else {
-                completion(nil, getMessagesStatus ?? "An unknown error occurred.")
-                return
-            }
-            
-            let deSerializedConversation = Conversation(identifier: identifier,
-                                                        messages: messages,
-                                                        lastModifiedDate: lastModifiedDate,
-                                                        participantIdentifiers: deSerializedParticipants)
-            
-            completion(deSerializedConversation, nil)
-        }
+        let deSerializedConversation = Conversation(identifier: identifier,
+                                                    messageIdentifiers: messageIdentifiers,
+                                                    messages: [],
+                                                    lastModifiedDate: lastModifiedDate,
+                                                    participants: deSerializedParticipants)
+        
+        completion(deSerializedConversation, nil)
+        deSerializedConversation.setMessages(); #warning("Account for this with a boolean?")
+        
+        //        MessageSerializer.shared.getMessages(withIdentifiers: messageIdentifiers) { (returnedMessages,
+        //                                                                           getMessagesStatus) in
+        //            guard let messages = returnedMessages else {
+        //                completion(nil, getMessagesStatus ?? "An unknown error occurred.")
+        //                return
+        //            }
+        //
+        //            let deSerializedConversation = Conversation(identifier: identifier,
+        //                                                        messageIdentifiers: messageIdentifiers,
+        //                                                        messages: messages,
+        //                                                        lastModifiedDate: lastModifiedDate,
+        //                                                        participants: deSerializedParticipants)
+        //
+        //            completion(deSerializedConversation, nil)
+        //        }
     }
 }

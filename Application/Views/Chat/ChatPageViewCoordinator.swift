@@ -49,8 +49,66 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         inputBar.inputTextView.placeholder = "Sending..."
         inputBar.inputTextView.tintColor = .clear
         
-        let languagePair = LanguagePair(from: currentUser!.languageCode,
-                                        to: otherUser.languageCode)
+        #warning("Debug only.")
+        let dispatchGroup = DispatchGroup()
+        
+        let debugLanguagePair = LanguagePair(from: "en",
+                                             to: currentUser!.languageCode)
+        
+        dispatchGroup.enter()
+        var translationOutput = ""
+        FirebaseTranslator.shared.translate(TranslationInput(text),
+                                            with: debugLanguagePair) { (returnedTranslation,
+                                                                        errorDescriptor) in
+            guard let translation = returnedTranslation else {
+                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                           metadata: [#file, #function, #line])
+                dispatchGroup.leave()
+                return
+            }
+            
+            translationOutput = translation.output
+            dispatchGroup.leave()
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            let languagePair = LanguagePair(from: currentUser!.languageCode,
+                                            to: otherUser.languageCode)
+            
+            FirebaseTranslator.shared.translate(TranslationInput(translationOutput),
+                                                with: languagePair,
+                                                using: .google) { (returnedTranslation, errorDescriptor) in
+                inputBar.sendButton.stopAnimating()
+                inputBar.inputTextView.placeholder = " New Message"
+                inputBar.inputTextView.tintColor = .systemBlue
+                
+                guard let translation = returnedTranslation else {
+                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                               with: .normalAlert,
+                               metadata: [#file, #function, #line])
+                    return
+                }
+                
+                MessageSerializer.shared.createMessage(fromAccountWithIdentifier: currentUserID,
+                                                       inConversationWithIdentifier: wrappedConversation.identifier,
+                                                       translation: translation/*,
+                                                       position: wrappedConversation.messages.count*/) { (returnedMessage, errorDescriptor) in
+                    guard let message = returnedMessage else {
+                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                                   with: .normalAlert,
+                                   metadata: [#file, #function, #line])
+                        return
+                    }
+                    
+                    wrappedConversation.updateLastModified()
+                    
+                    wrappedConversation.messages.append(message)
+                    wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
+                    topLevelMessages = wrappedConversation.messages
+                    shouldReloadData = true
+                }
+                                                }
+        }
         
         //        let message = Message(identifier: "!",
         //                              fromAccountIdentifier: currentUser!.identifier,
@@ -63,40 +121,6 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         //
         //        self.conversation.messages.wrappedValue?.append(message)
         //        shouldReloadData = true
-        
-        FirebaseTranslator.shared.translate(TranslationInput(text),
-                                            with: languagePair,
-                                            using: .google) { (returnedTranslation, errorDescriptor) in
-            inputBar.sendButton.stopAnimating()
-            inputBar.inputTextView.placeholder = " New Message"
-            inputBar.inputTextView.tintColor = .systemBlue
-            
-            guard let translation = returnedTranslation else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                           with: .normalAlert,
-                           metadata: [#file, #function, #line])
-                return
-            }
-            
-            MessageSerializer.shared.createMessage(fromAccountWithIdentifier: currentUserID,
-                                                   inConversationWithIdentifier: wrappedConversation.identifier,
-                                                   translation: translation/*,
-                                                   position: wrappedConversation.messages.count*/) { (returnedMessage, errorDescriptor) in
-                guard let message = returnedMessage else {
-                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                               with: .normalAlert,
-                               metadata: [#file, #function, #line])
-                    return
-                }
-                
-                wrappedConversation.updateLastModified()
-                
-                wrappedConversation.messages.append(message)
-                wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
-                topLevelMessages = wrappedConversation.messages
-                shouldReloadData = true
-            }
-                                            }
     }
     
     public func inputBar(_ inputBar: InputBarAccessoryView,
