@@ -97,7 +97,7 @@ public struct Logger {
         case .fatalAlert:
             AKCore.shared.present(.fatalErrorAlert,
                                   with: [text,
-                                         buildType != .generalRelease,
+                                         Build.stage != .generalRelease,
                                          [fileName, functionName, lineNumber]])
         case .normalAlert:
             AKAlert(message: text,
@@ -204,7 +204,7 @@ public struct Logger {
         case .fatalAlert:
             AKCore.shared.present(.fatalErrorAlert,
                                   with: [text,
-                                         buildType != .generalRelease,
+                                         Build.stage != .generalRelease,
                                          [#file, #function, #line]])
         case .normalAlert:
             AKAlert(message: text,

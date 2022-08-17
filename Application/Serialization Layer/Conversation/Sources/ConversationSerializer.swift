@@ -30,14 +30,14 @@ public struct ConversationSerializer {
         
         var data: [String: Any] = [:]
         
-        var participants = [String]()
+        var serializedParticipants = [String]()
         
         for identifier in participants {
-            participants.append("\(identifier) | false")
+            serializedParticipants.append("\(identifier) | false")
         }
         
         data["messages"] = [initialMessageIdentifier]
-        data["participants"] = participants
+        data["participants"] = serializedParticipants
         data["lastModified"] = secondaryDateFormatter.string(from: Date())
         
         guard let generatedKey = Database.database().reference().child("/allConversations/").childByAutoId().key else {

@@ -9,7 +9,11 @@
 /* First-party Frameworks */
 import Foundation
 
-public enum LocalizationCase {
+//==================================================//
+
+/* MARK: - Enumerated Type Declarations */
+
+public enum LocalizationCase: String /* Add pre-localized strings here. */ {
     case dismiss
     case followingUnable
     
@@ -36,48 +40,16 @@ public enum LocalizationCase {
     case sunday
     
     var description: String {
-        switch self {
-        case .dismiss:
-            return "dismiss"
-        case .followingUnable:
-            return "following_unable"
-        case .noInternetMessage:
-            return "no_internet_message"
-        case .noInternetTitle:
-            return "no_internet_title"
-        case .notSupportedMessage:
-            return "not_supported"
-        case .sendFeedback:
-            return "send_feedback"
-        case .unableMessage:
-            return "unable_message"
-        case .unableTitle:
-            return "unable_title"
-        case .newMessage:
-            return "new_message"
-        case .today:
-            return "today"
-        case .yesterday:
-            return "yesterday"
-        case .monday:
-            return "monday"
-        case .tuesday:
-            return "tuesday"
-        case .wednesday:
-            return "wednesday"
-        case .thursday:
-            return "thursday"
-        case .friday:
-            return "friday"
-        case .saturday:
-            return "saturday"
-        case .sunday:
-            return "sunday"
-        }
+        return rawValue.snakeCase()
     }
 }
 
 public struct Localizer {
+    
+    //==================================================//
+    
+    /* MARK: - Public Functions */
+    
     public static func preLocalizedString(for case: LocalizationCase,
                                           language code: String? = nil) -> String? {
         let language = code ?? languageCode

@@ -8,11 +8,14 @@
 /* First-party Frameworks */
 import UIKit
 
+/* Third-party Frameworks */
+import Translator
+
 //==================================================//
 
-/* MARK: - Array Extensions */
+/* MARK: - Array public extensions */
 
-extension Array {
+public extension Array {
     var randomElement: Element {
         return self[Int(arc4random_uniform(UInt32(count)))]
     }
@@ -28,7 +31,7 @@ extension Array {
     }
 }
 
-extension Array where Element == String {
+public extension Array where Element == String {
     func containsAny(in: [String]) -> Bool {
         for value in `in` {
             if contains(value) {
@@ -62,11 +65,69 @@ extension Array where Element == String {
     }
 }
 
+public extension Array where Element == Translation {
+    func homogeneousLanguagePairs() -> Bool {
+        var pairs = [String]()
+        
+        for element in self {
+            pairs.append(element.languagePair.asString())
+            pairs = pairs.unique()
+        }
+        
+        return !(pairs.count > 1)
+    }
+    
+    func languagePairs() -> [LanguagePair] {
+        var pairStrings = [String]()
+        
+        for element in self {
+            pairStrings.append(element.languagePair.asString())
+        }
+        
+        pairStrings = pairStrings.unique()
+        
+        var pairs = [LanguagePair]()
+        
+        //        #warning("Think about whether this should be optional return.")
+        for pairString in pairStrings {
+            if let languagePair = pairString.asLanguagePair() {
+                pairs.append(languagePair)
+            }
+        }
+        
+        return pairs
+    }
+    
+    func matchedTo(_ inputs: [String: TranslationInput]) -> [String: Translation]? {
+        var translationDictionary = [String: Translation]()
+        
+        for translation in self {
+            if let matchingInput = translation.matchingInput(inputs: inputs) {
+                translationDictionary[matchingInput.key] = matchingInput.translation
+            }
+        }
+        
+        return translationDictionary.count != inputs.count ? nil : translationDictionary
+    }
+    
+    func `where`(languagePair: LanguagePair) -> [Translation] {
+        var matching = [Translation]()
+        
+        for element in self {
+            if element.languagePair.asString() == languagePair.asString() {
+                matching.append(element)
+            }
+        }
+        
+        return matching
+    }
+}
+
 //==================================================//
 
-/* MARK: - Date Extensions */
+/* MARK: - Date public extensions */
 
-extension Date {
+public extension Date {
     /* MARK: - Functions */
     
     func elapsedInterval() -> String {
@@ -125,9 +186,9 @@ extension Date {
 
 //==================================================//
 
-/* MARK: - Dictionary Extensions */
+/* MARK: - Dictionary public extensions */
 
-extension Dictionary {
+public extension Dictionary {
     mutating func switchKey(fromKey: Key, toKey: Key) {
         if let dictionaryEntry = removeValue(forKey: fromKey) {
             self[toKey] = dictionaryEntry
@@ -135,7 +196,7 @@ extension Dictionary {
     }
 }
 
-extension Dictionary where Value: Equatable {
+public extension Dictionary where Value: Equatable {
     func allKeys(forValue: Value) -> [Key] {
         return filter { $1 == forValue }.map { $0.0 }
     }
@@ -143,9 +204,9 @@ extension Dictionary where Value: Equatable {
 
 //==================================================//
 
-/* MARK: - Int Extensions */
+/* MARK: - Int public extensions */
 
-extension Int {
+public extension Int {
     /* MARK: - Functions */
     
     ///Returns a random integer value.
@@ -180,9 +241,9 @@ extension Int {
 
 //==================================================//
 
-/* MARK: - Sequence Extensions */
+/* MARK: - Sequence public extensions */
 
-extension Sequence where Iterator.Element: Hashable {
+public extension Sequence where Iterator.Element: Hashable {
     func unique() -> [Iterator.Element] {
         var seen = Set<Iterator.Element>()
         
@@ -192,10 +253,21 @@ extension Sequence where Iterator.Element: Hashable {
 
 //==================================================//
 
-/* MARK: - String Extensions */
+/* MARK: - String public extensions */
 
-extension String {
+public extension String {
     /* MARK: - Functions */
+    
+    func asLanguagePair() -> LanguagePair? {
+        let components = self.components(separatedBy: "-")
+        
+        guard components.count > 1 else {
+            return nil
+        }
+        
+        return LanguagePair(from: components[0],
+                            to: components[1...components.count - 1].joined(separator: "-"))
+    }
     
     func ciphered(by modifier: Int) -> String {
         var shiftedCharacters = [Character]()
@@ -232,19 +304,19 @@ extension String {
         
         switch Calendar.current.component(.weekday, from: fromDate) {
         case 1:
-            return Localizer.preLocalizedString(for: .sunday) ?? "Sunday"
+            return "Sunday"
         case 2:
-            return Localizer.preLocalizedString(for: .monday) ?? "Monday"
+            return "Monday"
         case 3:
-            return Localizer.preLocalizedString(for: .tuesday) ?? "Tuesday"
+            return "Tuesday"
         case 4:
-            return Localizer.preLocalizedString(for: .wednesday) ?? "Wednesday"
+            return "Wednesday"
         case 5:
-            return Localizer.preLocalizedString(for: .thursday) ?? "Thursday"
+            return "Thursday"
         case 6:
-            return Localizer.preLocalizedString(for: .friday) ?? "Friday"
+            return "Friday"
         case 7:
-            return Localizer.preLocalizedString(for: .saturday) ?? "Saturday"
+            return "Saturday"
         default:
             return "NULL"
         }
@@ -299,6 +371,18 @@ extension String {
         return mutable
     }
     
+    func snakeCase() -> String {
+        var characters = self.characterArray
+        
+        for (index, character) in characters.enumerated() {
+            if character.isUppercase && character.isAlphabetical {
+                characters[index] = "_\(character.lowercased())"
+            }
+        }
+        
+        return characters.joined()
+    }
+    
     //--------------------------------------------------//
     
     /* MARK: - Variables */
@@ -333,6 +417,10 @@ extension String {
     
     var firstLowercase: String {
         return prefix(1).lowercased() + dropFirst()
+    }
+    
+    var isAlphabetical: Bool {
+        return "A"..."Z" ~= self || "a"..."z" ~= self
     }
     
     var isLowercase: Bool {
@@ -382,9 +470,9 @@ extension String {
 
 //==================================================//
 
-/* MARK: - UIColor Extensions */
+/* MARK: - UIColor public extensions */
 
-extension UIColor {
+public extension UIColor {
     private convenience init(red: Int, green: Int, blue: Int, alpha: CGFloat = 1.0) {
         self.init(red: CGFloat(red) / 255.0, green: CGFloat(green) / 255.0, blue: CGFloat(blue) / 255.0, alpha: alpha)
     }
@@ -411,9 +499,9 @@ extension UIColor {
 
 //==================================================//
 
-/* MARK: - UIImageView Extensions */
+/* MARK: - UIImageView public extensions */
 
-extension UIImageView {
+public extension UIImageView {
     func downloadedFrom(_ link: String, contentMode mode: UIView.ContentMode = .scaleAspectFit) {
         guard let url = URL(string: link) else {
             return
@@ -447,9 +535,9 @@ extension UIImageView {
 
 //==================================================//
 
-/* MARK: - UILabel Extensions */
+/* MARK: - UILabel public extensions */
 
-extension UILabel {
+public extension UILabel {
     /* MARK: - Functions */
     
     func fontSizeThatFits(_ alternateText: String?) -> CGFloat {
@@ -525,9 +613,9 @@ extension UILabel {
 
 //==================================================//
 
-/* MARK: - UITextView Extensions */
+/* MARK: - UITextView public extensions */
 
-extension UITextView {
+public extension UITextView {
     func fontSizeThatFits(_ alternateText: String?) -> CGFloat {
         if let labelText = alternateText ?? text {
             let frameToUse = (superview as? UIButton != nil ? superview!.frame : frame)
@@ -583,9 +671,9 @@ extension UITextView {
 
 //==================================================//
 
-/* MARK: - UIView Extensions */
+/* MARK: - UIView public extensions */
 
-extension UIView {
+public extension UIView {
     /* MARK: - Functions */
     
     func addBlur(withActivityIndicator: Bool, withStyle: UIBlurEffect.Style, withTag: Int, alpha: CGFloat) {

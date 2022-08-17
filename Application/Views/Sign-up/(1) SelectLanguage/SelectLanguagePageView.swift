@@ -19,18 +19,13 @@ public struct SelectLanguagePageView: View {
     
     /* MARK: - Struct-level Variable Declarations */
     
+    //Other Declarations
     @StateObject public var viewModel: SelectLanguagePageViewModel
     @StateObject public var viewRouter: ViewRouter
     
-    //Strings
-    //    @State public var userID: String
-    
     @State private var selectedLanguage: String = languageCodeDictionary[languageCode]!
     
-    //Other Declarations
     public var languages = Array(languageCodeDictionary.values).sorted()
-    
-    //    @State public var phoneNumber: Int
     
     //==================================================//
     
@@ -46,45 +41,47 @@ public struct SelectLanguagePageView: View {
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
-            TitleSubtitleView(translations: translations)
-            
-            VStack(alignment: .center) {
-                Text(translations["instruction"]!.output)
-                    .bold()
-                    .foregroundColor(.gray)
-                    .font(.system(size: 16))
-                    .padding(.vertical, 5)
+            VStack {
+                TitleSubtitleView(translations: translations)
                 
-                Picker("", selection: $selectedLanguage) { 
-                    ForEach(languages, id: \.self) {
-                        Text($0)
-                    }
-                }
-                //                .pickerStyle(.wheel)
-                .padding(.horizontal, 30)
-                
-                Button {
-                    languageCode = languageCodeDictionary.allKeys(forValue: selectedLanguage).first!
-                    viewRouter.currentPage = .signUp_verifyNumber
-                } label: {
-                    Text(translations["continue"]!.output)
+                VStack(alignment: .center) {
+                    Text(translations["instruction"]!.output)
                         .bold()
+                        .foregroundColor(.gray)
+                        .font(.system(size: 16))
+                        .padding(.vertical, 5)
+                    
+                    Picker("", selection: $selectedLanguage) {
+                        ForEach(languages, id: \.self) {
+                            Text($0)
+                        }
+                    }
+                    //                .pickerStyle(.wheel)
+                    .padding(.horizontal, 30)
+                    
+                    Button {
+                        languageCode = languageCodeDictionary.allKeys(forValue: selectedLanguage).first!
+                        viewRouter.currentPage = .signUp_verifyNumber
+                    } label: {
+                        Text(translations["continue"]!.output)
+                            .bold()
+                    }
+                    .padding(.top, 5)
+                    .foregroundColor(.blue)
+                    
+                    Button {
+                        viewRouter.currentPage = .initial
+                    } label: {
+                        Text(translations["back"]!.output)
+                    }
+                    .padding(.top, 2)
+                    .foregroundColor(.blue)
+                    .font(.system(size: 15))
                 }
-                .padding(.top, 5)
-                .foregroundColor(.blue)
+                .padding(.top, 50)
                 
-                Button {
-                    viewRouter.currentPage = .initial
-                } label: {
-                    Text(translations["back"]!.output)
-                }
-                .padding(.top, 2)
-                .foregroundColor(.blue)
-                .font(.system(size: 15))
-            }
-            .padding(.top, 50)
-            
-            Spacer()
+                Spacer()
+            }.onAppear { currentFile = #file }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

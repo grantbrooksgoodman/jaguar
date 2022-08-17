@@ -25,7 +25,34 @@ final class ConversationSerializerTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Testing Functions */
+    /* MARK: Creation Tests */
+    
+    func testCreateConversation() {
+        let expectation = XCTestExpectation(description: "No error returned")
+        
+        let participants = [String]()
+        
+        ConversationSerializer.shared.createConversation(initialMessageIdentifier: "!",
+                                                         participants: participants) { (returnedIdentifier, errorDescriptor) in
+            guard let identifier = returnedIdentifier else {
+                let error = errorDescriptor ?? "An unknown error occurred."
+                
+                Logger.log(error,
+                           metadata: [#file, #function, #line])
+                XCTFail(error)
+                return
+            }
+            
+            print(identifier)
+            expectation.fulfill()
+        }
+        
+        wait(for: [expectation], timeout: 10)
+    }
+    
+    //==================================================//
+    
+    /* MARK: Retrieval Tests */
     
     func testGetConversation() {
         let expectation = XCTestExpectation(description: "No error returned")

@@ -10,6 +10,11 @@
 import Translator
 
 public struct PLISTGenerator {
+    
+    //==================================================//
+    
+    /* MARK: - Public Functions */
+    
     public static func createPLIST(from dictionary: [String: String]) {
         let fileManager = FileManager.default
         

@@ -10,40 +10,29 @@
 import Contacts
 import CoreTelephony
 import MessageUI
-import UIKit
 
 /* Third-party Frameworks */
 import AlertKit
 import Firebase
 import FirebaseAuth
 import PKHUD
-import Reachability
 import Translator
 
 //==================================================//
 
 /* MARK: - Top-level Variable Declarations */
 
-//Booleans
-var darkMode                              = false
-var isPresentingMailComposeViewController = false
-var prefersConsistentBuildInfo            = false
-var timebombActive                        = true
-
 //DateFormatters
-let masterDateFormatter    = DateFormatter()
-let secondaryDateFormatter = DateFormatter()
+public let masterDateFormatter = DateFormatter()
+public let secondaryDateFormatter = DateFormatter()
 
 //Dictionaries
-var callingCodeDictionary:          [String: String]!
-var informationDictionary:          [String: String]!
-var languageCodeDictionary:         [String: String]!
+public var callingCodeDictionary: [String: String]!
+public var languageCodeDictionary: [String: String]!
 
 //Strings
-var callingCode               = ""
-var codeName                  = "Jaguar"
-var currentFile               = #file
-var currentUserID             = "" {
+public var callingCode = ""
+public var currentUserID = "" {
     didSet {
         UserDefaults.standard.setValue(currentUserID, forKey: "currentUserID")
         UserSerializer.shared.getUser(withIdentifier: currentUserID) { (returnedUser, errorDescriptor) in
@@ -73,66 +62,55 @@ var currentUserID             = "" {
         }
     }
 }
-var dmyFirstCompileDateString = "23042022"
-var finalName                 = ""
-var languageCode              = Locale.preferredLanguages[0].components(separatedBy: "-")[0] //["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()! //["ca", "es", "fr", "gl", "it", "pt", "ro"].randomElement()! //Locale.preferredLanguages[0].components(separatedBy: "-")[0]
+public var languageCode = Locale.preferredLanguages[0].components(separatedBy: "-")[0] //["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()! //["ca", "es", "fr", "gl", "it", "pt", "ro"].randomElement()! //Locale.preferredLanguages[0].components(separatedBy: "-")[0]
 
-var previousLanguageCode = ""
-var selectedRegionCode: String?
-
-//UIViewControllers
-var buildInfoController: BuildInfoController?
-var frontmostViewController: UIViewController! = UIApplication.shared.windows.first!.rootViewController!
+public var previousLanguageCode = ""
+public var selectedRegionCode: String?
 
 //Other Declarations
-let telephonyNetworkInfo = CTTelephonyNetworkInfo()
+public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
 
-var appStoreReleaseVersion = 0
-var buildType: Build.BuildType = .preAlpha
-var conversationArchive = [Conversation]() {
+public var conversationArchive = [Conversation]() {
     didSet {
         ConversationArchiver.setArchive()
     }
 }
-var currentCalendar = Calendar(identifier: .gregorian)
-var currentTimeLastCalled: Date! = Date() {
+public var currentCalendar = Calendar(identifier: .gregorian)
+public var currentTimeLastCalled: Date! = Date() {
     willSet {
         print("\(newValue.amountOfSeconds(from: currentTimeLastCalled)) seconds from last call")
     }
 }
-var currentUser: User?
-var selectedContact: CNContact?
-var statusBarStyle: UIStatusBarStyle = .default
-var touchTimer: Timer?
+public var currentUser: User?
+public var isPresentingMailComposeViewController = false
+public var selectedContact: CNContact?
 
 //==================================================//
 
-@UIApplicationMain class AppDelegate: UIResponder, MFMailComposeViewControllerDelegate, UIApplicationDelegate, UIGestureRecognizerDelegate {
-    
-    //==================================================//
-    
-    /* MARK: - Class-level Variable Declarations */
-    
-    //Boolean Declarations
-    var currentlyAnimating = false
-    var hasResigned        = false
-    
-    //Other Declarations
-    let screenSize = UIScreen.main.bounds
-    
-    var informationDictionary: [String:String] = [:]
-    var window: UIWindow?
+@UIApplicationMain public class AppDelegate: UIResponder, MFMailComposeViewControllerDelegate, UIApplicationDelegate {
     
     //==================================================//
     
     /* MARK: - Required Functions */
     
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    public func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        Build.set([.appStoreReleaseVersion: 4,
+                   .codeName: "Jaguar",
+                   .dmyFirstCompileDateString: "23042022",
+                   .finalName: "",
+                   .stage: Build.Stage.alpha,
+                   .timebombActive: true])
+        
         Logger.exposureLevel = .normal
         
-        let tapGesture = UITapGestureRecognizer(target: self, action: nil)
-        tapGesture.delegate = self
-        window?.addGestureRecognizer(tapGesture)
+        let expiryAlertProvider = ExpiryAlertProvider()
+        let reportProvider = ReportProvider()
+        let translationProvider = TranslationProvider()
+        
+        AKCore.shared.setLanguageCode(languageCode)
+        AKCore.shared.register(expiryAlertProvider: expiryAlertProvider,
+                               reportProvider: reportProvider,
+                               translationProvider: translationProvider)
         
         currentCalendar.timeZone = TimeZone(abbreviation: "GMT")!
         
@@ -167,19 +145,6 @@ var touchTimer: Timer?
         
         callingCode = getCallingCode() ?? ""
         
-        //Set the array of information.
-        Build.shared.setInformationDictionary()
-        buildInfoController = BuildInfoController()
-        buildInfoController?.view.isHidden = true
-        
-        let reportProvider = ReportProvider()
-        let translationProvider = TranslationProvider()
-        
-        AKCore.shared.setLanguageCode(languageCode)
-        AKCore.shared.register(expiryAlertProvider: buildInfoController!,
-                               reportProvider: reportProvider,
-                               translationProvider: translationProvider)
-        
         FirebaseApp.configure()
         FirebaseConfiguration.shared.setLoggerLevel(.min)
         
@@ -187,9 +152,9 @@ var touchTimer: Timer?
         
         //        UserDefaults.standard.setValue(nil, forKey: "currentUserID")
         
-        if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
-            currentUserID = userID
-        }
+        //        if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
+        //            currentUserID = userID
+        //        }
         
         ConversationArchiver.getArchive { (returnedTuple,
                                            errorDescriptor) in
@@ -200,7 +165,7 @@ var touchTimer: Timer?
             }
             
             if tuple.userID == currentUserID {
-                conversationArchive = tuple.conversations
+                conversationArchive = tuple.conversations.filter({ $0.participants.contains(where: { $0.userID == currentUserID })})
             } else {
                 Logger.log("Different user ID – nuking conversation archive.",
                            metadata: [#file, #function, #line])
@@ -214,26 +179,23 @@ var touchTimer: Timer?
         return true
     }
     
-    func applicationDidBecomeActive(_ application: UIApplication) {
-        if currentlyAnimating && hasResigned {
-            frontmostViewController.performSegue(withIdentifier: "initialSegue", sender: self)
-            currentlyAnimating = false
-        }
-    }
-    
-    func applicationDidEnterBackground(_ application: UIApplication) {
+    public func applicationDidBecomeActive(_ application: UIApplication) {
         
     }
     
-    func applicationWillEnterForeground(_ application: UIApplication) {
+    public func applicationDidEnterBackground(_ application: UIApplication) {
         
     }
     
-    func applicationWillResignActive(_ application: UIApplication) {
-        hasResigned = true
+    public func applicationWillEnterForeground(_ application: UIApplication) {
+        
     }
     
-    func applicationWillTerminate(_ application: UIApplication) {
+    public func applicationWillResignActive(_ application: UIApplication) {
+        
+    }
+    
+    public func applicationWillTerminate(_ application: UIApplication) {
         
     }
     
@@ -241,51 +203,23 @@ var touchTimer: Timer?
     
     /* MARK: - Push Notification Functions */
     
-    func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    public func application(_ application: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable : Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         if Auth.auth().canHandleNotification(userInfo) {
             completionHandler(.noData)
             return
         }
     }
     
-    func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+    public func application(_ application: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
         Auth.auth().setAPNSToken(deviceToken, type: .unknown)
     }
     
-    func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
+    public func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey : Any] = [:]) -> Bool {
         if Auth.auth().canHandle(url) {
             return true
         }
         
         return false
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Other Functions */
-    
-    func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
-        touchTimer?.invalidate()
-        touchTimer = nil
-        
-        UIView.animate(withDuration: 0.2, animations: { buildInfoController?.view.alpha = 0.35 }) { (_) in
-            if touchTimer == nil {
-                touchTimer = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(self.touchTimerAction), userInfo: nil, repeats: true)
-            }
-        }
-        
-        return false
-    }
-    
-    @objc func touchTimerAction() {
-        UIView.animate(withDuration: 0.2, animations: {
-            if touchTimer != nil {
-                buildInfoController?.view.alpha = 1
-                
-                touchTimer?.invalidate()
-                touchTimer = nil
-            }
-        })
     }
 }
 
@@ -297,13 +231,13 @@ var touchTimer: Timer?
 
 /* MARK: Dispatch Queue Functions */
 
-func after(milliseconds: Int, do: @escaping () -> Void = { }) {
+public func after(milliseconds: Int, do: @escaping () -> Void = { }) {
     DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(milliseconds), execute: {
         `do`()
     })
 }
 
-func after(seconds: Int, do: @escaping () -> Void = { }) {
+public func after(seconds: Int, do: @escaping () -> Void = { }) {
     DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds), execute: {
         `do`()
     })
@@ -314,16 +248,16 @@ func after(seconds: Int, do: @escaping () -> Void = { }) {
 /* MARK: First Responder Functions */
 
 ///Finds and resigns the first responder.
-func findAndResignFirstResponder() {
+public func findAndResignFirstResponder() {
     DispatchQueue.main.async {
-        if let unwrappedFirstResponder = findFirstResponder(inView: frontmostViewController.view) {
+        if let unwrappedFirstResponder = findFirstResponder(inView: AKCore.shared.getFrontmostVC().view) {
             unwrappedFirstResponder.resignFirstResponder()
         }
     }
 }
 
 ///Finds the first responder in a given view.
-func findFirstResponder(inView view: UIView) -> UIView? {
+public func findFirstResponder(inView view: UIView) -> UIView? {
     for individualSubview in view.subviews {
         if individualSubview.isFirstResponder {
             return individualSubview
@@ -342,7 +276,7 @@ func findFirstResponder(inView view: UIView) -> UIView? {
 /* MARK: HUD Functions */
 
 ///Hides the HUD.
-func hideHUD() {
+public func hideHUD() {
     DispatchQueue.main.async {
         if PKHUD.sharedHUD.isVisible {
             PKHUD.sharedHUD.hide(true)
@@ -350,7 +284,7 @@ func hideHUD() {
     }
 }
 
-func hideHUD(delay: Double?) {
+public func hideHUD(delay: Double?) {
     if let delay = delay {
         let millisecondDelay = Int(delay * 1000)
         
@@ -368,7 +302,7 @@ func hideHUD(delay: Double?) {
     }
 }
 
-func hideHUD(delay: Double?, completion: @escaping() -> Void) {
+public func hideHUD(delay: Double?, completion: @escaping() -> Void) {
     if let delay = delay {
         let millisecondDelay = Int(delay * 1000)
         
@@ -391,30 +325,30 @@ func hideHUD(delay: Double?, completion: @escaping() -> Void) {
 }
 
 ///Shows the progress HUD.
-func showProgressHUD() {
+public func showProgressHUD() {
     DispatchQueue.main.async {
         if !PKHUD.sharedHUD.isVisible {
             PKHUD.sharedHUD.contentView = PKHUDProgressView()
-            PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+            PKHUD.sharedHUD.show(onView: AKCore.shared.getFrontmostVC().view)
         }
     }
 }
 
-func showProgressHUD(text: String?, delay: Double?) {
+public func showProgressHUD(text: String?, delay: Double?) {
     if let delay = delay {
         let millisecondDelay = Int(delay * 1000)
         
         DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(millisecondDelay)) {
             if !PKHUD.sharedHUD.isVisible {
                 PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
-                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+                PKHUD.sharedHUD.show(onView: AKCore.shared.getFrontmostVC().view)
             }
         }
     } else {
         DispatchQueue.main.async {
             if !PKHUD.sharedHUD.isVisible {
                 PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text)
-                PKHUD.sharedHUD.show(onView: frontmostViewController.view)
+                PKHUD.sharedHUD.show(onView: AKCore.shared.getFrontmostVC().view)
             }
         }
     }
@@ -425,7 +359,7 @@ func showProgressHUD(text: String?, delay: Double?) {
 /* MARK: - Miscellaneous Functions */
 
 ///Retrieves the appropriately random tag integer for a given title.
-func aTagFor(_ theViewNamed: String) -> Int {
+public func aTagFor(_ theViewNamed: String) -> Int {
     var finalValue: Float = 1.0
     
     for individualCharacter in String(theViewNamed.unicodeScalars.filter(CharacterSet.letters.contains)).characterArray {
@@ -435,10 +369,10 @@ func aTagFor(_ theViewNamed: String) -> Int {
     return Int(String(finalValue).replacingOccurrences(of: ".", with: "")) ?? Int().random(min: 5, max: 10)
 }
 
-func attributedString(_ with: String,
-                      mainAttributes: [NSAttributedString.Key: Any],
-                      alternateAttributes: [NSAttributedString.Key: Any],
-                      alternateAttributeRange: [String]) -> NSAttributedString {
+public func attributedString(_ with: String,
+                             mainAttributes: [NSAttributedString.Key: Any],
+                             alternateAttributes: [NSAttributedString.Key: Any],
+                             alternateAttributeRange: [String]) -> NSAttributedString {
     let attributedString = NSMutableAttributedString(string: with, attributes: mainAttributes)
     
     for string in alternateAttributeRange {
@@ -450,22 +384,7 @@ func attributedString(_ with: String,
     return attributedString
 }
 
-func buildTypeAsString(short: Bool) -> String {
-    switch buildType {
-    case .preAlpha:
-        return short ? "p" : "pre-alpha"
-    case .alpha:
-        return short ? "a" : "alpha"
-    case .beta:
-        return short ? "b" : "beta"
-    case .releaseCandidate:
-        return short ? "c" : "release candidate"
-    default:
-        return short ? "g" : "general"
-    }
-}
-
-func getCallingCode() -> String? {
+public func getCallingCode() -> String? {
     guard let callingCodes = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "CallingCodes", ofType: "plist") ?? "") as? [String: String] else {
         return nil
     }
@@ -483,45 +402,8 @@ func getCallingCode() -> String? {
     return callingCodes[countryCode.uppercased()]
 }
 
-///Presents a mail composition view.
-func composeMessage(_ message: String,
-                    recipients: [String],
-                    subject: String,
-                    isHTML: Bool,
-                    metadata: [Any]) {
-    hideHUD(delay: nil)
-    
-    if MFMailComposeViewController.canSendMail() {
-        let composeController = MFMailComposeViewController()
-        composeController.mailComposeDelegate = frontmostViewController as! MFMailComposeViewControllerDelegate?
-        composeController.setToRecipients(recipients)
-        composeController.setMessageBody(message, isHTML: isHTML)
-        composeController.setSubject(subject)
-        
-        if let controller = buildInfoController {
-            controller.wasHidden = controller.view.isHidden
-            controller.view.isHidden = true
-        }
-        
-        politelyPresent(viewController: composeController)
-    } else {
-        let error = AKError(nil, metadata: metadata, isReportable: false)
-        AKErrorAlert(message: "It appears that your device is not able to send e-mail.\n\nPlease verify that your e-mail client is set up and try again.",
-                     error: error,
-                     networkDependent: true).present()
-    }
-}
-
-///Returns a boolean describing whether or not the device has an active Internet connection.
-func hasConnectivity() -> Bool {
-    let connectionReachability = try! Reachability()
-    let networkStatus = connectionReachability.connection.description
-    
-    return (networkStatus != "No Connection")
-}
-
-func messagesAttributedString(_ forString: String,
-                              separationIndex: Int) -> NSAttributedString {
+public func messagesAttributedString(_ forString: String,
+                                     separationIndex: Int) -> NSAttributedString {
     let attributedString = NSMutableAttributedString(string: forString)
     
     let boldAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 12),
@@ -540,7 +422,7 @@ func messagesAttributedString(_ forString: String,
 }
 
 ///Presents a given view controller, but waits for others to be dismissed before doing so.
-func politelyPresent(viewController: UIViewController) {
+public func politelyPresent(viewController: UIViewController) {
     hideHUD(delay: nil)
     
     if viewController as? MFMailComposeViewController != nil {
@@ -556,7 +438,7 @@ func politelyPresent(viewController: UIViewController) {
         
         if topController.presentedViewController == nil && !topController.isKind(of: UIAlertController.self) {
             #warning("Something changed in iOS 14 that broke the above code.")
-            topController = frontmostViewController
+            topController = AKCore.shared.getFrontmostVC()
             
             if !Thread.isMainThread {
                 DispatchQueue.main.sync {
@@ -573,7 +455,7 @@ func politelyPresent(viewController: UIViewController) {
     }
 }
 
-func printCurrentTime() {
+public func printCurrentTime() {
     let timeFormatter = DateFormatter()
     timeFormatter.dateFormat = "HH:mm:ss zzz"
     
@@ -585,7 +467,7 @@ func printCurrentTime() {
 
 ///Rounds the corners on any desired view.
 ///Numbers 0 through 4 correspond to all, left, right, top, and bottom, respectively.
-func roundCorners(forViews: [UIView], withCornerType: Int!) {
+public func roundCorners(forViews: [UIView], withCornerType: Int!) {
     for individualView in forViews {
         var cornersToRound: UIRectCorner!
         

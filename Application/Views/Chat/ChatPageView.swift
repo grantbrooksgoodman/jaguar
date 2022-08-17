@@ -24,7 +24,10 @@ public var shouldReloadData = false
 public var typingIndicator: Bool?
 
 //Other Declarations
+public var fullMessages: [Message]!
 public var topLevelMessages: [Message]!
+
+//==================================================//
 
 public struct ChatPageView: UIViewControllerRepresentable {
     
@@ -49,12 +52,14 @@ public struct ChatPageView: UIViewControllerRepresentable {
         messagesVC.messagesCollectionView.messagesDisplayDelegate = context.coordinator
         messagesVC.messagesCollectionView.messagesLayoutDelegate = context.coordinator
         messagesVC.messagesCollectionView.messagesDataSource = context.coordinator
+        //        messagesVC.messagesCollectionView.prefetchDataSource = messagesVC
         messagesVC.messageInputBar.delegate = context.coordinator
         messagesVC.scrollsToLastItemOnKeyboardBeginsEditing = true // default false
         //messagesVC.maintainPositionOnInputBarHeightChanged = true // default false
         messagesVC.showMessageTimestampOnSwipeLeft = true // default false
         
         conversation.messages = conversation.sortedFilteredMessages()
+        fullMessages = conversation.messages
         topLevelMessages = conversation.messages
         
         let inputBar = messagesVC.messageInputBar
@@ -78,6 +83,8 @@ public struct ChatPageView: UIViewControllerRepresentable {
         setUpNewMessageObserver()
         setUpReadDateObserver()
         setUpTypingIndicatorObserver()
+        
+        currentFile = #file
         
         return messagesVC
     }

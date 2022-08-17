@@ -42,53 +42,55 @@ public struct VerifyNumberPageView: View {
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
-            TitleSubtitleView(translations: translations)
-            
-            Spacer()
-            
-            VStack(alignment: .center) {
-                Text(translations["instruction"]!.output)
-                    .bold()
-                    .foregroundColor(.gray)
-                    .font(.system(size: 16))
-                    .padding(.vertical, 5)
+            VStack {
+                TitleSubtitleView(translations: translations)
                 
-                HStack(alignment: .center) {
-                    RegionMenu(selectedRegion: $selectedRegion)
-                        .padding(.leading, 20)
-                        .padding(.trailing, 5)
-                    
-                    PhoneNumberTextField(phoneNumberString: $phoneNumberString,
-                                         region: selectedRegion)
-                        .padding(.vertical, 2)
-                        .padding(.trailing, 20)
-                }
+                Spacer()
                 
-                Button {
-                    let compiledNumber = "\(callingCodeDictionary[selectedRegion]!)\(phoneNumberString.digits)".digits
-                    
-                    selectedRegionCode = selectedRegion
-                    verifyUser(phoneNumber: compiledNumber)
-                } label: {
-                    Text(translations["continue"]!.output)
+                VStack(alignment: .center) {
+                    Text(translations["instruction"]!.output)
                         .bold()
+                        .foregroundColor(.gray)
+                        .font(.system(size: 16))
+                        .padding(.vertical, 5)
+                    
+                    HStack(alignment: .center) {
+                        RegionMenu(selectedRegion: $selectedRegion)
+                            .padding(.leading, 20)
+                            .padding(.trailing, 5)
+                        
+                        PhoneNumberTextField(phoneNumberString: $phoneNumberString,
+                                             region: selectedRegion)
+                            .padding(.vertical, 2)
+                            .padding(.trailing, 20)
+                    }
+                    
+                    Button {
+                        let compiledNumber = "\(callingCodeDictionary[selectedRegion]!)\(phoneNumberString.digits)".digits
+                        
+                        selectedRegionCode = selectedRegion
+                        verifyUser(phoneNumber: compiledNumber)
+                    } label: {
+                        Text(translations["continue"]!.output)
+                            .bold()
+                    }
+                    .padding(.top, 5)
+                    .accentColor(.blue)
+                    .disabled(phoneNumberString.removingOccurrences(of: ["+"]).lowercasedTrimmingWhitespace.count < 7)
+                    
+                    Button {
+                        viewRouter.currentPage = .signUp_selectLanguage
+                    } label: {
+                        Text(translations["back"]!.output)
+                    }
+                    .padding(.top, 2)
+                    .foregroundColor(.blue)
+                    .font(.system(size: 15))
                 }
-                .padding(.top, 5)
-                .accentColor(.blue)
-                .disabled(phoneNumberString.removingOccurrences(of: ["+"]).lowercasedTrimmingWhitespace.count < 7)
+                .padding(.bottom, 30)
                 
-                Button {
-                    viewRouter.currentPage = .signUp_selectLanguage
-                } label: {
-                    Text(translations["back"]!.output)
-                }
-                .padding(.top, 2)
-                .foregroundColor(.blue)
-                .font(.system(size: 15))
-            }
-            .padding(.bottom, 30)
-            
-            Spacer()
+                Spacer()
+            }.onAppear { currentFile = #file }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

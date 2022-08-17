@@ -1,28 +1,44 @@
 //
 //  SceneDelegate.swift
-//  Jaguar
+//  Application
 //
-//  Created by Grant Brooks Goodman on 23/04/2022.
-//  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
+//  Created by Grant Brooks Goodman on DD/MM/20YY.
+//  Copyright © 2013-20YY NEOTechnica Corporation. All rights reserved.
 //
 
 /* First-party Frameworks */
 import SwiftUI
 import UIKit
 
-class SceneDelegate: UIResponder, UIWindowSceneDelegate {
+//==================================================//
+
+/* MARK: - Top-level Variable Declarations */
+
+//Other Declarations
+public var topWindow: UIWindow!
+
+//==================================================//
+
+public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecognizerDelegate {
     
     //==================================================//
     
     /* MARK: - Class-level Variable Declarations */
     
-    var window: UIWindow?
+    //UIWindows
+    public var window: UIWindow?
+    
+    private var buildInfoOverlayWindow: UIWindow!
+    private var expiryOverlayWindow: UIWindow!
+    
+    //Other Declarations
+    private var touchTimer: Timer?
     
     //==================================================//
     
     /* MARK: - Scene Control Functions */
     
-    func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
+    public func scene(_ scene: UIScene, willConnectTo session: UISceneSession, options connectionOptions: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
@@ -36,35 +52,101 @@ class SceneDelegate: UIResponder, UIWindowSceneDelegate {
             window.rootViewController = UIHostingController(rootView: contentView)
             self.window = window
             window.makeKeyAndVisible()
+            
+            let tapGesture = UITapGestureRecognizer(target: self, action: nil)
+            tapGesture.delegate = self
+            window.addGestureRecognizer(tapGesture)
+            
+            let bounds = UIScreen.main.bounds
+            
+            buildInfoOverlayWindow = UIWindow()
+            buildInfoOverlayWindow.frame = CGRect(x: 0,
+                                                  y: bounds.maxY - 100,
+                                                  width: bounds.size.width,
+                                                  height: 100)
+            buildInfoOverlayWindow.rootViewController = UIHostingController(rootView: BuildInfoOverlayView())
+            buildInfoOverlayWindow.isHidden = false
+            buildInfoOverlayWindow.tag = aTagFor("buildInfoOverlayWindow")
+            
+            if Build.stage != .generalRelease {
+                window.addSubview(buildInfoOverlayWindow)
+            }
+            
+            expiryOverlayWindow = UIWindow()
+            expiryOverlayWindow.frame = CGRect(x: 0,
+                                               y: 0,
+                                               width: bounds.size.width,
+                                               height: bounds.size.height)
+            expiryOverlayWindow.rootViewController = UIHostingController(rootView: ExpiryOverlayView())
+            expiryOverlayWindow.isHidden = false
+            expiryOverlayWindow.tag = aTagFor("expiryOverlayWindow")
+            
+            if Build.expiryDate == Date().comparator,
+               Build.stage != .generalRelease,
+               Build.timebombActive {
+                window.addSubview(expiryOverlayWindow)
+            }
+            
+            topWindow = self.window!
         }
     }
     
-    func sceneDidDisconnect(_ scene: UIScene) {
+    public func sceneDidDisconnect(_ scene: UIScene) {
         // Called as the scene is being released by the system.
         // This occurs shortly after the scene enters the background, or when its session is discarded.
         // Release any resources associated with this scene that can be re-created the next time the scene connects.
         // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
     }
     
-    func sceneDidBecomeActive(_ scene: UIScene) {
+    public func sceneDidBecomeActive(_ scene: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
     }
     
-    func sceneWillResignActive(_ scene: UIScene) {
+    public func sceneWillResignActive(_ scene: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
     }
     
-    func sceneWillEnterForeground(_ scene: UIScene) {
+    public func sceneWillEnterForeground(_ scene: UIScene) {
         // Called as the scene transitions from the background to the foreground.
         // Use this method to undo the changes made on entering the background.
     }
     
-    func sceneDidEnterBackground(_ scene: UIScene) {
+    public func sceneDidEnterBackground(_ scene: UIScene) {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Gesture Recognizer Functions */
+    
+    public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldReceive touch: UITouch) -> Bool {
+        self.touchTimer?.invalidate()
+        self.touchTimer = nil
+        
+        UIView.animate(withDuration: 0.2, animations: {
+            self.buildInfoOverlayWindow.alpha = 0.35
+        }) { _ in
+            if self.touchTimer == nil {
+                self.touchTimer = Timer.scheduledTimer(timeInterval: 5, target: self, selector: #selector(self.touchTimerAction), userInfo: nil, repeats: true)
+            }
+        }
+        
+        return false
+    }
+    
+    @objc private func touchTimerAction() {
+        UIView.animate(withDuration: 0.2, animations: {
+            if self.touchTimer != nil {
+                self.buildInfoOverlayWindow.alpha = 1
+                
+                self.touchTimer?.invalidate()
+                self.touchTimer = nil
+            }
+        })
     }
 }
 

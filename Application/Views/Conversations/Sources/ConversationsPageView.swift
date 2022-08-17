@@ -46,43 +46,45 @@ public struct ConversationsPageView: View {
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations,
                      let openConversations):
-            //                        let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() }) : conversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() })
-            
-            let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }) : conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
-            
-            NavigationView {
-                List {
-                    ForEach(0..<conversationsToUse.count, id: \.self, content: { index in
-                        let conversation = conversationsToUse[index]
-                        
-                        MessageCell(conversation: conversation)
-                    })
-                }
-                .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        Button(action: {
-                            showingPopover = true
-                        }) {
-                            Label("Compose", systemImage: "square.and.pencil")
-                        }
-                        .sheet(isPresented: $showingPopover) {
-                            EmbeddedContactPickerView()
-                                .onDisappear {
-                                    viewModel.startConversation()
-                                }
-                            //.interactiveDismissDisabled(true)
+            VStack {
+                //                        let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() }) : conversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() })
+                
+                let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }) : conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
+                
+                NavigationView {
+                    List {
+                        ForEach(0..<conversationsToUse.count, id: \.self, content: { index in
+                            let conversation = conversationsToUse[index]
+                            
+                            MessageCell(conversation: conversation)
+                        })
+                    }
+                    .toolbar {
+                        ToolbarItem(placement: .navigationBarTrailing) {
+                            Button(action: {
+                                showingPopover = true
+                            }) {
+                                Label("Compose", systemImage: "square.and.pencil")
+                            }
+                            .sheet(isPresented: $showingPopover) {
+                                EmbeddedContactPickerView()
+                                    .onDisappear {
+                                        viewModel.startConversation()
+                                    }
+                                //.interactiveDismissDisabled(true)
+                            }
                         }
                     }
+                    .navigationBarTitle(translations["messages"]!.output)
                 }
-                .navigationBarTitle(translations["messages"]!.output)
-            }
-            .onAppear() {
-                if !updated {
-                    conversations = openConversations    
+                .onAppear() {
+                    if !updated {
+                        conversations = openConversations
+                    }
+                    
+                    updated = false
                 }
-                
-                updated = false
-            }
+            }.onAppear { currentFile = #file }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

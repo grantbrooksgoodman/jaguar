@@ -27,7 +27,6 @@ public class Conversation: Codable {
     //Other Declarations
     public var identifier: String!
     public var lastModifiedDate: Date!
-    
     public var otherUser: User?
     
     //==================================================//
@@ -48,7 +47,49 @@ public class Conversation: Codable {
     
     //==================================================//
     
+    /* MARK: - Enumerated Type Declarations */
+    
+    public enum Slice {
+        case first
+        case last
+    }
+    
+    //==================================================//
+    
     /* MARK: - Other Functions */
+    
+    public func get(_ slice: Slice,
+                    messages count: Int) -> [Message] {
+        var amountToGet = count
+        
+        guard messages.count > amountToGet else {
+            while messages.count - 1 < amountToGet {
+                amountToGet -= 1
+            }
+            
+            print("Getting \(slice == .first ? "first" : "last") \(amountToGet + 1) messages.")
+            return slice == .first ? Array(messages[0...amountToGet]) : Array(messages.reversed()[0...amountToGet].reversed())
+        }
+        
+        return slice == .first ? Array(messages[0...amountToGet]) : Array(messages.reversed()[0...amountToGet])
+    }
+    
+    public func get(_ slice: Slice) -> [Message] {
+        switch slice {
+        case .first:
+            guard messages.count > 2 else {
+                return [messages.first!]
+            }
+            
+            return Array(messages[0...messages.count / 2])
+        case .last:
+            guard messages.count > 2 else {
+                return [messages.last!]
+            }
+            
+            return Array(messages[(messages.count / 2) + 1...messages.count - 1])
+        }
+    }
     
     public func getMessageIdentifiers() -> [String]? {
         var identifierArray = [String]()
@@ -122,11 +163,13 @@ public class Conversation: Codable {
         }
     }
     
-    public func sortedFilteredMessages() -> [Message] {
+    public func sortedFilteredMessages(_ for: [Message]? = nil) -> [Message] {
+        let messagesToUse = `for` == nil ? messages : `for`!
+        
         var filteredMessages = [Message]()
         
         //Filters for duplicates and blank messages.
-        for message in messages {
+        for message in messagesToUse! {
             if !filteredMessages.contains(where: { $0.identifier == message.identifier }) && message.identifier != "!" {
                 filteredMessages.append(message)
             }

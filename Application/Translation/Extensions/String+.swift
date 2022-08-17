@@ -15,17 +15,6 @@ import Translator
 public extension String {
     /* MARK: - Functions */
     
-    func asLanguagePair() -> LanguagePair? {
-        let components = self.components(separatedBy: "-")
-        
-        guard components.count > 1 else {
-            return nil
-        }
-        
-        return LanguagePair(from: components[0],
-                            to: components[1...components.count - 1].joined(separator: "-"))
-    }
-    
     func decoded(getInput: Bool) -> String? {
         let halves = self.components(separatedBy: "–")
         

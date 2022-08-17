@@ -23,6 +23,8 @@ public final class ChatPageViewController: MessagesViewController {
     var typingIndicatorTimer: Timer?
     
     //Other Declarations
+    let refreshControl = UIRefreshControl()
+    
     var selectedCell: TextMessageCell?
     
     //==================================================//
@@ -51,6 +53,18 @@ public final class ChatPageViewController: MessagesViewController {
         longPressGestureRecognizer.delaysTouchesBegan = true
         
         messagesCollectionView.addGestureRecognizer(longPressGestureRecognizer)
+        
+        refreshControl.addTarget(self,
+                                 action: #selector(refresh),
+                                 for: .valueChanged)
+        //        messagesCollectionView.addSubview(refreshControl)
+    }
+    
+    @objc func refresh() {
+        topLevelMessages = fullMessages
+        self.messagesCollectionView.reloadData()
+        shouldReloadData = true
+        refreshControl.endRefreshing()
     }
     
     public override func viewDidAppear(_ animated: Bool) {
@@ -78,6 +92,26 @@ public final class ChatPageViewController: MessagesViewController {
         typingIndicatorTimer = nil
         
         Database.database().reference().removeAllObservers()
+    }
+    
+    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
+        var visibleRect = CGRect()
+        
+        visibleRect.origin = self.messagesCollectionView.contentOffset
+        visibleRect.size = self.messagesCollectionView.bounds.size
+        let visiblePoint = CGPoint(x: visibleRect.midX, y: visibleRect.midY)
+        
+        guard let indexPath = self.messagesCollectionView.indexPathForItem(at: visiblePoint) else { return }
+        
+        print("\(indexPath)")
+        if indexPath.section == 3 {
+            print("should load more")
+            //            self.loadMessages()
+        }
+    }
+    
+    public func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+        print("load more")
     }
     
     public override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
@@ -199,3 +233,12 @@ public final class ChatPageViewController: MessagesViewController {
         selectedCell = nil
     }
 }
+
+//extension ChatPageViewController: UICollectionViewDataSourcePrefetching {
+//    public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
+//        if let first = indexPaths.first,
+//           fullMessages.count - 1 == first.section {
+//            print("Load more messages from PREFETCH")
+//        }
+//    }
+//}

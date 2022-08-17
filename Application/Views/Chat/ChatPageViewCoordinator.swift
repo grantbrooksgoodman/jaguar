@@ -104,7 +104,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                     
                     wrappedConversation.messages.append(message)
                     wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
-                    topLevelMessages = wrappedConversation.messages
+                    topLevelMessages = wrappedConversation.get(.last)
                     shouldReloadData = true
                 }
                                                 }
@@ -202,11 +202,11 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     }
     
     public func cellTopLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
-        return conversation.wrappedValue.messages[indexPath.section].sentDate.separatorDateString()
+        return /*conversation.wrappedValue.get(.last)*/topLevelMessages[indexPath.section].sentDate.separatorDateString()
     }
     
     public func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
-        return conversation.messages.wrappedValue.count
+        return /*conversation.wrappedValue.get(.last)*/topLevelMessages.count
     }
     
     public func messageBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
@@ -216,7 +216,7 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     }
     
     public func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageType {
-        let messages = conversation.messages.wrappedValue!
+        let messages = topLevelMessages! /*conversation.wrappedValue.get(.last)*/
         
         if indexPath.section == messages.count - 1 &&
             messages[indexPath.section].fromAccountIdentifier != currentUserID &&
@@ -264,9 +264,9 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
     public func cellBottomLabelHeight(for message: MessageType,
                                       at indexPath: IndexPath,
                                       in messagesCollectionView: MessagesCollectionView) -> CGFloat {
-        let lastMessageIndex = conversation.wrappedValue.messages.count - 1
+        let lastMessageIndex = topLevelMessages.count - 1/*conversation.wrappedValue.get(.last).count - 1*/
         
-        if indexPath.section == lastMessageIndex && conversation.wrappedValue.messages[lastMessageIndex].fromAccountIdentifier == currentUser!.identifier {
+        if indexPath.section == lastMessageIndex && /*conversation.wrappedValue.get(.last)*/topLevelMessages[lastMessageIndex].fromAccountIdentifier == currentUser!.identifier {
             return 20.0
         } else if indexPath.section == lastMessageIndex {
             return 5
@@ -278,7 +278,7 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
     public func cellTopLabelHeight(for message: MessageType, at indexPath: IndexPath,
                                    in messagesCollectionView: MessagesCollectionView) -> CGFloat {
         if (indexPath.section - 1) > -1 {
-            if conversation.wrappedValue.messages[indexPath.section].sentDate.amountOfSeconds(from: conversation.wrappedValue.messages[indexPath.section - 1].sentDate) > 5400 {
+            if /*conversation.wrappedValue.get(.last)*/topLevelMessages[indexPath.section].sentDate.amountOfSeconds(from: /*conversation.wrappedValue.get(.last)*/topLevelMessages[indexPath.section - 1].sentDate) > 5400 {
                 return 25
             }
         }

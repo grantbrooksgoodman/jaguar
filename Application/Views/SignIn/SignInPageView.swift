@@ -47,77 +47,79 @@ public struct SignInPageView: View {
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
-            Spacer()
-            
-            VStack(alignment: .center) {
-                Image(uiImage: UIImage(named: "Hello.png")!)
-                    .resizable()
-                    .frame(width: 150, height: 70)
-                    .padding(.bottom, 30)
+            VStack {
+                Spacer()
                 
-                Text(translations[verified ? "codePrompt" : "phoneNumberPrompt"]!.output)
-                    .bold()
-                    .foregroundColor(.gray)
-                    .font(.system(size: 16))
-                    .padding(.vertical, 5)
-                
-                if verified {
-                    TextField("000000", text: $verificationCode)
-                        .padding(.vertical, 2)
-                        .multilineTextAlignment(.center)
-                        .overlay(VStack {
-                            Divider()
-                                .offset(x: 0, y: 15)
-                        })
-                        .padding(.horizontal, 30)
-                        .keyboardType(.numberPad)
-                } else {
-                    HStack(alignment: .center) {
-                        RegionMenu(selectedRegion: $selectedRegion)
-                            .padding(.leading, 20)
-                            .padding(.trailing, 5)
-                        
-                        PhoneNumberTextField(phoneNumberString: $phoneNumberString,
-                                             region: selectedRegion)
-                            .padding(.vertical, 2)
-                            .padding(.trailing, 20)
-                    }
-                }
-                
-                Button {
-                    if verified {
-                        authenticateUser()
-                    } else {
-                        selectedRegionCode = selectedRegion
-                        verifyPhoneNumber()
-                    }
-                } label: {
-                    Text(translations[verified ? "finish" : "continue"]!.output)
+                VStack(alignment: .center) {
+                    Image(uiImage: UIImage(named: "Hello.png")!)
+                        .resizable()
+                        .frame(width: 150, height: 70)
+                        .padding(.bottom, 30)
+                    
+                    Text(translations[verified ? "codePrompt" : "phoneNumberPrompt"]!.output)
                         .bold()
-                }
-                .padding(.top, 5)
-                .accentColor(.blue)
-                .disabled(verified ? verificationCode.lowercasedTrimmingWhitespace.count != 6 : phoneNumberString.removingOccurrences(of: ["+"]).lowercasedTrimmingWhitespace.count < 7)
-                
-                Button {
+                        .foregroundColor(.gray)
+                        .font(.system(size: 16))
+                        .padding(.vertical, 5)
+                    
                     if verified {
-                        verified = false
-                    } else if fromSignUp {
-                        languageCode = previousLanguageCode
-                        viewRouter.currentPage = .signUp_verifyNumber
+                        TextField("000000", text: $verificationCode)
+                            .padding(.vertical, 2)
+                            .multilineTextAlignment(.center)
+                            .overlay(VStack {
+                                Divider()
+                                    .offset(x: 0, y: 15)
+                            })
+                            .padding(.horizontal, 30)
+                            .keyboardType(.numberPad)
                     } else {
-                        viewRouter.currentPage = .initial
+                        HStack(alignment: .center) {
+                            RegionMenu(selectedRegion: $selectedRegion)
+                                .padding(.leading, 20)
+                                .padding(.trailing, 5)
+                            
+                            PhoneNumberTextField(phoneNumberString: $phoneNumberString,
+                                                 region: selectedRegion)
+                                .padding(.vertical, 2)
+                                .padding(.trailing, 20)
+                        }
                     }
-                } label: {
-                    Text(translations["back"]!.output)
+                    
+                    Button {
+                        if verified {
+                            authenticateUser()
+                        } else {
+                            selectedRegionCode = selectedRegion
+                            verifyPhoneNumber()
+                        }
+                    } label: {
+                        Text(translations[verified ? "finish" : "continue"]!.output)
+                            .bold()
+                    }
+                    .padding(.top, 5)
+                    .accentColor(.blue)
+                    .disabled(verified ? verificationCode.lowercasedTrimmingWhitespace.count != 6 : phoneNumberString.removingOccurrences(of: ["+"]).lowercasedTrimmingWhitespace.count < 7)
+                    
+                    Button {
+                        if verified {
+                            verified = false
+                        } else if fromSignUp {
+                            languageCode = previousLanguageCode
+                            viewRouter.currentPage = .signUp_verifyNumber
+                        } else {
+                            viewRouter.currentPage = .initial
+                        }
+                    } label: {
+                        Text(translations["back"]!.output)
+                    }
+                    .padding(.top, 2)
+                    .foregroundColor(.blue)
+                    .font(.system(size: 15))
                 }
-                .padding(.top, 2)
-                .foregroundColor(.blue)
-                .font(.system(size: 15))
-            }
-            .padding(.bottom, 30)
-            
-            Spacer()
+                .padding(.bottom, 30)
+                
+                Spacer()
+            }.onAppear { currentFile = #file }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

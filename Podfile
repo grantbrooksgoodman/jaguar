@@ -7,7 +7,6 @@ target 'Jaguar' do
 
   # Pods for Application
     pod 'PKHUD', '~> 5.0'
-    pod 'ReachabilitySwift'
     pod 'Firebase/Analytics'
     pod 'Firebase/Auth'
     pod 'Firebase/Database'

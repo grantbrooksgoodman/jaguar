@@ -68,7 +68,7 @@ public struct NewConversationPageView: View {
             }.onAppear() {
                 self.requestAccess()
             }
-        }
+        }.onAppear { currentFile = #file }
     }
     
     //==================================================//

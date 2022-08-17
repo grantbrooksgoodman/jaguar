@@ -249,7 +249,7 @@ public class ConversationsPageViewModel: ObservableObject {
                                    metadata: [#file, #function, #line])
                         if index == conversations.count - 1 {
                             ConversationArchiver.addToArchive(conversations)
-                            self.load()
+                            //                            self.load()
                         }
                     }
                 }

@@ -35,33 +35,35 @@ public struct InitialPageView: View {
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
-            Image(uiImage: UIImage(named: "Hello.png")!)
-                .resizable()
-                .frame(width: 150, height: 70)
-                .padding(.bottom, 5)
-            
-            Text(translations["instruction"]!.output)
+            VStack {
+                Image(uiImage: UIImage(named: "Hello.png")!)
+                    .resizable()
+                    .frame(width: 150, height: 70)
+                    .padding(.bottom, 5)
+                
+                Text(translations["instruction"]!.output)
+                    .padding(.vertical, 5)
+                    .multilineTextAlignment(.center)
+                    .padding(.horizontal, 30)
+                
+                Button {
+                    viewRouter.currentPage = .signUp_selectLanguage
+                } label: {
+                    Text(translations["continue"]!.output)
+                        .bold()
+                }
                 .padding(.vertical, 5)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 30)
-            
-            Button {
-                viewRouter.currentPage = .signUp_selectLanguage
-            } label: {
-                Text(translations["continue"]!.output)
-                    .bold()
-            }
-            .padding(.vertical, 5)
-            .foregroundColor(.blue)
-            
-            Button {
-                viewRouter.currentPage = .signIn(phoneNumber: nil,
-                                                 fromSignUp: false)
-            } label: {
-                Text(translations["alreadyUse"]!.output)
-            }
-            .padding(.vertical, 5)
-            .foregroundColor(.blue)
+                .foregroundColor(.blue)
+                
+                Button {
+                    viewRouter.currentPage = .signIn(phoneNumber: nil,
+                                                     fromSignUp: false)
+                } label: {
+                    Text(translations["alreadyUse"]!.output)
+                }
+                .padding(.vertical, 5)
+                .foregroundColor(.blue)
+            }.onAppear { currentFile = #file }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }
