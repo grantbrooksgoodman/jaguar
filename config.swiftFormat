@@ -1,0 +1,11 @@
+#Rules
+--rules andOperator,anyObjectProtocol,blankLinesAroundMark,blankLinesAtEndOfScope,blankLinesAtEndOfScope,blankLinesBetweenScopes,braces,consecutiveBlankLines,consecutiveSpaces,duplicateImports,elseOnSameLine,emptyBraces,hoistPatternLet,indent,isEmpty,leadingDelimiters,linebreakAtEndOfFile,numberFormatting,spaceAroundOperators,redundantBackticks,redundantExtensionACL,redundantFileprivate,redundantGet,redundantInit,redundantLet,redundantLetError,redundantNilInit,redundantObjc,redundantParens,redundantPattern,redundantRawValues,redundantReturn,redundantSelf,redundantVoidReturnType,semicolons,sortedImports,spaceAroundBraces,spaceAroundBrackets,spaceAroundComments,spaceAroundGenerics,spaceAroundOperators,spaceAroundParens,spaceInsideBraces,spaceInsideBrackets,spaceInsideComments,spaceInsideGenerics,modifierOrder,strongOutlets,todos,trailingClosures,trailingCommas,trailingSpace,unusedArguments,void,wrapArguments,blankLinesAtStartOfScope
+
+# Rules Options
+--wraparguments afterfirst
+--wrapcollections beforeFirst
+--stripunusedargs closure-only
+--ifdef noindent
+--self init-only
+--commas inline
+

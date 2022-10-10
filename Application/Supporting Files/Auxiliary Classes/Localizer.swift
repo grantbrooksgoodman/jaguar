@@ -11,25 +11,11 @@ import Foundation
 
 //==================================================//
 
-/* MARK: - Enumerated Type Declarations */
+/* MARK: - Enums */
 
 public enum LocalizationCase: String /* Add pre-localized strings here. */ {
     case dismiss
-    case followingUnable
-    
-    case noInternetMessage
-    case noInternetTitle
-    
-    case notSupportedMessage
-    case sendFeedback
-    
-    case unableMessage
-    case unableTitle
-    
-    case newMessage
-    
-    case today
-    case yesterday
+    case noEmail
     
     case monday
     case tuesday
@@ -39,12 +25,26 @@ public enum LocalizationCase: String /* Add pre-localized strings here. */ {
     case saturday
     case sunday
     
+    case newMessage
+    case delivered
+    case read
+    case sending
+    
+    case noInternetMessage
+    case noInternetTitle
+    
+    case notSupported
+    case sendFeedback
+    
+    case today
+    case yesterday
+    
     var description: String {
         return rawValue.snakeCase()
     }
 }
 
-public struct Localizer {
+public enum Localizer {
     
     //==================================================//
     
@@ -52,15 +52,11 @@ public struct Localizer {
     
     public static func preLocalizedString(for case: LocalizationCase,
                                           language code: String? = nil) -> String? {
-        let language = code ?? languageCode
+        let language = code ?? RuntimeStorage.languageCode!
         
-        guard let essentialLocalizations = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "EssentialLocalizations", ofType: "plist") ?? "") as? [String: [String: String]] else {
-            return nil
-        }
+        guard let essentialLocalizations = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "EssentialLocalizations", ofType: "plist") ?? "") as? [String: [String: String]] else { return nil }
         
-        guard let dictionary = essentialLocalizations[`case`.description] else {
-            return nil
-        }
+        guard let dictionary = essentialLocalizations[`case`.description] else { return nil }
         
         return dictionary[language]
     }

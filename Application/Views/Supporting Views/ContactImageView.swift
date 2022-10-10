@@ -13,7 +13,7 @@ public struct ContactImageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
     public var uiImage: UIImage?
     

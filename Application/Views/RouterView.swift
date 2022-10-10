@@ -11,7 +11,7 @@ import SwiftUI
 
 //==================================================//
 
-/* MARK: - Enumerated Type Declarations */
+/* MARK: - Enums */
 
 public enum Page {
     case initial
@@ -23,7 +23,7 @@ public enum Page {
                          region: String)
     
     case signIn(phoneNumber: String?,
-                fromSignUp: Bool) //Add region for sign in from sign up flow
+                fromSignUp: Bool) // Add region for sign in from sign up flow
     case conversations
 }
 
@@ -32,7 +32,7 @@ public enum Page {
 /* MARK: - View Router Declaration */
 
 public class ViewRouter: ObservableObject {
-    @Published var currentPage: Page? = currentUserID == "" ? .initial : .conversations
+    @Published var currentPage: Page? = RuntimeStorage.currentUserID! == "" ? .initial : .conversations
 }
 
 //==================================================//
@@ -43,7 +43,7 @@ public struct RouterView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
     @StateObject public var viewRouter: ViewRouter
     
@@ -56,47 +56,47 @@ public struct RouterView: View {
         case .initial:
             InitialPageView(viewModel: InitialPageViewModel(),
                             viewRouter: viewRouter)
-                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
-                .zIndex(1)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
         case .signUp_verifyNumber:
             VerifyNumberPageView(viewModel: VerifyNumberPageViewModel(),
                                  viewRouter: viewRouter)
-                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
-                .zIndex(1)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
         case .signUp_authCode(let identifier,
                               let phoneNumber,
                               let region):
             AuthCodePageView(viewModel: AuthCodePageViewModel(),
                              viewRouter: viewRouter,
-                             verificationIdentifier: identifier,
                              phoneNumber: phoneNumber,
-                             region: region)
-                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
-                .zIndex(1)
+                             region: region,
+                             verificationIdentifier: identifier)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
         case .signUp_selectLanguage:
             SelectLanguagePageView(viewModel: SelectLanguagePageViewModel(),
                                    viewRouter: viewRouter)
-                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
-                .zIndex(1)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
         case .signIn(let phoneNumber,
                      let fromSignUp):
             SignInPageView(viewModel: SignInPageViewModel(),
                            viewRouter: viewRouter,
                            phoneNumberString: phoneNumber ?? "",
                            fromSignUp: fromSignUp)
-                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
-                .zIndex(1)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
         case .conversations:
             ConversationsPageView(viewModel: ConversationsPageViewModel(),
                                   viewRouter: viewRouter)
-                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
-                .zIndex(1)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
             
         default:
             InitialPageView(viewModel: InitialPageViewModel(),
                             viewRouter: viewRouter)
-                .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
-                .zIndex(1)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
         }
     }
 }
@@ -105,8 +105,8 @@ public struct RouterView: View {
 
 /* MARK: - Previews */
 
-//public struct RouterView_Previews: PreviewProvider {
+// public struct RouterView_Previews: PreviewProvider {
 //    public static var previews: some View {
 //        RouterView(viewRouter: ViewRouter())
 //    }
-//}
+// }

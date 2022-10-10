@@ -12,25 +12,13 @@ import SwiftUI
 import AlertKit
 import Translator
 
-//==================================================//
-
-/* MARK: - Top-level Variable Declarations */
-
-//Other Declarations
-public var currentFile = #file
-
-//==================================================//
-
 public struct BuildInfoOverlayView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
-    //    @State private var sendFeedbackButtonEnabled = true
-    
-    //    private var dismissTimer: Timer?
+    @State public var yOffset: CGFloat = 0
     
     //==================================================//
     
@@ -42,11 +30,11 @@ public struct BuildInfoOverlayView: View {
                 presentSendFeedbackAlert()
             }, label: {
                 Text(Localizer
-                        .preLocalizedString(for: .sendFeedback) ?? "Send Feedback")
-                    .font(Font.custom("Arial",
-                                      size: 12))
-                    .foregroundColor(.white)
-                    .underline()
+                    .preLocalizedString(for: .sendFeedback) ?? "Send Feedback")
+                .font(Font.custom("Arial",
+                                  size: 12))
+                .foregroundColor(.white)
+                .underline()
             })
             //            .disabled(!sendFeedbackButtonEnabled)
             .padding(.horizontal, 1)
@@ -72,10 +60,8 @@ public struct BuildInfoOverlayView: View {
                    alignment: .trailing)
             .offset(x: -10)
         }
-        .frame(maxWidth: .infinity,
-               maxHeight: .infinity,
-               alignment: .bottomTrailing)
-        .offset(x: -10)
+        .offset(x: -10,
+                y: yOffset)
     }
     
     //==================================================//
@@ -90,25 +76,24 @@ public struct BuildInfoOverlayView: View {
                                                 preferredStyle: .alert)
         
         alertController.addAction(UIAlertAction(title: Localizer
-                                                    .preLocalizedString(for: .dismiss) ?? "Dismiss",
+            .preLocalizedString(for: .dismiss) ?? "Dismiss",
                                                 style: .cancel,
                                                 handler: nil))
         
         let mainAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 13)]
         let alternateAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 14)]
         
-        let attributed = attributedString(message,
-                                          mainAttributes: mainAttributes,
-                                          alternateAttributes: alternateAttributes,
-                                          alternateAttributeRange: ["Build Number",
-                                                                    "Build Stage",
-                                                                    "Bundle Version",
-                                                                    "Project ID",
-                                                                    "SKU"])
+        let attributed = message.attributed(mainAttributes: mainAttributes,
+                                            alternateAttributes: alternateAttributes,
+                                            alternateAttributeRange: ["Build Number",
+                                                                      "Build Stage",
+                                                                      "Bundle Version",
+                                                                      "Project ID",
+                                                                      "SKU"])
         
         alertController.setValue(attributed, forKey: "attributedMessage")
         
-        politelyPresent(viewController: alertController)
+        Core.ui.politelyPresent(viewController: alertController)
     }
     
     private func presentDisclaimerAlert() {
@@ -130,8 +115,8 @@ public struct BuildInfoOverlayView: View {
                                                        TranslationInput(projectTitle),
                                                        TranslationInput(viewBuildInformationString)],
                                                  languagePair: LanguagePair(from: "en",
-                                                                            to: languageCode),
-                                                 requiresHUD: true,
+                                                                            to: RuntimeStorage.languageCode!),
+                                                 requiresHUD: false /*true*/,
                                                  using: .google) { (returnedTranslations,
                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
@@ -149,16 +134,16 @@ public struct BuildInfoOverlayView: View {
                                                            style: .default) { _ in
                 self.presentBuildInformationAlert()
             }
-                                                    
-                                                    alertController.addAction(viewBuildInformationAction)
+            
+            alertController.addAction(viewBuildInformationAction)
             alertController.addAction(UIAlertAction(title: Localizer
-                                                        .preLocalizedString(for: .dismiss) ?? "Dismiss",
+                .preLocalizedString(for: .dismiss) ?? "Dismiss",
                                                     style: .cancel,
                                                     handler: nil))
             
             guard Build.timebombActive else {
                 alertController.message = translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay
-                politelyPresent(viewController: alertController)
+                Core.ui.politelyPresent(viewController: alertController)
                 
                 return
             }
@@ -176,55 +161,43 @@ public struct BuildInfoOverlayView: View {
                 dateComponent = postExpiryComponents[1].components(separatedBy: ".")[0]
             }
             
-            let attributed = attributedString(translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay,
-                                              mainAttributes: mainAttributes,
-                                              alternateAttributes: alternateAttributes,
-                                              alternateAttributeRange: [dateComponent])
+            let message = translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay
+            let attributed = message.attributed(mainAttributes: mainAttributes,
+                                                alternateAttributes: alternateAttributes,
+                                                alternateAttributeRange: [dateComponent])
             alertController.setValue(attributed, forKey: "attributedMessage")
             
-            politelyPresent(viewController: alertController)
+            Core.ui.politelyPresent(viewController: alertController)
         }
     }
     
     private func presentSendFeedbackAlert() {
-        if isPresentingMailComposeViewController {
-            AKErrorAlert(message: "It appears that a report is already being filed.\n\nPlease complete the first report before beginning another.",
-                         error: AKError(metadata: [#file, #function, #line],
-                                        isReportable: false)).present()
-        } else {
-            //            sendFeedbackButtonEnabled = false
+        let sendFeedbackAction = AKAction(title: "Send Feedback", style: .default)
+        let reportBugAction = AKAction(title: "Report a Bug", style: .default)
+        
+        let fileReportAlert = AKAlert(title: "File Report",
+                                      message: "Choose the option which best describes your intention.",
+                                      actions: [sendFeedbackAction, reportBugAction],
+                                      networkDependent: true)
+        
+        fileReportAlert.present { actionID in
+            guard actionID != -1 else {
+                return
+            }
             
-            //            dismissTimer = Timer.scheduledTimer(timeInterval: 10,
-            //                                                target: self,
-            //                                                selector: #selector(reenableButton),
-            //                                                userInfo: nil,
-            //                                                repeats: false)
-            
-            let sendFeedbackAction = AKAction(title: "Send Feedback", style: .default)
-            let reportBugAction = AKAction(title: "Report a Bug", style: .default)
-            
-            AKAlert(title: "File Report",
-                    message: "Choose the option which best describes your intention.",
-                    actions: [sendFeedbackAction, reportBugAction],
-                    networkDependent: true).present { (actionID) in
-                        guard actionID != -1 else {
-                            return
-                        }
-                        
-                        if actionID == sendFeedbackAction.identifier {
-                            AKCore.shared.reportProvider().fileReport(type: .feedback,
-                                                                      body: "Appended below are various data points useful in analysing any potential problems within the application. Please do not edit the information contained in the lines below, with the exception of the last field, in which any general feedback is appreciated.",
-                                                                      prompt: "General Feedback",
-                                                                      extraInfo: nil,
-                                                                      metadata: [currentFile, #function, #line])
-                        } else if actionID == reportBugAction.identifier {
-                            AKCore.shared.reportProvider().fileReport(type: .bug,
-                                                                      body: "In the appropriate section, please describe the error encountered and the steps to reproduce it.",
-                                                                      prompt: "Description/Steps to Reproduce",
-                                                                      extraInfo: nil,
-                                                                      metadata: [currentFile, #function, #line])
-                        }
-                    }
+            if actionID == sendFeedbackAction.identifier {
+                AKCore.shared.reportProvider().fileReport(type: .feedback,
+                                                          body: "Appended below are various data points useful in analysing any potential problems within the application. Please do not edit the information contained in the lines below, with the exception of the last field, in which any general feedback is appreciated.",
+                                                          prompt: "General Feedback",
+                                                          extraInfo: nil,
+                                                          metadata: [RuntimeStorage.currentFile!, #function, #line])
+            } else if actionID == reportBugAction.identifier {
+                AKCore.shared.reportProvider().fileReport(type: .bug,
+                                                          body: "In the appropriate section, please describe the error encountered and the steps to reproduce it.",
+                                                          prompt: "Description/Steps to Reproduce",
+                                                          extraInfo: nil,
+                                                          metadata: [RuntimeStorage.currentFile!, #function, #line])
+            }
         }
     }
 }

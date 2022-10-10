@@ -8,17 +8,19 @@
 
 /* First-party Frameworks */
 import CryptoKit
+import UIKit
 
 /* Third-party Frameworks */
+import AlertKit
 import Translator
 
-public struct TranslationSerializer {
+public enum TranslationSerializer {
     
     //==================================================//
     
     /* MARK: - Uploading Functions */
     
-    public static func uploadTranslation(_ translation: Translation,
+    public static func uploadTranslation(_ translation: Translator.Translation,
                                          completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
         let languagePair = translation.languagePair
         let serializedTranslation = translation.serialize()
@@ -44,7 +46,7 @@ public struct TranslationSerializer {
         }
     }
     
-    public static func uploadTranslations(_ translations: [Translation],
+    public static func uploadTranslations(_ translations: [Translator.Translation],
                                           completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
         let languagePairs = translations.languagePairs()
         var finalErrorDescriptor = ""
@@ -74,11 +76,14 @@ public struct TranslationSerializer {
     /* MARK: - Downloading Functions */
     
     public static func downloadTranslations(completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
-        GeneralSerializer.getValues(atPath: "/allTranslations/en-\(languageCode)") { (returnedValues, errorDescriptor) in
+#warning("Figure out whether the limit will cause any issues. It shouldn't, because we have findTranslation() as a backup, but still.")
+        GeneralSerializer.queryValues(atPath: "allTranslations/en-\(RuntimeStorage.languageCode!)",
+                                      limit: 50) { (returnedValues,
+                                                    errorDescriptor) in
             guard let values = returnedValues as? [String: String] else {
                 let error = errorDescriptor ?? "No online translation archive for this language pair."
                 
-                if languageCode != "en" {
+                if RuntimeStorage.languageCode! != "en" {
                     Logger.log(error,
                                metadata: [#file, #function, #line])
                 }
@@ -98,23 +103,40 @@ public struct TranslationSerializer {
                        verbose: true,
                        metadata: [#file, #function, #line])
             
-            let languagePair = LanguagePair(from: "en",
-                                            to: languageCode)
+            let languagePair = Translator.LanguagePair(from: "en",
+                                                       to: RuntimeStorage.languageCode!)
             
-            for key in decodedValues.keys {
-                let input = TranslationInput(key)
-                let translation = Translation(input: input,
-                                              output: decodedValues[key]!,
-                                              languagePair: languagePair)
+            for (index, key) in decodedValues.keys.enumerated() {
+                let input = Translator.TranslationInput(key)
+                let translation = Translator.Translation(input: input,
+                                                         output: decodedValues[key]!,
+                                                         languagePair: languagePair)
                 
                 TranslationArchiver.addToArchive(translation)
+                
+                if index == decodedValues.count - 1 {
+                    let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
+                    
+                    if var topController = keyWindow?.rootViewController {
+                        while let presentedViewController = topController.presentedViewController {
+                            topController = presentedViewController
+                        }
+                        
+                        if topController.isKind(of: UIAlertController.self) {
+                            topController.dismiss(animated: true)
+                            AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
+                        }
+                    }
+                    
+                    completion(nil)
+                }
             }
         }
     }
     
     public static func findTranslation(withReference: String,
-                                       languagePair: LanguagePair,
-                                       completion: @escaping(_ returnedTranslation: Translation?,
+                                       languagePair: Translator.LanguagePair,
+                                       completion: @escaping(_ returnedTranslation: Translator.Translation?,
                                                              _ errorDescriptor: String?) -> Void) {
         let path = "/allTranslations/\(languagePair.asString())"
         
@@ -148,8 +170,8 @@ public struct TranslationSerializer {
         }
     }
     
-    public static func findTranslation(for input: TranslationInput,
-                                       languagePair: LanguagePair,
+    public static func findTranslation(for input: Translator.TranslationInput,
+                                       languagePair: Translator.LanguagePair,
                                        completion: @escaping(_ returnedString: String?,
                                                              _ errorDescriptor: String?) -> Void) {
         let path = "/allTranslations/\(languagePair.asString())"
@@ -158,8 +180,8 @@ public struct TranslationSerializer {
             guard let value = returnedValues as? String else {
                 let error = errorDescriptor ?? "No uploaded translation exists."
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
+                //                Logger.log(error,
+                //                           metadata: [#file, #function, #line])
                 completion(nil, error)
                 return
             }
@@ -173,8 +195,8 @@ public struct TranslationSerializer {
         }
     }
     
-    public static func findTranslations(_ for: [TranslationInput],
-                                        languagePair: LanguagePair,
+    public static func findTranslations(_ for: [Translator.TranslationInput],
+                                        languagePair: Translator.LanguagePair,
                                         completion: @escaping(_ returnedStrings: [String: String]?) -> Void) {
         let dispatchGroup = DispatchGroup()
         
@@ -204,7 +226,7 @@ public struct TranslationSerializer {
                                metadata: [#file, #function, #line])
                 }
                 
-                if Array(translationDictionary.values).filter({$0 != "!"}).count == 0 {
+                if Array(translationDictionary.values).filter({$0 != "!"}).isEmpty {
                     completion(nil)
                 } else {
                     completion(translationDictionary)
@@ -222,8 +244,8 @@ public struct TranslationSerializer {
     
     /* MARK: - Removal Functions */
     
-    public static func removeTranslation(for input: TranslationInput,
-                                         languagePair: LanguagePair,
+    public static func removeTranslation(for input: Translator.TranslationInput,
+                                         languagePair: Translator.LanguagePair,
                                          completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
         GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
                                       withData: [input.value().compressedHash: NSNull()]) { (returnedError) in
@@ -244,8 +266,8 @@ public struct TranslationSerializer {
         }
     }
     
-    public static func removeTranslations(for inputs: [TranslationInput],
-                                          languagePair: LanguagePair,
+    public static func removeTranslations(for inputs: [Translator.TranslationInput],
+                                          languagePair: Translator.LanguagePair,
                                           completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
         var nulledDictionary = [String: Any]()
         for input in inputs {
@@ -276,8 +298,8 @@ public struct TranslationSerializer {
     
     /* MARK: - Private Functions */
     
-    private static func uploadTranslations(_ translations: [Translation],
-                                           for languagePair: LanguagePair,
+    private static func uploadTranslations(_ translations: [Translator.Translation],
+                                           for languagePair: Translator.LanguagePair,
                                            completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
         guard translations.homogeneousLanguagePairs() else {
             completion("Translations are not all from the same language!")

@@ -9,13 +9,13 @@
 /* Third-party Frameworks */
 import Translator
 
-public struct PLISTGenerator {
+public enum PLISTGenerator {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Functions */
     
-    public static func createPLIST(from dictionary: [String: String]) {
+    public static func createPLIST(from dictionary: [String: Any]) {
         let fileManager = FileManager.default
         
         let documentDirectory = NSSearchPathForDirectoriesInDomains(.documentDirectory, .userDomainMask, true)[0] as String
@@ -46,7 +46,7 @@ public struct PLISTGenerator {
             FirebaseTranslator.shared.translate(TranslationInput(text),
                                                 with: LanguagePair(from: "en",
                                                                    to: languageCode),
-                                                using: .random) { (returnedTranslation, errorDescriptor) in
+                                                using: .random) { returnedTranslation, errorDescriptor in
                 dispatchGroup.leave()
                 
                 guard let translation = returnedTranslation else {

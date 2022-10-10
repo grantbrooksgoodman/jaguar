@@ -1,5 +1,5 @@
 //
-//  ContactsServer.swift
+//  ContactService.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 06/07/2022.
@@ -9,14 +9,27 @@
 /* First-party Frameworks */
 import ContactsUI
 
-public class ContactsServer {
+public enum ContactService {
+    
+    //==================================================//
+    
+    /* MARK: - Properties */
+    
+    // Dictionaries
+    private static var names = [String: (String, String)]()
+    private static var thumbnails = [String: UIImage]()
     
     //==================================================//
     
     /* MARK: - Public Functions */
     
-    public static func fetchAllContacts() -> [ContactInfo] {
-        var contacts = [ContactInfo]()
+    public static func clearCache() {
+        thumbnails = [:]
+        names = [:]
+    }
+    
+    public static func fetchAllContacts() -> [Contact] {
+        var contacts = [Contact]()
         
         let contactStore = CNContactStore()
         let queryKeys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
@@ -24,13 +37,15 @@ public class ContactsServer {
         let fetchRequest = CNContactFetchRequest(keysToFetch: queryKeys as! [CNKeyDescriptor])
         
         do {
-            try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { (contact,
-                                                                                  endPointer) in
-                contacts.append(ContactInfo(firstName: contact.givenName,
+            try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { contact,
+                _ in
+                if !contact.phoneNumbers.isEmpty {
+                    contacts.append(Contact(firstName: contact.givenName,
                                             lastName: contact.familyName,
-                                            phoneNumber: contact.phoneNumbers.first?.value))
+                                            phoneNumbers: contact.phoneNumbers.asPhoneNumbers()))
+                }
             })
-        } catch let error {
+        } catch {
             Logger.log("Unable to fetch contacts.\n\(Logger.errorInfo(error))",
                        metadata: [#file, #function, #line])
         }
@@ -43,6 +58,10 @@ public class ContactsServer {
     }
     
     public static func fetchContactName(forNumber: String) -> (givenName: String, familyName: String)? {
+        guard names[forNumber] == nil else {
+            return names[forNumber]!
+        }
+        
         let queryDigits = forNumber.digits
         
         var contactName: (String, String)?
@@ -53,24 +72,33 @@ public class ContactsServer {
         let fetchRequest = CNContactFetchRequest(keysToFetch: queryKeys as! [CNKeyDescriptor])
         
         do {
-            try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { (contact,
-                                                                                  endPointer) in
+            try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { contact,
+                _ in
                 for phoneNumber in contact.phoneNumbers {
-                    if phoneNumber.value.stringValue.digits == queryDigits {
+                    if phoneNumber.value.stringValue.digits == queryDigits ||
+                        phoneNumber.value.stringValue.digits.dropPrefix(1) == queryDigits ||
+                        phoneNumber.value.stringValue.digits.dropPrefix(2) == queryDigits ||
+                        phoneNumber.value.stringValue.digits.dropPrefix(3) == queryDigits {
                         contactName = (contact.givenName, contact.familyName)
                     }
                 }
             })
-        } catch let error {
+        } catch {
             Logger.log("Unable to fetch contact name.\n\(Logger.errorInfo(error))",
                        metadata: [#file, #function, #line])
             return nil
         }
         
+        names[forNumber] = contactName ?? ("", "")
+        
         return contactName
     }
     
     public static func fetchContactThumbnail(forNumber: String) -> UIImage? {
+        guard thumbnails[forNumber] == nil else {
+            return thumbnails[forNumber]!
+        }
+        
         let queryDigits = forNumber.digits
         
         var thumbnailImage: UIImage?
@@ -82,21 +110,27 @@ public class ContactsServer {
         let fetchRequest = CNContactFetchRequest(keysToFetch: queryKeys as! [CNKeyDescriptor])
         
         do {
-            try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { (contact,
-                                                                                  endPointer) in
+            try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { contact,
+                _ in
                 for phoneNumber in contact.phoneNumbers {
-                    if phoneNumber.value.stringValue.digits == queryDigits,
+                    if phoneNumber.value.stringValue.digits == queryDigits ||
+                        phoneNumber.value.stringValue.digits.dropPrefix(1) == queryDigits ||
+                        phoneNumber.value.stringValue.digits.dropPrefix(2) == queryDigits ||
+                        phoneNumber.value.stringValue.digits.dropPrefix(3) == queryDigits,
                        contact.imageDataAvailable,
-                       let imageData = contact.imageData {
+                       let imageData = contact.imageData
+                    {
                         thumbnailImage = UIImage(data: imageData)
                     }
                 }
             })
-        } catch let error {
+        } catch {
             Logger.log("Unable to fetch contact image data.\n\(Logger.errorInfo(error))",
                        metadata: [#file, #function, #line])
             return nil
         }
+        
+        thumbnails[forNumber] = thumbnailImage ?? UIImage()
         
         return thumbnailImage
     }

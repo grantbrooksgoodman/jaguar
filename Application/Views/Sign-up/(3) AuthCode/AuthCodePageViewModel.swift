@@ -15,7 +15,7 @@ public class AuthCodePageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Enumerated Type Declarations */
+    /* MARK: - Enums */
     
     public enum State {
         case idle
@@ -26,9 +26,8 @@ public class AuthCodePageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     private let inputs = ["title": TranslationInput("Enter Verification Code"),
                           "subtitle": TranslationInput("A verification code was sent to your device. It may take a minute or so to arrive.\n\nWhen ready, press continue to complete setup."),
                           "instruction": TranslationInput("Enter the code sent to your device:"),
@@ -80,15 +79,6 @@ public class AuthCodePageViewModel: ObservableObject {
             }
             
             completion(result.user.uid, nil)
-        }
-    }
-    
-    public func simpleErrorString(_ errorDescriptor: String) -> String {
-        switch errorDescriptor {
-        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code SMS and be sure to use the verification code provided by the user.":
-            return "The verification code entered was invalid.\n\nPlease try again."
-        default:
-            return "An unknown error has occurred. Please try again."
         }
     }
 }

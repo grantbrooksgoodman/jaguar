@@ -12,7 +12,7 @@ import MessageUI
 import AlertKit
 import Translator
 
-public class ReportProvider: NSObject, AKReportProvider {
+public class ReportProvider: UIViewController, AKReportProvider, MFMailComposeViewControllerDelegate {
     
     //==================================================//
     
@@ -29,8 +29,8 @@ public class ReportProvider: NSObject, AKReportProvider {
         TranslatorService.shared.getTranslations(for: [Translator.TranslationInput(body),
                                                        Translator.TranslationInput(prompt)],
                                                  languagePair: Translator.LanguagePair(from: "en",
-                                                                                       to: languageCode),
-                                                 requiresHUD: true,
+                                                                                       to: RuntimeStorage.languageCode!),
+                                                 requiresHUD: false /*true*/,
                                                  using: .google) { (returnedTranslations,
                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
@@ -59,7 +59,7 @@ public class ReportProvider: NSObject, AKReportProvider {
             
             let bodySection = translatedBody.split(separator: ".").count > 1 ? "<i>\(translatedBody.split(separator: ".")[0]).<p></p>\(translatedBody.split(separator: ".")[1]).</i><p></p>" : "<i>\(translatedBody.split(separator: ".")[0]).</i><p></p>"
             
-            let compiledRemainder = "<b>Project ID:</b> \(Build.projectID)<p></p><b>Build SKU:</b> \(Build.buildSKU)<p></p><b>Occurrence Date:</b> \(secondaryDateFormatter.string(from: Date()))<p></p><b>Internet Connection Status:</b> \(connectionStatus)<p></p>\(extraInfo == nil ? "" : "<b>Extraneous Information:</b> \(extraInfo!)<p></p>")<b>Reference Code:</b> [\(code)]<p></p><b>\(translatedPrompt):</b> "
+            let compiledRemainder = "<b>Project ID:</b> \(Build.projectID)<p></p><b>Build SKU:</b> \(Build.buildSKU)<p></p><b>Occurrence Date:</b> \(Core.secondaryDateFormatter!.string(from: Date()))<p></p><b>Internet Connection Status:</b> \(connectionStatus)<p></p>\(extraInfo == nil ? "" : "<b>Extraneous Information:</b> \(extraInfo!)<p></p>")<b>Reference Code:</b> [\(code)]<p></p><b>\(translatedPrompt):</b> "
             
             let subject = "\(Build.stage == .generalRelease ? Build.finalName : Build.codeName) (\(Build.bundleVersion)) \(type == .bug ? "Bug" : (type == .error ? "Error" : "Feedback")) Report"
             
@@ -67,7 +67,7 @@ public class ReportProvider: NSObject, AKReportProvider {
                                 recipients: ["me@grantbrooks.io"],
                                 subject: subject,
                                 isHTML: true,
-                                metadata: metadata)
+                                metadata: [#file, #function, #line])
         }
     }
     
@@ -75,26 +75,19 @@ public class ReportProvider: NSObject, AKReportProvider {
     
     /* MARK: - Mail Composition Functions */
     
-    func composeMessage(_ message: String,
-                        recipients: [String],
-                        subject: String,
-                        isHTML: Bool,
-                        metadata: [Any]) {
-        //    hideHUD(delay: nil)
-        
+    public func composeMessage(_ message: String,
+                               recipients: [String],
+                               subject: String,
+                               isHTML: Bool,
+                               metadata: [Any]) {
         if MFMailComposeViewController.canSendMail() {
             let composeController = MFMailComposeViewController()
-            composeController.mailComposeDelegate = (AKCore.shared.getFrontmostVC() as! MFMailComposeViewControllerDelegate)
+            composeController.mailComposeDelegate = self
             composeController.setToRecipients(recipients)
             composeController.setMessageBody(message, isHTML: isHTML)
             composeController.setSubject(subject)
             
-            //        if let controller = buildInfoController {
-            //            controller.wasHidden = controller.view.isHidden
-            //            controller.view.isHidden = true
-            //        }
-            
-            politelyPresent(viewController: composeController)
+            Core.ui.politelyPresent(viewController: composeController)
         } else {
             let error = AKError(nil, metadata: metadata, isReportable: false)
             AKErrorAlert(message: "It appears that your device is not able to send e-mail.\n\nPlease verify that your e-mail client is set up and try again.",
@@ -103,17 +96,11 @@ public class ReportProvider: NSObject, AKReportProvider {
         }
     }
     
-    func handleMailComposition(controller: MFMailComposeViewController,
-                               result: MFMailComposeResult,
-                               error: Error?) {
+    public func handleMailComposition(controller: MFMailComposeViewController,
+                                      result: MFMailComposeResult,
+                                      error: Error?) {
         controller.dismiss(animated: true) {
-            isPresentingMailComposeViewController = false
-            
-            //        if let controller = buildInfoController {
-            //            controller.view.isHidden = controller.wasHidden
-            //        }
-            
-            after(seconds: 1) {
+            Core.gcd.after(seconds: 1) {
                 if result == .failed {
                     let error = AKError((error != nil ? Logger.errorInfo(error!) : nil),
                                         metadata: [#file, #function, #line],
@@ -130,5 +117,13 @@ public class ReportProvider: NSObject, AKReportProvider {
                 }
             }
         }
+    }
+    
+    public func mailComposeController(_ controller: MFMailComposeViewController,
+                                      didFinishWith result: MFMailComposeResult,
+                                      error: Error?) {
+        handleMailComposition(controller: controller,
+                              result: result,
+                              error: error)
     }
 }

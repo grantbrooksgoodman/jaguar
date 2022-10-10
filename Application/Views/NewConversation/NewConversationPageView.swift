@@ -10,109 +10,88 @@
 import ContactsUI
 import SwiftUI
 
+/* Third-party Frameworks */
+import PhoneNumberKit
+
 public struct NewConversationPageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    @State private var contacts = [ContactInfo.init(firstName: "",
-                                                    lastName: "",
-                                                    phoneNumber: nil)]
+    @StateObject public var viewModel: NewConversationPageViewModel
+    
     @State private var searchText = ""
     @State private var showCancelButton: Bool = false
+    @Binding public var isPresenting: Bool
     
     //==================================================//
     
     /* MARK: - View Body */
     
     public var body: some View {
-        VStack {
-            HStack {
+        switch viewModel.state {
+        case .idle:
+            Color.clear.onAppear(perform: viewModel.load)
+        case .loading:
+            ProgressView("")
+        case .loaded(translations: let translations):
+            VStack {
                 HStack {
-                    Image(systemName: "magnifyingglass").foregroundColor(.secondary)
+                    HStack {
+                        Image(systemName: "magnifyingglass").foregroundColor(.secondary)
+                        
+                        TextField(translations["search"]!.output, text: self.$searchText, onEditingChanged: { isEditing in
+                            self.showCancelButton = true
+                        })
+                        
+                        Button(action: {
+                            self.searchText = ""
+                        }) {
+                            Image(systemName: "xmark.circle.fill")
+                                .foregroundColor(.secondary)
+                                .opacity(self.searchText == "" ? 0 : 1)
+                        }
+                    }
+                    .padding(8)
+                    .background(Color(.secondarySystemBackground))
+                    .cornerRadius(8)
                     
-                    TextField("search", text: self.$searchText, onEditingChanged: { isEditing in
-                        self.showCancelButton = true
-                    })
-                    
-                    Button(action: {
-                        self.searchText = ""
-                    }) {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(.secondary)
-                            .opacity(self.searchText == "" ? 0 : 1)
+                    if self.showCancelButton  {
+                        Button("Cancel") {
+                            UIApplication.shared.endEditing(true)
+                            self.searchText = ""
+                            self.showCancelButton = false
+                        }
                     }
                 }
-                .padding(8)
-                .background(Color(.secondarySystemBackground))
-                .cornerRadius(8)
+                .padding([.leading, .trailing,.top])
                 
-                if self.showCancelButton  {
-                    Button("Cancel") {
-                        UIApplication.shared.endEditing(true)
-                        self.searchText = ""
-                        self.showCancelButton = false
-                    }
-                }
-            }
-            .padding([.leading, .trailing,.top])
-            
-            List {
-                ForEach (self.contacts.filter({ (contact) -> Bool in
-                    self.searchText.isEmpty ? true :
+                List {
+                    ForEach (viewModel.contacts.contacts.sorted(by: { $0.lastName < $1.lastName }).filter({ (contact) -> Bool in
+                        self.searchText.isEmpty ? true :
                         "\(contact)".lowercased().contains(self.searchText.lowercased())
-                })) { contact in
-                    ContactCell(contact: contact)
+                    })) { contact in
+                        let contactPair = viewModel.contacts.filter({ $0.contact.hash == contact.hash }).first!
+                        
+                        if contact.firstName != "" || contact.lastName != "" {
+                            if contactPair.users != nil {
+                                Button("\(contact.firstName) \(contact.lastName)") {
+                                    isPresenting = false
+                                    RuntimeStorage.store(contactPair, as: .selectedContactPair)
+                                }
+                            } else {
+                                Text("\(contact.firstName) \(contact.lastName)")
+                            }
+                        }
+                    }
                 }
-            }.onAppear() {
-                self.requestAccess()
+            }.onAppear {
+                RuntimeStorage.store(#file, as: .currentFile)
+                viewModel.requestAccess()
             }
-        }.onAppear { currentFile = #file }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Private Functions */
-    
-    private func getContacts() {
-        DispatchQueue.main.async {
-            self.contacts = ContactsServer.fetchAllContacts()
-        }
-    }
-    
-    private func requestAccess() {
-        let contactStore = CNContactStore()
-        
-        switch CNContactStore.authorizationStatus(for: .contacts) {
-        case .authorized:
-            self.getContacts()
-        case .denied:
-            contactStore.requestAccess(for: .contacts) { granted,
-                                                         error in
-                guard granted else {
-                    Logger.log(error == nil ? "An unknown error occurred." : Logger.errorInfo(error!),
-                               metadata: [#file, #function, #line])
-                    return
-                }
-                
-                self.getContacts()
-            }
-        case .restricted, .notDetermined:
-            contactStore.requestAccess(for: .contacts) { granted,
-                                                         error in
-                
-                guard granted else {
-                    Logger.log(error == nil ? "An unknown error occurred." : Logger.errorInfo(error!),
-                               metadata: [#file, #function, #line])
-                    return
-                }
-                
-                self.getContacts()
-            }
-        @unknown default:
-            Logger.log("An unknown error occurred.",
-                       metadata: [#file, #function, #line])
+        case .failed(let errorDescriptor):
+            Text(errorDescriptor)
         }
     }
 }

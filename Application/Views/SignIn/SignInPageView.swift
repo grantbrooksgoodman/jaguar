@@ -17,12 +17,12 @@ public struct SignInPageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
     @StateObject public var viewModel: SignInPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
-    //Strings
+    // Strings
     @State public var phoneNumberString: String
     @State public var fromSignUp: Bool
     @State private var verificationIdentifier: String = "" {
@@ -32,7 +32,7 @@ public struct SignInPageView: View {
     }
     @State private var verificationCode: String = ""
     
-    //Other Declarations
+    // Other
     @State private var verified = false
     @State private var selectedRegion = "US"
     
@@ -80,8 +80,8 @@ public struct SignInPageView: View {
                             
                             PhoneNumberTextField(phoneNumberString: $phoneNumberString,
                                                  region: selectedRegion)
-                                .padding(.vertical, 2)
-                                .padding(.trailing, 20)
+                            .padding(.vertical, 2)
+                            .padding(.trailing, 20)
                         }
                     }
                     
@@ -89,7 +89,7 @@ public struct SignInPageView: View {
                         if verified {
                             authenticateUser()
                         } else {
-                            selectedRegionCode = selectedRegion
+                            RuntimeStorage.store(selectedRegion, as: .selectedRegionCode)
                             verifyPhoneNumber()
                         }
                     } label: {
@@ -104,7 +104,7 @@ public struct SignInPageView: View {
                         if verified {
                             verified = false
                         } else if fromSignUp {
-                            languageCode = previousLanguageCode
+                            RuntimeStorage.store(RuntimeStorage.previousLanguageCode!, as: .languageCode)
                             viewRouter.currentPage = .signUp_verifyNumber
                         } else {
                             viewRouter.currentPage = .initial
@@ -119,7 +119,7 @@ public struct SignInPageView: View {
                 .padding(.bottom, 30)
                 
                 Spacer()
-            }.onAppear { currentFile = #file }
+            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }
@@ -133,47 +133,34 @@ public struct SignInPageView: View {
         viewModel.authenticateUser(identifier: verificationIdentifier,
                                    verificationCode: verificationCode) { (userID, returnedError) in
             guard let identifier = userID else {
-                let errorDescriptor = returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!)
-                Logger.log(errorDescriptor,
+                let error = returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!)
+                Logger.log(error,
+                           with: .errorAlert,
                            metadata: [#file, #function, #line])
-                
-                let akError = AKError(errorDescriptor,
-                                      metadata: [#file, #function, #line],
-                                      isReportable: true)
-                AKErrorAlert(message: viewModel.simpleErrorString(errorDescriptor),
-                             error: akError).present()
-                
                 return
             }
             
-            currentUserID = identifier
+            RuntimeStorage.store(identifier, as: .currentUserID)
             viewRouter.currentPage = .conversations
         }
     }
     
     private func verifyPhoneNumber() {
-        let compiledNumber = "\(callingCodeDictionary[selectedRegion]!)\(phoneNumberString.digits)".digits
+        let compiledNumber = "\(RuntimeStorage.callingCodeDictionary![selectedRegion]!)\(phoneNumberString.digits)".digits
         
         viewModel.verifyPhoneNumber("+\(compiledNumber)") { (returnedIdentifier,
                                                              returnedError) in
             
             guard let identifier = returnedIdentifier else {
                 let error = returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!)
-                let akError = AKError(error,
-                                      metadata: [#file, #function, #line],
-                                      isReportable: false)
-                
                 Logger.log(error,
+                           with: .errorAlert,
                            metadata: [#file, #function, #line])
-                AKErrorAlert(message: viewModel.simpleErrorString(error),
-                             error: akError,
-                             networkDependent: true).present()
-                
                 return
             }
             
             verificationIdentifier = identifier
-            selectedRegionCode = nil
+            RuntimeStorage.remove(.selectedRegionCode)
         }
     }
 }

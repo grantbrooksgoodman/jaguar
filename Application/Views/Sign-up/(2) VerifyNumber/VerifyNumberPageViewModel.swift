@@ -19,7 +19,7 @@ public class VerifyNumberPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Enumerated Type Declarations */
+    /* MARK: - Enums */
     
     public enum State {
         case idle
@@ -30,9 +30,8 @@ public class VerifyNumberPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     private let inputs = ["title": TranslationInput("Enter Phone Number"),
                           "subtitle": TranslationInput("Next, enter your phone number with your country prefix.\n\nA verification code will be sent to your number. Standard messaging rates apply."),
                           "instruction": TranslationInput("Enter your phone number below:"),
@@ -70,23 +69,10 @@ public class VerifyNumberPageViewModel: ObservableObject {
     
     /* MARK: - Other Functions */
     
-    public func simpleErrorString(_ errorDescriptor: String) -> String {
-        switch errorDescriptor {
-        case "Invalid format.", "The format of the phone number provided is incorrect. Please enter the phone number in a format that can be parsed into E.164 format. E.164 phone numbers are written in the format [+][country code][subscriber number including area code].", "TOO_SHORT":
-            return "The format of the phone number provided is incorrect.\n\nPlease verify that you have fully entered your phone number, including the country and area codes."
-        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code sms and be sure use the verification code provided by the user.":
-            return "The verification code entered was invalid. Please try again."
-        case "We have blocked all requests from this device due to unusual activity. Try again later.":
-            return "Due to unusual activity, all requests from this device have been temporarily blocked. Please try again later."
-        default:
-            return "An unknown error has occurred. Please try again."
-        }
-    }
-    
     public func verifyPhoneNumber(_ string: String,
                                   completion: @escaping (_ returnedIdentifier: String?,
                                                          _ errorDescriptor: String?) -> Void) {
-        Auth.auth().languageCode = languageCode
+        Auth.auth().languageCode = RuntimeStorage.languageCode!
         PhoneAuthProvider.provider().verifyPhoneNumber(string,
                                                        uiDelegate: nil) { (returnedIdentifier,
                                                                            returnedError) in
@@ -99,8 +85,8 @@ public class VerifyNumberPageViewModel: ObservableObject {
                            completion: @escaping (_ returnedIdentifier: String?,
                                                   _ errorDescriptor: String?,
                                                   _ hasAccount: Bool) -> Void) {
-        UserSerializer.shared.findUser(byPhoneNumber: phoneNumber) { (returnedUser, _) in
-            if returnedUser == nil {
+        UserSerializer.shared.validUsers(forPhoneNumbers: [phoneNumber]) { returnedUsers, errorDescriptor in
+            if returnedUsers == nil || returnedUsers?.count == 0 {
                 self.verifyPhoneNumber("+\(phoneNumber)") { (returnedIdentifier,
                                                              errorDescriptor) in
                     guard let identifier = returnedIdentifier else {
@@ -115,8 +101,8 @@ public class VerifyNumberPageViewModel: ObservableObject {
                                false)
                 }
             } else {
-                previousLanguageCode = languageCode
-                languageCode = returnedUser!.languageCode
+                RuntimeStorage.store(RuntimeStorage.languageCode!, as: .previousLanguageCode)
+                RuntimeStorage.store(returnedUsers![0].languageCode!, as: .languageCode)
                 
                 completion(nil,
                            nil,

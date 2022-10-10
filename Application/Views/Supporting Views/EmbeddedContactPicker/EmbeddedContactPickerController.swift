@@ -12,7 +12,7 @@ import ContactsUI
 
 //==================================================//
 
-/* MARK: - Protocol Declarations */
+/* MARK: - Protocols */
 
 public protocol EmbeddedContactPickerControllerDelegate: AnyObject {
     func embeddedContactPickerControllerDidCancel(_ viewController: EmbeddedContactPickerController)
@@ -23,13 +23,13 @@ public protocol EmbeddedContactPickerControllerDelegate: AnyObject {
 
 //==================================================//
 
-/* MARK: - Class Declarations */
+/* MARK: - Classes */
 
 public class EmbeddedContactPickerController: UIViewController, CNContactPickerDelegate {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
     public weak var delegate: EmbeddedContactPickerControllerDelegate?
     

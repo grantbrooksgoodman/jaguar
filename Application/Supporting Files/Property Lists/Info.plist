@@ -2,8 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>synchronizeContacts</string>
+	</array>
 	<key>CFBuildDate</key>
-	<string>1660775370</string>
+	<string>1665385512</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -19,9 +23,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleReleaseVersion</key>
-	<string>2859</string>
+	<string>4477</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.19.57</string>
+	<string>0.29.89</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -42,7 +46,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>2859</string>
+	<string>4477</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>dbapi-2</string>
@@ -52,6 +56,23 @@
 	<true/>
 	<key>NSContactsUsageDescription</key>
 	<string>Jaguar needs access to your contacts.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Jaguar needs access to your photos.</string>
+	<key>UIAppFonts</key>
+	<array>
+		<string>San Francisco (Bold Italic).otf</string>
+		<string>San Francisco (Bold).otf</string>
+		<string>San Francisco (Heavy Italic).otf</string>
+		<string>San Francisco (Heavy).otf</string>
+		<string>San Francisco (Light Italic).otf</string>
+		<string>San Francisco (Light).otf</string>
+		<string>San Francisco (Medium Italic).otf</string>
+		<string>San Francisco (Medium).otf</string>
+		<string>San Francisco (Regular Italic).otf</string>
+		<string>San Francisco (Regular).otf</string>
+		<string>San Francisco (Semibold Italic).otf</string>
+		<string>San Francisco (Semibold).otf</string>
+	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict>
 		<key>UIApplicationSupportsMultipleScenes</key>

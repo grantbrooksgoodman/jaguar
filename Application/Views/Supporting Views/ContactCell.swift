@@ -13,9 +13,10 @@ public struct ContactCell: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    public var contact: ContactInfo
+    public var contact: Contact
+    public var user: User
     
     //==================================================//
     

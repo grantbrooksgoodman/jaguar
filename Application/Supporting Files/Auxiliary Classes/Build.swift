@@ -8,23 +8,23 @@
 /* First-party Frameworks */
 import Foundation
 
-public struct Build {
+public enum Build {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Booleans
+    // Booleans
     public static var isOnline: Bool { get { return getNetworkStatus() } }
     
     private(set) static var timebombActive = Bool()
     
-    //Integers
+    // Integers
     public static var buildNumber: Int { get { return getBuildNumber() } }
     
     private static var appStoreReleaseVersion = Int()
     
-    //Strings
+    // Strings
     public static var buildSKU: String { get { return getBuildSKU() } }
     public static var bundleVersion: String { get { return getBundleVersion() } }
     public static var expiryInfoString: String { get { return getExpiryInfoString() } }
@@ -35,7 +35,7 @@ public struct Build {
     
     private static var dmyFirstCompileDateString = String()
     
-    //Other Declarations
+    // Other
     public static var expiryDate: Date { get { return getExpiryDate() } }
     
     private(set) static var stage: Stage!
@@ -50,7 +50,7 @@ public struct Build {
     
     //==================================================//
     
-    /* MARK: - Enumerated Type Declarations */
+    /* MARK: - Enums */
     
     public enum Metadatum {
         case appStoreReleaseVersion
@@ -181,8 +181,8 @@ public struct Build {
         
         let firstCompileDate = identifierDateFormatter.date(from: dmyFirstCompileDateString) ?? identifierDateFormatter.date(from: "24011984")!
         
-        let codeNameFirstLetterPositionValue = String(Build.codeName.first!).alphabeticalPosition
-        let codeNameLastLetterPositionValue = String(Build.codeName.last!).alphabeticalPosition
+        let firstLetterPosition = String(Build.codeName.first!).alphabeticalPosition
+        let lastLetterPosition = String(Build.codeName.last!).alphabeticalPosition
         
         let dateComponents = Calendar.current.dateComponents([.day, .month, .year],
                                                              from: firstCompileDate)
@@ -191,7 +191,7 @@ public struct Build {
         let middleLetterIndex = Build.codeName.index(Build.codeName.startIndex, offsetBy: offset)
         let middleLetter = String(Build.codeName[middleLetterIndex])
         
-        let multipliedConstants = String(codeNameFirstLetterPositionValue * middleLetter.alphabeticalPosition * codeNameLastLetterPositionValue * dateComponents.day! * dateComponents.month! * dateComponents.year!).map({ String($0) })
+        let multipliedConstants = String(firstLetterPosition * middleLetter.alphabeticalPosition * lastLetterPosition * dateComponents.day! * dateComponents.month! * dateComponents.year!).map({ String($0) })
         
         var projectIdComponents = [String]()
         
@@ -223,4 +223,3 @@ public struct Build {
         return (Array(NSOrderedSet(array: projectIdComponents)) as! [String]).joined()
     }
 }
-

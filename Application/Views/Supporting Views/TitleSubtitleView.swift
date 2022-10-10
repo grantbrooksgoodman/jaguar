@@ -16,7 +16,7 @@ public struct TitleSubtitleView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
     @State public var translations: [String: Translation]
     

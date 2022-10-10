@@ -10,22 +10,22 @@
 import Firebase
 import FirebaseDatabase
 import MessageKit
+import SwiftUI
 import Translator
 
 public final class ChatPageViewController: MessagesViewController {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Timers
-    var reloadTimer: Timer?
-    var typingIndicatorTimer: Timer?
+    // Timers
+    private var reloadTimer: Timer?
+    private var typingIndicatorTimer: Timer?
     
-    //Other Declarations
-    let refreshControl = UIRefreshControl()
-    
-    var selectedCell: TextMessageCell?
+    // Other
+    private var loadedMore: Date! = Date().addingTimeInterval(-10)
+    private var selectedCell: TextMessageCell?
     
     //==================================================//
     
@@ -53,18 +53,6 @@ public final class ChatPageViewController: MessagesViewController {
         longPressGestureRecognizer.delaysTouchesBegan = true
         
         messagesCollectionView.addGestureRecognizer(longPressGestureRecognizer)
-        
-        refreshControl.addTarget(self,
-                                 action: #selector(refresh),
-                                 for: .valueChanged)
-        //        messagesCollectionView.addSubview(refreshControl)
-    }
-    
-    @objc func refresh() {
-        topLevelMessages = fullMessages
-        self.messagesCollectionView.reloadData()
-        shouldReloadData = true
-        refreshControl.endRefreshing()
     }
     
     public override func viewDidAppear(_ animated: Bool) {
@@ -85,6 +73,8 @@ public final class ChatPageViewController: MessagesViewController {
     }
     
     public override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+        
         reloadTimer?.invalidate()
         reloadTimer = nil
         
@@ -92,27 +82,22 @@ public final class ChatPageViewController: MessagesViewController {
         typingIndicatorTimer = nil
         
         Database.database().reference().removeAllObservers()
+        
+        RuntimeStorage.store(0, as: .messageOffset)
     }
     
-    public func scrollViewDidEndDecelerating(_ scrollView: UIScrollView) {
-        var visibleRect = CGRect()
+    public override func viewDidDisappear(_ animated: Bool) {
+        super.viewDidDisappear(animated)
         
-        visibleRect.origin = self.messagesCollectionView.contentOffset
-        visibleRect.size = self.messagesCollectionView.bounds.size
-        let visiblePoint = CGPoint(x: visibleRect.midX, y: visibleRect.midY)
-        
-        guard let indexPath = self.messagesCollectionView.indexPathForItem(at: visiblePoint) else { return }
-        
-        print("\(indexPath)")
-        if indexPath.section == 3 {
-            print("should load more")
-            //            self.loadMessages()
+        if let window = RuntimeStorage.topWindow!.subview(Core.ui.nameTag(for: "buildInfoOverlayWindow")) as? UIWindow {
+            //            window.rootViewController = UIHostingController(rootView: BuildInfoOverlayView(yOffset: 0))
+            window.isHidden = false
         }
     }
     
-    public func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
-        print("load more")
-    }
+    //==================================================//
+    
+    /* MARK: - UICollectionView Functions */
     
     public override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         if let typingIndicatorCell = super.collectionView(collectionView, cellForItemAt: indexPath) as? TypingIndicatorCell {
@@ -120,14 +105,13 @@ public final class ChatPageViewController: MessagesViewController {
         }
         
         let currentCell = super.collectionView(collectionView, cellForItemAt: indexPath) as! MessageCollectionViewCell
-        
         currentCell.tag = indexPath.section
         
-        guard topLevelMessages.count > indexPath.section else {
+        guard RuntimeStorage.currentMessageSlice!.count > indexPath.section else {
             return currentCell
         }
         
-        if topLevelMessages[indexPath.section].isDisplayingAlternate,
+        if RuntimeStorage.currentMessageSlice![indexPath.section].isDisplayingAlternate,
            let cell = currentCell as? TextMessageCell {
             cell.messageLabel.font = cell.messageLabel.font.withTraits(traits: .traitItalic)
             
@@ -142,15 +126,54 @@ public final class ChatPageViewController: MessagesViewController {
     
     //==================================================//
     
-    /* MARK: - Other Functions */
+    /* MARK: - UIScrollView Functions */
+    
+    private func loadMoreMessages() {
+        if abs(loadedMore.amountOfSeconds(from: Date())) > 2 {
+            //Need to account for where conversation is short enough to be displayed fully on one page.
+            guard RuntimeStorage.messageOffset! + 10 < RuntimeStorage.globalConversation!.messages.count else {
+                return
+            }
+            
+            RuntimeStorage.store(RuntimeStorage.messageOffset! + 10, as: .messageOffset)
+            
+            let newMessages = RuntimeStorage.globalConversation!.get(.last,
+                                                                     messages: 10,
+                                                                     offset: RuntimeStorage.messageOffset!)
+            
+            let oldMessageSlice = Array(RuntimeStorage.currentMessageSlice!)
+            
+            var newMessageSlice = newMessages
+            newMessageSlice.append(contentsOf: oldMessageSlice)
+            newMessageSlice = newMessageSlice.unique()
+            
+            RuntimeStorage.store(newMessages, as: .currentMessageSlice)
+            
+            messagesCollectionView.reloadDataAndKeepOffset()
+            loadedMore = Date()
+        }
+    }
+    
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        if scrollView.contentOffset.y < 0 {
+            loadMoreMessages()
+        }
+    }
+    
+    public func scrollViewDidEndDragging(_ scrollView: UIScrollView,
+                                         willDecelerate decelerate: Bool) {
+        //        print("ended dragging")
+    }
+    
+    public func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
+        loadMoreMessages()
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Private Functions */
     
     @objc private func displayCustomMenu(gestureRecognizer: UIGestureRecognizer) {
-        guard !UIMenuController.shared.isMenuVisible else {
-            return
-        }
-        
-        messageInputBar.inputTextView.resignFirstResponder()
-        
         let point = gestureRecognizer.location(in: messagesCollectionView)
         
         guard let indexPath = messagesCollectionView.indexPathForItem(at: point),
@@ -158,13 +181,21 @@ public final class ChatPageViewController: MessagesViewController {
             return
         }
         
-        let currentMessage = topLevelMessages[indexPath.section]
+        let currentMessage = RuntimeStorage.currentMessageSlice![indexPath.section]
+        
+        guard !UIMenuController.shared.isMenuVisible,
+              currentMessage.identifier != "NEW" else {
+            return
+        }
+        
+        messageInputBar.inputTextView.resignFirstResponder()
+        
         var menuTitle: String!
         
         if currentMessage.isDisplayingAlternate {
-            menuTitle = currentMessage.fromAccountIdentifier == currentUserID ? "View Original" : "View Translation"
+            menuTitle = currentMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! ? "View Original" : "View Translation"
         } else {
-            menuTitle = currentMessage.fromAccountIdentifier == currentUserID ? "View Translation" : "View Original"
+            menuTitle = currentMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! ? "View Translation" : "View Original"
         }
         
         let viewAlternateItem = UIMenuItem(title: menuTitle, action: #selector(viewAlternate))
@@ -186,7 +217,7 @@ public final class ChatPageViewController: MessagesViewController {
     private func indexPaths() -> [IndexPath] {
         var indexPaths = [IndexPath]()
         
-        for (index, message) in topLevelMessages.enumerated() {
+        for (index, message) in RuntimeStorage.currentMessageSlice!.enumerated() {
             if message.isDisplayingAlternate {
                 indexPaths.append(IndexPath(row: 0, section: index))
             }
@@ -196,18 +227,28 @@ public final class ChatPageViewController: MessagesViewController {
     }
     
     @objc private func reloadData() {
-        if shouldReloadData {
+        if RuntimeStorage.shouldReloadData! {
             self.messagesCollectionView.reloadData()
             self.messagesCollectionView.scrollToLastItem(animated: true)
-            shouldReloadData = false
+            RuntimeStorage.store(false, as: .shouldReloadData)
         }
     }
     
     @objc private func updateTypingIndicator() {
-        if let indicator = typingIndicator {
-            self.setTypingIndicatorViewHidden(!indicator, animated: true)
-            self.messagesCollectionView.scrollToLastItem(animated: true)
-            typingIndicator = nil
+        guard isFirstResponder else {
+            typingIndicatorTimer?.invalidate()
+            typingIndicatorTimer = nil
+            return
+        }
+        
+        if let indicator = RuntimeStorage.typingIndicator {
+            if !messagesCollectionView.isDragging &&
+                !messagesCollectionView.isTracking &&
+                !messagesCollectionView.isDecelerating {
+                setTypingIndicatorViewHidden(!indicator, animated: false)
+                messagesCollectionView.scrollToLastItem(animated: false)
+                RuntimeStorage.remove(.typingIndicator)
+            }
         }
     }
     
@@ -220,7 +261,7 @@ public final class ChatPageViewController: MessagesViewController {
         paths.append(IndexPath(row: 0, section: cell.tag))
         paths = paths.unique()
         
-        let message = topLevelMessages[cell.tag]
+        let message = RuntimeStorage.currentMessageSlice![cell.tag]
         
         let input = message.translation.input
         message.translation.input = TranslationInput(message.translation.output)
@@ -234,11 +275,23 @@ public final class ChatPageViewController: MessagesViewController {
     }
 }
 
-//extension ChatPageViewController: UICollectionViewDataSourcePrefetching {
-//    public func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
-//        if let first = indexPaths.first,
-//           fullMessages.count - 1 == first.section {
-//            print("Load more messages from PREFETCH")
-//        }
-//    }
-//}
+//==================================================//
+
+/* MARK: - Extensions */
+
+/**/
+
+/* MARK: Array */
+public extension Array where Element == Message {
+    func unique() -> [Message] {
+        var uniqueValues = [Message]()
+        
+        for message in self {
+            if !uniqueValues.contains(where: { $0.identifier == message.identifier }) {
+                uniqueValues.append(message)
+            }
+        }
+        
+        return uniqueValues
+    }
+}

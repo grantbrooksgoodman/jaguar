@@ -9,13 +9,12 @@
 /* Third-party Frameworks */
 import Translator
 
-public class FirebaseTranslator: Translatorable {
+public struct FirebaseTranslator: Translatorable {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     public static var shared = FirebaseTranslator()
     
     //==================================================//
@@ -76,8 +75,8 @@ public class FirebaseTranslator: Translatorable {
                                onLine: #line)
             
             if translations.count + errors.count == inputs.count {
-                completion(translations.count == 0 ? nil : translations,
-                           errors.count == 0 ? nil : errors)
+                completion(translations.isEmpty ? nil : translations,
+                           errors.isEmpty ? nil : errors)
             } else {
                 Logger.log("Mismatched translation input/output.",
                            with: .fatalAlert,
@@ -105,7 +104,7 @@ public class FirebaseTranslator: Translatorable {
         
         if let required = requiresHUD,
            required {
-            showProgressHUD()
+            //            showProgressHUD()
         }
         
         TranslationSerializer.findTranslation(for: input,
@@ -145,7 +144,7 @@ public class FirebaseTranslator: Translatorable {
                     
                     if let required = requiresHUD,
                        required {
-                        hideHUD(delay: 0.2)
+                        Core.hud.hide(delay: 0.2)
                     }
                 }
             }

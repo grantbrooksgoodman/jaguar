@@ -13,13 +13,13 @@ public class PageViewDataModel {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
     private var inputs: [String: TranslationInput]!
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Constructor Function */
     
     public init(inputs: [String: TranslationInput]) {
         self.inputs = inputs
@@ -29,13 +29,13 @@ public class PageViewDataModel {
     
     /* MARK: - Other Functions */
     
-    public func translateStrings(completion: @escaping(_ returnedTranslations: [String: Translation]?,
-                                                       _ errorDescriptor: String?) -> Void) {
+    public func translateStrings(completion: @escaping (_ returnedTranslations: [String: Translation]?,
+                                                        _ errorDescriptor: String?) -> Void) {
         FirebaseTranslator.shared.getTranslations(for: Array(inputs.values),
                                                   languagePair: LanguagePair(from: "en",
-                                                                             to: languageCode),
-                                                  using: .google) { (returnedTranslations,
-                                                                     errorDescriptors) in
+                                                                             to: RuntimeStorage.languageCode!),
+                                                  using: .google) { returnedTranslations,
+            errorDescriptors in
             guard let translations = returnedTranslations else {
                 completion(nil, errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.")
                 return

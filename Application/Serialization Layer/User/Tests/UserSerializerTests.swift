@@ -39,15 +39,16 @@ final class UserSerializerTests: XCTestCase {
             return
         }
         
-        var phoneNumberString = "1"
+        var phoneNumberString = ""
         for _ in 0...9 {
             phoneNumberString += "\(Int().random(min: 0, max: 9))"
         }
         
         UserSerializer.shared.createUser(generatedKey,
+                                         callingCode: "1",
                                          languageCode: ["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()!,
                                          phoneNumber: phoneNumberString.digits,
-                                         region: Array(callingCodeDictionary.keys).randomElement()!) { (errorDescriptor) in
+                                         region: Array(RuntimeStorage.callingCodeDictionary!.keys).randomElement()!) { (errorDescriptor) in
             guard let error = errorDescriptor else {
                 expectation.fulfill()
                 return

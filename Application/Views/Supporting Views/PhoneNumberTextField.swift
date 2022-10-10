@@ -16,9 +16,9 @@ public struct PhoneNumberTextField: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Strings
+    // Strings
     @Binding public var phoneNumberString: String
     public var region: String
     
@@ -29,17 +29,17 @@ public struct PhoneNumberTextField: View {
     public var body: some View {
         TextField(placeholderText(),
                   text: $phoneNumberString)
-            .multilineTextAlignment(.center)
-            .overlay(VStack {
-                Divider()
-                    .offset(x: 0, y: 15)
-            })
-            .keyboardType(.phonePad)
-            .onChange(of: phoneNumberString, perform: { _ in
-                DispatchQueue.main.async {
-                    phoneNumberString = phoneNumberString.formattedPhoneNumber(region: region)
-                }
-            })
+        .multilineTextAlignment(.center)
+        .overlay(VStack {
+            Divider()
+                .offset(x: 0, y: 15)
+        })
+        .keyboardType(.phonePad)
+        .onChange(of: phoneNumberString, perform: { _ in
+            DispatchQueue.main.async {
+                phoneNumberString = phoneNumberString.formattedPhoneNumber(region: region)
+            }
+        })
     }
     
     //==================================================//

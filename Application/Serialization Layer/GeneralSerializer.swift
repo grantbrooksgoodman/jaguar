@@ -12,11 +12,11 @@ import UIKit
 /* Third-party Frameworks */
 import FirebaseDatabase
 
-public struct GeneralSerializer {
+public enum GeneralSerializer {
     
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Getter Functions */
     
     /**
      Gets values on the server for a given path.
@@ -26,12 +26,33 @@ public struct GeneralSerializer {
      */
     public static func getValues(atPath: String, completion: @escaping (_ returnedValues: Any?,
                                                                         _ errorDescriptor: String?) -> Void) {
-        Database.database().reference().child(atPath).observeSingleEvent(of: .value) { (returnedSnapshot) in
+        Database.database().reference().child(atPath).observeSingleEvent(of: .value) { returnedSnapshot in
             completion(returnedSnapshot.value, nil)
-        } withCancel: { (returnedError) in
+        } withCancel: { returnedError in
             completion(nil, Logger.errorInfo(returnedError))
         }
     }
+    
+    //==================================================//
+    
+    /* MARK: - Query Functions */
+    
+    public static func queryValues(atPath: String,
+                                   limit: Int,
+                                   completion: @escaping (_ returnedValues: Any?,
+                                                          _ errorDescriptor: String?) -> Void) {
+        Database.database().reference().child(atPath).queryLimited(toFirst: UInt(limit)).getData { (returnedError, returnedSnapshot) in
+            if let error = returnedError {
+                completion(nil, Logger.errorInfo(error))
+            }
+            
+            completion(returnedSnapshot.value, nil)
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Setter Functions */
     
     public static func setValue(onKey: String, withData: Any, completion: @escaping (Error?) -> Void) {
         Database.database().reference().child(onKey).setValue(withData) { returnedError, _ in

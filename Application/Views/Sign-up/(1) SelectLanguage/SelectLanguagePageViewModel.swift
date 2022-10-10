@@ -16,7 +16,7 @@ public class SelectLanguagePageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Enumerated Type Declarations */
+    /* MARK: - Enums */
     
     public enum State {
         case idle
@@ -27,7 +27,7 @@ public class SelectLanguagePageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
     private let inputs = ["title": TranslationInput("Select Language"),
                           "subtitle": TranslationInput("To begin, please select your language."),
@@ -46,7 +46,7 @@ public class SelectLanguagePageViewModel: ObservableObject {
     public func load() {
         state = .loading
         
-        for name in languageCodeDictionary.values {
+        for name in RuntimeStorage.languageCodeDictionary!.values {
             languageNames.append(name)
         }
         

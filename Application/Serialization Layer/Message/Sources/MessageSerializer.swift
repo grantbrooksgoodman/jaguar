@@ -15,7 +15,7 @@ public struct MessageSerializer {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
     public static let shared = MessageSerializer()
     
@@ -28,7 +28,7 @@ public struct MessageSerializer {
                               translation: Translation,
                               completion: @escaping(_ returnedMessage: Message?,
                                                     _ errorDescriptor: String?) -> Void) {
-        currentUser?.updateLastActiveDate()
+        RuntimeStorage.currentUser?.updateLastActiveDate()
         
         var data: [String: Any] = [:]
         
@@ -36,7 +36,7 @@ public struct MessageSerializer {
         data["languagePair"] = translation.languagePair.asString()
         data["translationReference"] = translation.serialize().key
         data["readDate"] = "!"
-        data["sentDate"] = secondaryDateFormatter.string(from: Date())
+        data["sentDate"] = Core.secondaryDateFormatter!.string(from: Date())
         
         guard let generatedKey = Database.database().reference().child("/allMessages/").childByAutoId().key else {
             Logger.log("Unable to generate key for new message.",
@@ -158,8 +158,8 @@ public struct MessageSerializer {
                     }
                     
                     if messages.count + errorDescriptors.count == withIdentifiers.count {
-                        completion(messages.count == 0 ? nil : messages,
-                                   errorDescriptors.count == 0 ? nil : "Failed: \(errorDescriptors.joined(separator: "\n"))")
+                        completion(messages.isEmpty ? nil : messages,
+                                   errorDescriptors.isEmpty ? nil : "Failed: \(errorDescriptors.joined(separator: "\n"))")
                     }
                 }
             }
@@ -208,7 +208,7 @@ public struct MessageSerializer {
             return
         }
         
-        #warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
+        //#warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
         formatter.locale = Locale(identifier: "en_GB")
@@ -231,7 +231,7 @@ public struct MessageSerializer {
                     return
                 }
                 
-                let readDate = secondaryDateFormatter.date(from: readDateString) ?? nil
+                let readDate = Core.secondaryDateFormatter!.date(from: readDateString) ?? nil
                 
                 let deSerializedMessage = Message(identifier: identifier,
                                                   fromAccountIdentifier: fromAccountIdentifier,
@@ -246,7 +246,7 @@ public struct MessageSerializer {
             return
         }
         
-        let readDate = secondaryDateFormatter.date(from: readDateString) ?? nil
+        let readDate = Core.secondaryDateFormatter!.date(from: readDateString) ?? nil
         
         let deSerializedMessage = Message(identifier: identifier,
                                           fromAccountIdentifier: fromAccountIdentifier,

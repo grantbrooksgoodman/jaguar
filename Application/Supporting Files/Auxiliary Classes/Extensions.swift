@@ -7,13 +7,14 @@
 
 /* First-party Frameworks */
 import UIKit
+import SwiftUI
 
 /* Third-party Frameworks */
 import Translator
 
 //==================================================//
 
-/* MARK: - Array public extensions */
+/* MARK: - Array Extensions */
 
 public extension Array {
     var randomElement: Element {
@@ -51,7 +52,9 @@ public extension Array where Element == String {
             }
         }
         
-        return bools.allSatisfy({$0 == true})
+        guard !bools.isEmpty else { return false }
+        
+        return bools.allSatisfy({ $0 == true })
     }
     
     func count(of: String) -> Int {
@@ -125,7 +128,7 @@ public extension Array where Element == Translation {
 
 //==================================================//
 
-/* MARK: - Date public extensions */
+/* MARK: - Date Extensions */
 
 public extension Date {
     /* MARK: - Functions */
@@ -165,8 +168,8 @@ public extension Date {
         } else if differenceBetweenDates == -86400 {
             return "Yesterday"
         } else if differenceBetweenDates >= -604_800 {
-            if masterDateFormatter.string(from: self).dayOfWeek() != masterDateFormatter.string(from: Date()).dayOfWeek() {
-                return masterDateFormatter.string(from: self).dayOfWeek()
+            if Core.masterDateFormatter!.string(from: self).dayOfWeek() != Core.masterDateFormatter!.string(from: Date()).dayOfWeek() {
+                return Core.masterDateFormatter!.string(from: self).dayOfWeek()
             } else {
                 return stylizedDateFormatter.string(from: self)
             }
@@ -180,13 +183,14 @@ public extension Date {
     /* MARK: - Variables */
     
     var comparator: Date {
-        return currentCalendar.date(bySettingHour: 12, minute: 00, second: 00, of: currentCalendar.startOfDay(for: self))!
+        let calendar = Core.currentCalendar!
+        return calendar.date(bySettingHour: 12, minute: 00, second: 00, of: calendar.startOfDay(for: self))!
     }
 }
 
 //==================================================//
 
-/* MARK: - Dictionary public extensions */
+/* MARK: - Dictionary Extensions */
 
 public extension Dictionary {
     mutating func switchKey(fromKey: Key, toKey: Key) {
@@ -204,7 +208,7 @@ public extension Dictionary where Value: Equatable {
 
 //==================================================//
 
-/* MARK: - Int public extensions */
+/* MARK: - Int Extensions */
 
 public extension Int {
     /* MARK: - Functions */
@@ -241,7 +245,7 @@ public extension Int {
 
 //==================================================//
 
-/* MARK: - Sequence public extensions */
+/* MARK: - Sequence Extensions */
 
 public extension Sequence where Iterator.Element: Hashable {
     func unique() -> [Iterator.Element] {
@@ -253,7 +257,7 @@ public extension Sequence where Iterator.Element: Hashable {
 
 //==================================================//
 
-/* MARK: - String public extensions */
+/* MARK: - String Extensions */
 
 public extension String {
     /* MARK: - Functions */
@@ -261,12 +265,24 @@ public extension String {
     func asLanguagePair() -> LanguagePair? {
         let components = self.components(separatedBy: "-")
         
-        guard components.count > 1 else {
-            return nil
-        }
+        guard components.count > 1 else { return nil }
         
         return LanguagePair(from: components[0],
                             to: components[1...components.count - 1].joined(separator: "-"))
+    }
+    
+    func attributed(mainAttributes: [NSAttributedString.Key: Any],
+                    alternateAttributes: [NSAttributedString.Key: Any],
+                    alternateAttributeRange: [String]) -> NSAttributedString {
+        let attributedString = NSMutableAttributedString(string: self, attributes: mainAttributes)
+        
+        for string in alternateAttributeRange {
+            let currentRange = (self as NSString).range(of: (string as NSString) as String)
+            
+            attributedString.addAttributes(alternateAttributes, range: currentRange)
+        }
+        
+        return attributedString
     }
     
     func ciphered(by modifier: Int) -> String {
@@ -295,7 +311,7 @@ public extension String {
     
     ///Function that returns a day of the week for a given date string.
     func dayOfWeek() -> String {
-        guard let fromDate = masterDateFormatter.date(from: self) else {
+        guard let fromDate = Core.masterDateFormatter!.date(from: self) else {
             Logger.log("String is not a valid date.",
                        with: .fatalAlert,
                        metadata: [#file, #function, #line])
@@ -470,7 +486,7 @@ public extension String {
 
 //==================================================//
 
-/* MARK: - UIColor public extensions */
+/* MARK: - UIColor Extensions */
 
 public extension UIColor {
     private convenience init(red: Int, green: Int, blue: Int, alpha: CGFloat = 1.0) {
@@ -499,7 +515,7 @@ public extension UIColor {
 
 //==================================================//
 
-/* MARK: - UIImageView public extensions */
+/* MARK: - UIImageView Extensions */
 
 public extension UIImageView {
     func downloadedFrom(_ link: String, contentMode mode: UIView.ContentMode = .scaleAspectFit) {
@@ -535,7 +551,7 @@ public extension UIImageView {
 
 //==================================================//
 
-/* MARK: - UILabel public extensions */
+/* MARK: - UILabel Extensions */
 
 public extension UILabel {
     /* MARK: - Functions */
@@ -613,7 +629,7 @@ public extension UILabel {
 
 //==================================================//
 
-/* MARK: - UITextView public extensions */
+/* MARK: - UITextView Extensions */
 
 public extension UITextView {
     func fontSizeThatFits(_ alternateText: String?) -> CGFloat {
@@ -649,9 +665,7 @@ public extension UITextView {
             if textWillFit(alternate: labelText, minimumSize: minimumSize) {
                 font = font!.withSize(fontSizeThatFits(labelText))
             } else {
-                guard let labelText = alternateText else {
-                    return
-                }
+                guard let labelText = alternateText else { return }
                 
                 guard textWillFit(alternate: labelText, minimumSize: minimumSize) else {
                     Logger.log("Neither the original nor alternate strings fit.",
@@ -671,7 +685,7 @@ public extension UITextView {
 
 //==================================================//
 
-/* MARK: - UIView public extensions */
+/* MARK: - UIView Extensions */
 
 public extension UIView {
     /* MARK: - Functions */
@@ -690,7 +704,7 @@ public extension UIView {
             let activityIndicatorView = UIActivityIndicatorView(style: .large)
             activityIndicatorView.center = center
             activityIndicatorView.startAnimating()
-            activityIndicatorView.tag = aTagFor("BLUR_INDICATOR")
+            activityIndicatorView.tag = Core.ui.nameTag(for: "BLUR_INDICATOR")
             addSubview(activityIndicatorView)
         }
     }
@@ -726,7 +740,7 @@ public extension UIView {
     
     func removeBlur(withTag: Int) {
         for indivdualSubview in subviews {
-            if indivdualSubview.tag == withTag || indivdualSubview.tag == aTagFor("BLUR_INDICATOR") {
+            if indivdualSubview.tag == withTag || indivdualSubview.tag == Core.ui.nameTag(for: "BLUR_INDICATOR") {
                 UIView.animate(withDuration: 0.2, animations: {
                     indivdualSubview.alpha = 0
                 }) { _ in
@@ -820,5 +834,26 @@ public extension UIView {
         }
         
         return nil
+    }
+}
+
+//==================================================//
+
+/* MARK: - View Extensions */
+
+public extension View {
+    func snapshot() -> UIImage {
+        let controller = UIHostingController(rootView: self)
+        let view = controller.view
+        
+        let targetSize = controller.view.intrinsicContentSize
+        view?.bounds = CGRect(origin: .zero, size: targetSize)
+        view?.backgroundColor = .clear
+        
+        let renderer = UIGraphicsImageRenderer(size: targetSize)
+        
+        return renderer.image { _ in
+            view?.drawHierarchy(in: controller.view.bounds, afterScreenUpdates: true)
+        }
     }
 }

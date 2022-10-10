@@ -21,13 +21,13 @@ public struct VerifyNumberPageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Strings
+    // Strings
     @State private var phoneNumberString: String = ""
     @State private var selectedRegion = "US"
     
-    //Other Declarations
+    // Other
     @StateObject public var viewModel: VerifyNumberPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
@@ -61,14 +61,14 @@ public struct VerifyNumberPageView: View {
                         
                         PhoneNumberTextField(phoneNumberString: $phoneNumberString,
                                              region: selectedRegion)
-                            .padding(.vertical, 2)
-                            .padding(.trailing, 20)
+                        .padding(.vertical, 2)
+                        .padding(.trailing, 20)
                     }
                     
                     Button {
-                        let compiledNumber = "\(callingCodeDictionary[selectedRegion]!)\(phoneNumberString.digits)".digits
+                        let compiledNumber = "\(RuntimeStorage.callingCodeDictionary![selectedRegion]!)\(phoneNumberString.digits)".digits
                         
-                        selectedRegionCode = selectedRegion
+                        RuntimeStorage.store(selectedRegion, as: .selectedRegionCode)
                         verifyUser(phoneNumber: compiledNumber)
                     } label: {
                         Text(translations["continue"]!.output)
@@ -90,7 +90,7 @@ public struct VerifyNumberPageView: View {
                 .padding(.bottom, 30)
                 
                 Spacer()
-            }.onAppear { currentFile = #file }
+            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }
@@ -114,26 +114,23 @@ public struct VerifyNumberPageView: View {
                         return
                     }
                     
-                    languageCode = previousLanguageCode
+                    RuntimeStorage.store(RuntimeStorage.previousLanguageCode!, as: .languageCode)
                 }
                 
                 return
             }
             
             guard let identifier = returnedIdentifier else {
-                let akError = AKError(errorDescriptor ?? "An unknown error occurred.",
-                                      metadata: [#file, #function, #line],
-                                      isReportable: true)
-                
-                AKErrorAlert(error: akError,
-                             networkDependent: true).present()
+                Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                           with: .errorAlert,
+                           metadata: [#file, #function, #line])
                 return
             }
             
             viewRouter.currentPage = .signUp_authCode(identifier: identifier,
                                                       phoneNumber: phoneNumber,
-                                                      region: selectedRegionCode ?? selectedRegion)
-            selectedRegionCode = nil
+                                                      region: RuntimeStorage.selectedRegionCode ?? selectedRegion)
+            RuntimeStorage.remove(.selectedRegionCode)
         }
     }
 }

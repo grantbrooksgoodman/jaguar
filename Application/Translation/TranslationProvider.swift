@@ -10,7 +10,7 @@
 import AlertKit
 import Translator
 
-public class TranslationProvider: AKTranslationProvider {
+public struct TranslationProvider: AKTranslationProvider {
     
     //==================================================//
     
@@ -19,9 +19,9 @@ public class TranslationProvider: AKTranslationProvider {
     public func getTranslations(for inputs: [AlertKit.TranslationInput],
                                 languagePair: AlertKit.LanguagePair,
                                 requiresHUD: Bool?,
-                                using: AlertKit.TranslationPlatform?,
-                                completion: @escaping(_ returnedTranslations: [AlertKit.Translation]?,
-                                                      _ errorDescriptor: [String: AlertKit.TranslationInput]?) -> Void) {
+                                using _: AlertKit.TranslationPlatform?,
+                                completion: @escaping (_ returnedTranslations: [AlertKit.Translation]?,
+                                                       _ errorDescriptor: [String: AlertKit.TranslationInput]?) -> Void) {
         var convertedInputs = [Translator.TranslationInput]()
         
         for input in inputs {
@@ -32,8 +32,8 @@ public class TranslationProvider: AKTranslationProvider {
         
         FirebaseTranslator.shared.getTranslations(for: convertedInputs,
                                                   languagePair: convertedLanguagePair,
-                                                  requiresHUD: requiresHUD) { (returnedTranslations,
-                                                                               errorDescriptors) in
+                                                  requiresHUD: requiresHUD) { returnedTranslations,
+            errorDescriptors in
             guard let translations = returnedTranslations else {
                 Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])

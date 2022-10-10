@@ -10,7 +10,7 @@ import Foundation
 
 //==================================================//
 
-/* MARK: - Enumerated Type Declarations */
+/* MARK: - Enums */
 
 public enum SystemInformationError: Error {
     case invalidSize

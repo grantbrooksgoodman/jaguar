@@ -15,7 +15,7 @@ public struct EmbeddedContactPickerView: UIViewControllerRepresentable {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
     public typealias UIViewControllerType = EmbeddedContactPickerController
     
@@ -45,12 +45,12 @@ public struct EmbeddedContactPickerView: UIViewControllerRepresentable {
     public final class Coordinator: NSObject, EmbeddedContactPickerControllerDelegate {
         
         public func embeddedContactPickerController(_ viewController: EmbeddedContactPickerController, didSelect contact: CNContact) {
-            selectedContact = contact
+            //            selectedContact = contact
             viewController.dismiss(animated: true)
         }
         
         public func embeddedContactPickerControllerDidCancel(_ viewController: EmbeddedContactPickerController) {
-            selectedContact = nil
+            //            selectedContact = nil
             viewController.dismiss(animated: true)
         }
     }

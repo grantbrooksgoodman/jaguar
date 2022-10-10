@@ -8,20 +8,20 @@
 /* Third-party Frameworks */
 import AlertKit
 
-public struct Logger {
+public enum Logger {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     public static var exposureLevel: ExposureLevel = .normal
     
+    private static var currentTimeLastCalled = Date()
     private static var streamOpen = false
     
     //==================================================//
     
-    /* MARK: - Enumerated Type Declarations */
+    /* MARK: - Enums */
     
     public enum AlertType {
         case errorAlert
@@ -64,7 +64,7 @@ public struct Logger {
                            verbose: Bool? = nil,
                            metadata: [Any]) {
         if let verbose = verbose,
-           verbose && exposureLevel != .verbose {
+           verbose, exposureLevel != .verbose {
             return
         }
         
@@ -82,7 +82,9 @@ public struct Logger {
             return
         }
         
-        print("\n--------------------------------------------------\n\(fileName): \(functionName)() [\(lineNumber)]\n\(text)\n--------------------------------------------------\n")
+        print("\n--------------------------------------------------\n\(fileName): \(functionName)() [\(lineNumber)]\(elapsedTime())\n\(text)\n--------------------------------------------------\n")
+        
+        currentTimeLastCalled = Date()
         
         guard let alertType = with else {
             return
@@ -90,7 +92,7 @@ public struct Logger {
         
         switch alertType {
         case .errorAlert:
-            let akError = AKError(text,
+            let akError = AKError(text.simpleErrorDescriptor(),
                                   metadata: [fileName, functionName, lineNumber],
                                   isReportable: true)
             AKErrorAlert(error: akError).present()
@@ -100,7 +102,7 @@ public struct Logger {
                                          Build.stage != .generalRelease,
                                          [fileName, functionName, lineNumber]])
         case .normalAlert:
-            AKAlert(message: text,
+            AKAlert(message: text.simpleErrorDescriptor(),
                     cancelButtonTitle: "OK").present()
         }
     }
@@ -124,19 +126,21 @@ public struct Logger {
             
             streamOpen = true
             
+            currentTimeLastCalled = Date()
+            
             guard let firstEntry = message else {
-                print("\n*------------------------STREAM OPENED------------------------*\n\(fileName): \(functionName)()")
+                print("\n*------------------------STREAM OPENED------------------------*\n\(fileName): \(functionName)()\(elapsedTime())")
                 return
             }
             
-            print("\n*------------------------STREAM OPENED------------------------*\n\(fileName): \(functionName)()\n[\(lineNumber)]: \(firstEntry)")
+            print("\n*------------------------STREAM OPENED------------------------*\n\(fileName): \(functionName)()\n[\(lineNumber)]: \(firstEntry)\(elapsedTime())")
         }
     }
     
     public static func logToStream(_ message: String,
                                    line: Int) {
         if exposureLevel == .verbose {
-            print("[\(line)]: \(message)")
+            print("[\(line)]: \(message)\(elapsedTime())")
         }
     }
     
@@ -145,13 +149,15 @@ public struct Logger {
         if exposureLevel == .verbose {
             streamOpen = false
             
+            currentTimeLastCalled = Date()
+            
             guard let closingMessage = message,
                   let line = onLine else {
                 print("*------------------------STREAM CLOSED------------------------*\n")
                 return
             }
             
-            print("[\(line)]: \(closingMessage)\n*------------------------STREAM CLOSED------------------------*\n")
+            print("[\(line)]: \(closingMessage)\(elapsedTime())\n*------------------------STREAM CLOSED------------------------*\n")
         }
     }
     
@@ -187,9 +193,24 @@ public struct Logger {
     
     /* MARK: - Private Functions */
     
+    private static func currentTime() -> String {
+        let timeFormatter = DateFormatter()
+        timeFormatter.dateFormat = "HH:mm:ss"
+        
+        return timeFormatter.string(from: Date())
+    }
+    
+    private static func elapsedTime() -> String {
+        let time = String(abs(currentTimeLastCalled.amountOfSeconds(from: Date())))
+        
+        return time == "0" ? "" : " @ \(time)s FLC"
+    }
+    
     private static func fallbackLog(_ text: String,
                                     with: AlertType? = nil) {
         print("\n--------------------------------------------------\n[IMPROPERLY FORMATTED METADATA]\n\(text)\n--------------------------------------------------\n")
+        
+        currentTimeLastCalled = Date()
         
         guard let alertType = with else {
             return
@@ -216,7 +237,8 @@ public struct Logger {
         guard metadata.count == 3,
               metadata[0] is String,
               metadata[1] is String,
-              metadata[2] is Int else {
+              metadata[2] is Int
+        else {
             return false
         }
         

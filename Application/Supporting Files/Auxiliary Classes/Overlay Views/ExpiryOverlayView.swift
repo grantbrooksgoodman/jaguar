@@ -28,7 +28,7 @@ public struct ExpiryOverlayView: View {
                maxHeight: .infinity)
         .edgesIgnoringSafeArea(.all)
         .onAppear(perform: {
-            after(milliseconds: 1500) {
+            Core.gcd.after(milliseconds: 1500) {
                 AKCore.shared.present(.expiryAlert)
             }
         })

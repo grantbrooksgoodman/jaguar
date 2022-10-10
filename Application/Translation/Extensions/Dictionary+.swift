@@ -6,13 +6,14 @@
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
-public extension Dictionary where Key == String, Value == String {    
+public extension Dictionary where Key == String, Value == String {
     func hashDecoded() -> Dictionary? {
         var newDictionary = [String: String]()
         
         for key in keys {
             guard let original = self[key]!.decoded(getInput: true),
-                  let translated = self[key]!.decoded(getInput: false) else {
+                  let translated = self[key]!.decoded(getInput: false)
+            else {
                 return nil
             }
             

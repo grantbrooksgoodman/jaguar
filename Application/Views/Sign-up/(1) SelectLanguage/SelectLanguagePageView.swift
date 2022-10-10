@@ -17,15 +17,14 @@ public struct SelectLanguagePageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     @StateObject public var viewModel: SelectLanguagePageViewModel
     @StateObject public var viewRouter: ViewRouter
     
-    @State private var selectedLanguage: String = languageCodeDictionary[languageCode]!
+    @State private var selectedLanguage: String = RuntimeStorage.languageCodeDictionary![RuntimeStorage.languageCode!]!
     
-    public var languages = Array(languageCodeDictionary.values).sorted()
+    public var languages = Array(RuntimeStorage.languageCodeDictionary!.values).sorted()
     
     //==================================================//
     
@@ -35,7 +34,8 @@ public struct SelectLanguagePageView: View {
         switch viewModel.state {
         case .idle:
             Color.clear.onAppear {
-                languageCode = Locale.preferredLanguages[0].components(separatedBy: "-")[0]
+                RuntimeStorage.store(Locale.preferredLanguages[0].components(separatedBy: "-")[0],
+                                     as: .languageCode)
                 viewModel.load()
             }
         case .loading:
@@ -60,7 +60,8 @@ public struct SelectLanguagePageView: View {
                     .padding(.horizontal, 30)
                     
                     Button {
-                        languageCode = languageCodeDictionary.allKeys(forValue: selectedLanguage).first!
+                        RuntimeStorage.store(RuntimeStorage.languageCodeDictionary!.allKeys(forValue: selectedLanguage).first!,
+                                             as: .languageCode)
                         viewRouter.currentPage = .signUp_verifyNumber
                     } label: {
                         Text(translations["continue"]!.output)
@@ -81,7 +82,7 @@ public struct SelectLanguagePageView: View {
                 .padding(.top, 50)
                 
                 Spacer()
-            }.onAppear { currentFile = #file }
+            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

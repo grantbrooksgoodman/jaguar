@@ -10,25 +10,15 @@
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import MessageKit
-
-//==================================================//
-
-/* MARK: - Top-level Variable Declarations */
-
-//Other Declarations
-public var conversations: [Conversation] = []
-public var updated = false
-
-//==================================================//
 
 public struct ConversationsPageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     @StateObject public var viewModel: ConversationsPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
@@ -47,9 +37,7 @@ public struct ConversationsPageView: View {
         case .loaded(let translations,
                      let openConversations):
             VStack {
-                //                        let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() }) : conversations.sorted(by: { $0.messages.last?.sentDate ?? Date() > $1.messages.last?.sentDate ?? Date() })
-                
-                let conversationsToUse = conversations.count == 0 ? openConversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }) : conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
+                let conversationsToUse = viewModel.conversationsToUse(for: openConversations)
                 
                 NavigationView {
                     List {
@@ -58,35 +46,72 @@ public struct ConversationsPageView: View {
                             
                             MessageCell(conversation: conversation)
                         })
+                        .onDelete(perform: viewModel.deleteConversation(at:))
                     }
+                    .listStyle(PlainListStyle())
                     .toolbar {
                         ToolbarItem(placement: .navigationBarTrailing) {
                             Button(action: {
-                                showingPopover = true
+                                viewModel.presentPromptMethodAlert { showContactPopover in
+                                    guard let showPopover = showContactPopover else { return }
+                                    showingPopover = showPopover
+                                }
                             }) {
                                 Label("Compose", systemImage: "square.and.pencil")
                             }
                             .sheet(isPresented: $showingPopover) {
-                                EmbeddedContactPickerView()
-                                    .onDisappear {
-                                        viewModel.startConversation()
-                                    }
-                                //.interactiveDismissDisabled(true)
+                                NewConversationPageView(viewModel: NewConversationPageViewModel(),
+                                                        isPresenting: $showingPopover)
+                                .onDisappear {
+                                    viewModel.routeNavigationWithSelectedContactPair()
+                                }
                             }
                         }
                     }
                     .navigationBarTitle(translations["messages"]!.output)
                 }
                 .onAppear() {
-                    if !updated {
-                        conversations = openConversations
-                    }
-                    
-                    updated = false
+                    RuntimeStorage.store(openConversations, as: .conversations)
                 }
-            }.onAppear { currentFile = #file }
+            }
+            .onShake(perform: {
+                self.confirmSequenceUser()
+            })
+            .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Private Functions */
+    
+    private func confirmSequenceUser() {
+        let confirmationAlert = AKConfirmationAlert(message: "Sign in next user?",
+                                                    confirmationStyle: .default)
+        
+        confirmationAlert.present { didConfirm in
+            if didConfirm == 1 {
+                UserTestingSerializer.shared.signInNextUserInSequence { errorDescriptor in
+                    guard errorDescriptor == nil else {
+                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                                   with: .errorAlert,
+                                   metadata: [#file, #function, #line])
+                        return
+                    }
+                    
+                    ConversationArchiver.clearArchive()
+                    
+                    RuntimeStorage.store(RuntimeStorage.currentUser!.languageCode!, as: .languageCode)
+                    AKCore.shared.setLanguageCode(RuntimeStorage.currentUser!.languageCode)
+                    
+                    Core.gcd.after(milliseconds: 100) {
+                        //                                setUpConversationArchive()
+                        viewModel.load()
+                    }
+                }
+            }
         }
     }
 }

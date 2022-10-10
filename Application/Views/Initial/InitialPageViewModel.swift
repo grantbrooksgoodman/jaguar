@@ -13,7 +13,7 @@ public class InitialPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Enumerated Type Declarations */
+    /* MARK: - Enums */
     
     public enum State {
         case idle
@@ -24,9 +24,8 @@ public class InitialPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     private let inputs = ["instruction": TranslationInput("Welcome to Hello. Follow the short instructions to get started."),
                           "continue": TranslationInput("Continue"),
                           "alreadyUse": TranslationInput("I already use this app")]

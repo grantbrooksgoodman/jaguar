@@ -20,21 +20,18 @@ public struct AuthCodePageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
+    // Other
     @StateObject public var viewModel: AuthCodePageViewModel
     @StateObject public var viewRouter: ViewRouter
     
-    //Strings
-    @State public var verificationIdentifier: String
-    
-    @State private var errorDescriptor = ""
+    // Strings
     @State public var phoneNumber: String
     @State public var region: String
-    @State private var verificationCode: String = ""
+    @State public var verificationIdentifier: String
     
-    //Other Declarations
-    @State private var errored = false
+    @State private var verificationCode: String = ""
     
     //==================================================//
     
@@ -60,11 +57,10 @@ public struct AuthCodePageView: View {
                         .padding(.vertical, 5)
                     
                     TextField("000000", text: $verificationCode)
-                        //                    .textFieldStyle(.plain)
                         .padding(.vertical, 2)
                         .multilineTextAlignment(.center)
                         .overlay(Rectangle()
-                                    .stroke(lineWidth: 1))
+                            .stroke(lineWidth: 1))
                         .padding(.horizontal, 30)
                         .keyboardType(.numberPad)
                     
@@ -72,28 +68,27 @@ public struct AuthCodePageView: View {
                         viewModel.authenticateUser(identifier: verificationIdentifier,
                                                    verificationCode: verificationCode) { (userID, returnedError) in
                             if let identifier = userID {
+                                let callingCode = RegionDetailServer.getCallingCode(forRegion: region)
+                                
                                 UserSerializer.shared.createUser(identifier,
-                                                                 languageCode: languageCode,
+                                                                 callingCode: callingCode ?? "1",
+                                                                 languageCode: RuntimeStorage.languageCode!,
                                                                  phoneNumber: phoneNumber,
                                                                  region: region) { (errorDescriptor) in
-                                    if let error = errorDescriptor {
-                                        print(error)
-                                    } else {
-                                        AKAlert(message: "Account created successfully.",
-                                                cancelButtonTitle: "OK").present()
+                                    guard errorDescriptor == nil else {
+                                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
+                                                   with: .errorAlert,
+                                                   metadata: [#file, #function, #line])
+                                        return
                                     }
+                                    
+                                    AKAlert(message: "Account created successfully.",
+                                            cancelButtonTitle: "OK").present()
                                 }
-                                
                             } else if let error = returnedError {
-                                errored = true
-                                errorDescriptor = (error as NSError).localizedDescription
-                                Logger.log(Logger.errorInfo(error),
+                                Logger.log(error,
+                                           with: .errorAlert,
                                            metadata: [#file, #function, #line])
-                                let error = AKError(Logger.errorInfo(error),
-                                                    metadata: [#file, #function, #line],
-                                                    isReportable: false)
-                                AKErrorAlert(message: viewModel.simpleErrorString(errorDescriptor),
-                                             error: error).present()
                                 
                             }
                         }
@@ -104,9 +99,6 @@ public struct AuthCodePageView: View {
                     .padding(.top, 5)
                     .accentColor(.blue)
                     .disabled(verificationCode.lowercasedTrimmingWhitespace.count != 6)
-                    //                .alert(isPresented: $errored) {
-                    //                    return Alert(title: Text(viewModel.simpleErrorString(errorDescriptor)))
-                    //                }
                     
                     Button {
                         viewRouter.currentPage = .signUp_verifyNumber
@@ -120,7 +112,7 @@ public struct AuthCodePageView: View {
                 .padding(.bottom, 30)
                 
                 Spacer()
-            }.onAppear { currentFile = #file }
+            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

@@ -16,17 +16,17 @@ public class Message: Codable {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Dates
+    // Dates
     public var readDate: Date?
     public var sentDate: Date
     
-    //Strings
+    // Strings
     public var identifier: String!
     public var fromAccountIdentifier: String!
     
-    //Other Declarations
+    // Other
     public var isDisplayingAlternate = false
     public var languagePair: LanguagePair!
     public var translation: Translation!
@@ -53,15 +53,15 @@ public class Message: Codable {
     
     /* MARK: - Other Functions */
     
-    ///Serializes the **Message's** metadata.
+    /// Serializes the **Message's** metadata.
     public func serialize() -> [String: Any] {
         var data: [String: Any] = [:]
         
         data["fromAccount"] = fromAccountIdentifier
         data["languagePair"] = languagePair.asString()
         data["translationReference"] = translation.serialize().key
-        data["readDate"] = (readDate == nil ? "!" : masterDateFormatter.string(from: readDate!))
-        data["sentDate"] = secondaryDateFormatter.string(from: sentDate)
+        data["readDate"] = (readDate == nil ? "!" : Core.masterDateFormatter!.string(from: readDate!))
+        data["sentDate"] = Core.secondaryDateFormatter!.string(from: sentDate)
         
         return data
     }
@@ -70,7 +70,7 @@ public class Message: Codable {
         readDate = Date()
         
         GeneralSerializer.setValue(onKey: "/allMessages/\(identifier!)/readDate",
-                                   withData: secondaryDateFormatter.string(from: readDate!)) { (returnedError) in
+                                   withData: Core.secondaryDateFormatter!.string(from: readDate!)) { returnedError in
             guard let error = returnedError else {
                 completion(nil)
                 return

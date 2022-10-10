@@ -16,9 +16,8 @@ public struct InitialPageView: View {
     
     //==================================================//
     
-    /* MARK: - Struct-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     @StateObject public var viewModel: InitialPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
@@ -63,7 +62,7 @@ public struct InitialPageView: View {
                 }
                 .padding(.vertical, 5)
                 .foregroundColor(.blue)
-            }.onAppear { currentFile = #file }
+            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let errorDescriptor):
             Text(errorDescriptor)
         }

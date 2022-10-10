@@ -109,11 +109,11 @@ public class Reachability {
     }
     
     fileprivate var isRunningOnDevice: Bool = {
-        #if targetEnvironment(simulator)
+#if targetEnvironment(simulator)
         return false
-        #else
+#else
         return true
-        #endif
+#endif
     }()
     
     fileprivate(set) var notifierRunning = false
@@ -287,9 +287,9 @@ extension SCNetworkReachabilityFlags {
         guard isReachableFlagSet else { return .unavailable }
         
         // If we're reachable, but not on an iOS device (i.e. simulator), we must be on WiFi
-        #if targetEnvironment(simulator)
+#if targetEnvironment(simulator)
         return .wifi
-        #else
+#else
         var connection = Connection.unavailable
         
         if !isConnectionRequiredFlagSet {
@@ -307,15 +307,15 @@ extension SCNetworkReachabilityFlags {
         }
         
         return connection
-        #endif
+#endif
     }
     
     var isOnWWANFlagSet: Bool {
-        #if os(iOS)
+#if os(iOS)
         return contains(.isWWAN)
-        #else
+#else
         return false
-        #endif
+#endif
     }
     var isReachableFlagSet: Bool {
         return contains(.reachable)

@@ -127,8 +127,8 @@ final class ConversationsPageViewModelTests: XCTestCase {
                 return
             }
             
-            currentUser = user
-            currentUserID = englishUserID
+            RuntimeStorage.store(user, as: .currentUser)
+            RuntimeStorage.store(englishUserID, as: .currentUserID)
             dispatchGroup.leave()
         }
         
@@ -175,8 +175,8 @@ final class ConversationsPageViewModelTests: XCTestCase {
                 return
             }
             
-            currentUser = user
-            currentUserID = spanishUserID
+            RuntimeStorage.store(user, as: .currentUser)
+            RuntimeStorage.store(spanishUserID, as: .currentUserID)
             dispatchGroup.leave()
         }
         

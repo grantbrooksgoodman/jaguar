@@ -9,7 +9,13 @@
 /* First-party Frameworks */
 import Foundation
 
-public struct ConversationArchiver {
+public enum ConversationArchiver {
+    
+    //==================================================//
+    
+    /* MARK: - Properties */
+    
+    private(set) static var conversationArchive = [Conversation]() { didSet { ConversationArchiver.setArchive() } }
     
     //==================================================//
     
@@ -27,7 +33,7 @@ public struct ConversationArchiver {
     public static func addToArchive(_ conversations: [Conversation]) {
         initializeArchive()
         
-        conversationArchive.removeAll(where: { $0.identifier.isAny(in: conversations.identifiers()) })
+        conversationArchive.removeAll(where: { $0.identifier.key.isAny(in: conversations.identifierKeys()) })
         conversationArchive.append(contentsOf: conversations)
         
         Logger.log("Added conversations to local archive.",
@@ -35,28 +41,33 @@ public struct ConversationArchiver {
                    metadata: [#file, #function, #line])
     }
     
-    public static func getFromArchive(_ identifier: String) -> Conversation? {
+    public static func getFromArchive(_ identifier: ConversationID) -> Conversation? {
         initializeArchive()
         
-        let conversations = conversationArchive.filter({ $0.identifier == identifier })
+        return conversationArchive.filter { $0.identifier == identifier }.first
+    }
+    
+    public static func getFromArchive(withKey: String) -> Conversation? {
+        initializeArchive()
         
-        if conversations.first != nil {
-            Logger.log("Found conversation in local archive.",
-                       verbose: true,
-                       metadata: [#file, #function, #line])
-        }
-        
-        return conversations.first
+        return conversationArchive.filter({ $0.identifier.key == withKey }).first
     }
     
     //==================================================//
     
     /* MARK: - Getter/Setter Functions */
     
+    public static func clearArchive() {
+        UserDefaults.standard.setValue(nil, forKey: "conversationArchive")
+        UserDefaults.standard.setValue(nil, forKey: "conversationArchiveUserID")
+        conversationArchive = []
+    }
+    
     public static func getArchive(completion: @escaping (_ returnedTuple: (conversations: [Conversation], userID: String)?,
                                                          _ errorDescriptor: String?) -> Void) {
         guard let conversationData = UserDefaults.standard.object(forKey: "conversationArchive") as? Data,
-              let userID = UserDefaults.standard.object(forKey: "conversationArchiveUserID") as? String else {
+              let userID = UserDefaults.standard.object(forKey: "conversationArchiveUserID") as? String
+        else {
             completion(nil, "Couldn't decode conversation archive. May be empty.")
             return
         }
@@ -65,10 +76,10 @@ public struct ConversationArchiver {
             let decoder = JSONDecoder()
             let decodedConversations = try decoder.decode([Conversation].self,
                                                           from: conversationData)
-            
+            setUpStaticArchive((conversations: decodedConversations, userID: userID))
             completion((conversations: decodedConversations, userID: userID), nil)
             return
-        } catch let error {
+        } catch {
             Logger.log(Logger.errorInfo(error),
                        metadata: [#file, #function, #line])
             
@@ -77,6 +88,11 @@ public struct ConversationArchiver {
     }
     
     public static func setArchive(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+        guard let currentUserID = RuntimeStorage.currentUserID else {
+            completion("No current user ID.")
+            return
+        }
+        
         do {
             let encoder = JSONEncoder()
             let encodedConversations = try encoder.encode(conversationArchive)
@@ -84,7 +100,7 @@ public struct ConversationArchiver {
             UserDefaults.standard.setValue(encodedConversations, forKey: "conversationArchive")
             UserDefaults.standard.setValue(currentUserID, forKey: "conversationArchiveUserID")
             completion(nil)
-        } catch let error {
+        } catch {
             Logger.log(Logger.errorInfo(error),
                        metadata: [#file, #function, #line])
             
@@ -97,13 +113,24 @@ public struct ConversationArchiver {
     /* MARK: - Private Functions */
     
     private static func initializeArchive() {
-        getArchive { (returnedTuple,
-                      errorDescriptor) in
+        getArchive { returnedTuple,
+            _ in
             guard let tuple = returnedTuple else {
                 return
             }
             
             conversationArchive = tuple.conversations
         }
+    }
+    
+    private static func setUpStaticArchive(_ with: (conversations: [Conversation], userID: String)) {
+        guard with.userID == RuntimeStorage.currentUserID else {
+            Logger.log("Different user ID – nuking conversation archive.",
+                       metadata: [#file, #function, #line])
+            clearArchive()
+            return
+        }
+        
+        conversationArchive = with.conversations.filter { $0.participants.contains(where: { $0.userID == RuntimeStorage.currentUserID! }) }
     }
 }

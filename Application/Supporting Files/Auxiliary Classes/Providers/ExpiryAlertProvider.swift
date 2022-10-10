@@ -16,9 +16,9 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Strings
+    // Strings
     private var continueUseString = "Continue Use"
     private var exitApplicationString = "Exit Application"
     private var expiryMessage = "The evaluation period for this pre-release build of \(Build.codeName) has ended.\n\nTo continue using this version, enter the six-digit expiration override code associated with it.\n\nUntil updated to a newer build, entry of this code will be required each time the application is launched.\n\nTime remaining for successful entry: 00:30"
@@ -29,7 +29,7 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
     private var timeExpiredTitle = "Time Expired"
     private var tryAgainString = "Try Again"
     
-    //Other Declarations
+    // Other
     private var exitTimer: Timer?
     private var expiryAlertController: UIAlertController!
     private var remainingSeconds = 30
@@ -61,8 +61,8 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
                     self.exitTimer?.invalidate()
                     self.exitTimer = nil
                     
-                    topWindow.removeSubview(aTagFor("expiryOverlayWindow"),
-                                            animated: true)
+                    RuntimeStorage.topWindow!.removeSubview(Core.ui.nameTag(for: "expiryOverlayWindow"),
+                                                            animated: true)
                 } else {
                     let incorrectAlertController = UIAlertController(title: self.incorrectCodeTitle,
                                                                      message: self.incorrectCodeMessage,
@@ -82,7 +82,7 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
                     incorrectAlertController.addAction(exitApplicationAction)
                     incorrectAlertController.preferredAction = tryAgainAction
                     
-                    politelyPresent(viewController: incorrectAlertController)
+                    Core.ui.politelyPresent(viewController: incorrectAlertController)
                 }
             }
             
@@ -103,7 +103,7 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
             
             self.setAttributedExpiryMessage()
             
-            politelyPresent(viewController: self.expiryAlertController)
+            Core.ui.politelyPresent(viewController: self.expiryAlertController)
             
             guard let timer = self.exitTimer else {
                 self.exitTimer = Timer.scheduledTimer(timeInterval: 1,
@@ -141,7 +141,7 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
                                                     message: self.timeExpiredMessage,
                                                     preferredStyle: .alert)
             
-            politelyPresent(viewController: alertController)
+            Core.ui.politelyPresent(viewController: alertController)
             
             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(1500)) {
                 fatalError()
@@ -179,10 +179,9 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
         let messageComponents = expiryMessage.components(separatedBy: ":")
         let attributeRange = messageComponents[1...messageComponents.count - 1].joined(separator: ":")
         
-        let attributedMessage = attributedString(expiryMessage,
-                                                 mainAttributes: [.font: UIFont.systemFont(ofSize: 13)],
-                                                 alternateAttributes: alternateAttributes,
-                                                 alternateAttributeRange: [attributeRange])
+        let attributedMessage = expiryMessage.attributed(mainAttributes: [.font: UIFont.systemFont(ofSize: 13)],
+                                                         alternateAttributes: alternateAttributes,
+                                                         alternateAttributeRange: [attributeRange])
         
         expiryAlertController.setValue(attributedMessage, forKey: "attributedMessage")
     }
@@ -206,8 +205,8 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
         dispatchGroup.enter()
         TranslatorService.shared.getTranslations(for: inputsToTranslate,
                                                  languagePair: LanguagePair(from: "en",
-                                                                            to: languageCode),
-                                                 requiresHUD: true,
+                                                                            to: RuntimeStorage.languageCode!),
+                                                 requiresHUD: false /*true*/,
                                                  using: .google) { (returnedTranslations,
                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {

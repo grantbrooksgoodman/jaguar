@@ -18,7 +18,7 @@ public class SignInPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Enumerated Type Declarations */
+    /* MARK: - Enums */
     
     public enum State {
         case idle
@@ -29,9 +29,8 @@ public class SignInPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Class-level Variable Declarations */
+    /* MARK: - Properties */
     
-    //Other Declarations
     private let inputs = ["phoneNumberPrompt": TranslationInput("Enter your phone number below:"),
                           "codePrompt": TranslationInput("Enter the code sent to your device:"),
                           "continue": TranslationInput("Continue"),
@@ -83,15 +82,6 @@ public class SignInPageViewModel: ObservableObject {
             }
             
             completion(result.user.uid, nil)
-        }
-    }
-    
-    public func simpleErrorString(_ errorDescriptor: String) -> String {
-        switch errorDescriptor {
-        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code SMS and be sure to use the verification code provided by the user.":
-            return "The verification code entered was invalid.\n\nPlease try again."
-        default:
-            return "An unknown error has occurred. Please try again."
         }
     }
     
