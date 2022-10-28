@@ -26,7 +26,7 @@ public struct FirebaseTranslator: Translatorable {
                                 requiresHUD: Bool? = nil,
                                 using: TranslationPlatform? = nil,
                                 completion: @escaping(_ returnedTranslations: [Translation]?,
-                                                      _ errorDescriptors: [String: TranslationInput]?) -> Void) {
+                                                      _ exception: Exception?) -> Void) {
         guard !(languagePair.from == "en" && languagePair.to == "en") else {
             var translations = [Translator.Translation]()
             
@@ -44,7 +44,7 @@ public struct FirebaseTranslator: Translatorable {
         let dispatchGroup = DispatchGroup()
         
         var translations = [Translator.Translation]()
-        var errors = [String: Translator.TranslationInput]()
+        var exceptions = [Exception]()
         
         Logger.openStream(metadata: [#file, #function, #line])
         
@@ -54,13 +54,14 @@ public struct FirebaseTranslator: Translatorable {
             self.translate(input,
                            with: languagePair,
                            requiresHUD: requiresHUD,
-                           using: using ?? .google) { (returnedTranslation, errorDescriptor) in
+                           using: using ?? .google) { (returnedTranslation, exception) in
                 if let translation = returnedTranslation {
                     translations.append(translation)
                 }
                 //else
-                if let error = errorDescriptor {
-                    errors[error] = input
+                if let unwrappedException = exception {
+                    exceptions.append(unwrappedException.appending(extraParams: ["TranslationInputOriginal": input.original,
+                                                                                 "TranslationInputAlternate": input.alternate ?? ""]))
                 }
                 
                 Logger.logToStream("Translated item \(index + 1) of \(inputs.count).",
@@ -74,9 +75,9 @@ public struct FirebaseTranslator: Translatorable {
             Logger.closeStream(message: "All strings should be translated; complete.",
                                onLine: #line)
             
-            if translations.count + errors.count == inputs.count {
+            if translations.count + exceptions.count == inputs.count {
                 completion(translations.isEmpty ? nil : translations,
-                           errors.isEmpty ? nil : errors)
+                           exceptions.compiledException)
             } else {
                 Logger.log("Mismatched translation input/output.",
                            with: .fatalAlert,
@@ -95,7 +96,7 @@ public struct FirebaseTranslator: Translatorable {
                           requiresHUD: Bool? = nil,
                           using: TranslationPlatform? = nil,
                           completion: @escaping (_ returnedTranslation: Translation?,
-                                                 _ errorDescriptor: String?) -> Void) {
+                                                 _ exception: Exception?) -> Void) {
         if let archivedTranslation = TranslationArchiver.getFromArchive(input,
                                                                         languagePair: languagePair) {
             completion(archivedTranslation, nil)
@@ -109,7 +110,7 @@ public struct FirebaseTranslator: Translatorable {
         
         TranslationSerializer.findTranslation(for: input,
                                               languagePair: languagePair) { (returnedString,
-                                                                             errorDescriptor) in
+                                                                             exception) in
             if let translatedString = returnedString {
                 Logger.log("No need to use translator; found uploaded string.",
                            metadata: [#file, #function, #line])
@@ -126,10 +127,9 @@ public struct FirebaseTranslator: Translatorable {
                                from: languagePair.from,
                                to: languagePair.to,
                                using: using ?? .google) { (returnedString,
-                                                           errorDescriptor) in
+                                                           exception) in
                     guard let translatedString = returnedString else {
-                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                                   metadata: [#file, #function, #line])
+                        Logger.log(Exception(exception, metadata: [#file, #function, #line]))
                         return
                     }
                     
@@ -169,11 +169,11 @@ public struct FirebaseTranslator: Translatorable {
                                            with: languagePair) { (returnedTranslation,
                                                                   errorDescriptor) in
             guard let translation = returnedTranslation else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let exception = Exception(errorDescriptor,
+                                          metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                completion(nil, error)
+                Logger.log(exception)
+                completion(nil, exception.descriptor)
                 return
             }
             

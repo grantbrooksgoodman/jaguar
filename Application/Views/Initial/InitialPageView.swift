@@ -63,8 +63,8 @@ public struct InitialPageView: View {
                 .padding(.vertical, 5)
                 .foregroundColor(.blue)
             }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
-        case .failed(let errorDescriptor):
-            Text(errorDescriptor)
+        case .failed(let exception):
+            Text(exception.userFacingDescriptor)
         }
     }
 }

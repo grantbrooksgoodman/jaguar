@@ -66,7 +66,7 @@ public class Message: Codable {
         return data
     }
     
-    public func updateReadDate(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+    public func updateReadDate(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         readDate = Date()
         
         GeneralSerializer.setValue(onKey: "/allMessages/\(identifier!)/readDate",
@@ -76,7 +76,7 @@ public class Message: Codable {
                 return
             }
             
-            completion(Logger.errorInfo(error))
+            completion(Exception(error, metadata: [#file, #function, #line]))
         }
     }
 }

@@ -56,10 +56,10 @@ public class User: Codable {
     /* MARK: - Getter Functions */
     
     public func deSerializeConversations(completion: @escaping (_ conversations: [Conversation]?,
-                                                                _ error: String?) -> Void) {
-        GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { returnedIdentifiers, errorDescriptor in
+                                                                _ exception: Exception?) -> Void) {
+        GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { returnedIdentifiers, exception in
             guard let updatedIdentifiers = returnedIdentifiers as? [String] else {
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
@@ -71,7 +71,8 @@ public class User: Codable {
             print("Conversations: \(updatedIdentifiers.count)")
             
             guard let asConversationIDs = updatedIdentifiers.asConversationIDs else {
-                completion(nil, "Unable to deserialize «openConversations».")
+                completion(nil, Exception("Unable to deserialize «openConversations».",
+                                          metadata: [#file, #function, #line]))
                 return
             }
             
@@ -84,7 +85,8 @@ public class User: Codable {
                 guard var conversationsToReturn = sorted[0] as? [Conversation],
                       let conversationsToUpdate = sorted[1] as? [Conversation],
                       let conversationsToFetch = sorted[2] as? [ConversationID] else {
-                    completion(nil, "Unable to sort conversations.")
+                    completion(nil, Exception("Unable to sort conversations.",
+                                              metadata: [#file, #function, #line]))
                     return
                 }
                 
@@ -92,25 +94,26 @@ public class User: Codable {
                 print("Conversations needing fetch: \(conversationsToFetch.count)\(conversationsToFetch.count > 0 ? "\n" : "")")
                 
                 self.updateConversations(conversationsToUpdate) { (returnedConversations,
-                                                                   errorDescriptor) in
+                                                                   exception) in
                     guard let updatedConversations = returnedConversations else {
-                        completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                        completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                         return
                     }
                     
                     conversationsToReturn.append(contentsOf: updatedConversations)
                     
                     self.fetchConversations(conversationsToFetch) { (returnedConversations,
-                                                                     errorDescriptor) in
+                                                                     exception) in
                         guard let fetchedConversations = returnedConversations else {
-                            completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                            completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                             return
                         }
                         
                         conversationsToReturn.append(contentsOf: fetchedConversations)
                         
                         guard !conversationsToReturn.isEmpty else {
-                            completion(nil, "Conversations to return is still empty!")
+                            completion(nil, Exception("Conversations to return is still empty!",
+                                                      metadata: [#file, #function, #line]))
                             return
                         }
                         
@@ -128,19 +131,19 @@ public class User: Codable {
     
     public func update(isTyping: Bool,
                        inConversationWithID: String,
-                       completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
-        GeneralSerializer.getValues(atPath: "/allConversations/\(inConversationWithID)") { returnedValues, errorDescriptor in
+                       completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
+        GeneralSerializer.getValues(atPath: "/allConversations/\(inConversationWithID)") { returnedValues, exception in
             guard let values = returnedValues as? [String: Any] else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
+                Logger.log(error)
                 completion(error)
                 return
             }
             
             guard let participants = values["participants"] as? [String] else {
-                completion("Couldn't deserialize participants.")
+                completion(Exception("Couldn't deserialize participants.",
+                                     metadata: [#file, #function, #line]))
                 return
             }
             
@@ -154,7 +157,7 @@ public class User: Codable {
                     return
                 }
                 
-                completion(Logger.errorInfo(error))
+                completion(Exception(error, metadata: [#file, #function, #line]))
             }
         }
     }
@@ -163,8 +166,9 @@ public class User: Codable {
         GeneralSerializer.setValue(onKey: "/allUsers/\(identifier!)/lastActive",
                                    withData: Core.secondaryDateFormatter!.string(from: Date())) { returnedError in
             if let error = returnedError {
-                Logger.log("Update last active date failed! \(Logger.errorInfo(error))",
-                           metadata: [#file, #function, #line])
+                Logger.log(Exception(error,
+                                     extraParams: ["UserFacingDescriptor": "Update last active date failed!"],
+                                     metadata: [#file, #function, #line]))
             }
         }
     }
@@ -175,7 +179,7 @@ public class User: Codable {
     
     private func fetchConversations(_ identifiers: [ConversationID],
                                     completion: @escaping (_ returnedConversations: [Conversation]?,
-                                                           _ errorDescriptor: String?) -> Void) {
+                                                           _ exception: Exception?) -> Void) {
         
         guard identifiers.count > 0 else {
             completion([], nil)
@@ -183,21 +187,21 @@ public class User: Codable {
         }
         
         ConversationSerializer.shared.getConversations(withIdentifiers: identifiers.keys) { (returnedConversations,
-                                                                                             errorDescriptor) in
+                                                                                             exception) in
             guard let fetchedConversations = returnedConversations else {
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
             let dispatchGroup = DispatchGroup()
-            var errors = [String]()
+            var exceptions = [Exception]()
             
             for conversation in fetchedConversations {
                 dispatchGroup.enter()
                 
-                conversation.setOtherUser { (errorDescriptor) in
-                    if let error = errorDescriptor {
-                        errors.append(error)
+                conversation.setOtherUser { (exception) in
+                    if let error = exception {
+                        exceptions.append(error)
                     }
                     
                     dispatchGroup.leave()
@@ -205,11 +209,18 @@ public class User: Codable {
             }
             
             dispatchGroup.notify(queue: .main) {
-                if fetchedConversations.count + errors.count == identifiers.count {
+                if fetchedConversations.count + exceptions.count == identifiers.count {
                     completion(fetchedConversations.isEmpty ? nil : fetchedConversations,
-                               errors.isEmpty ? nil : errors.joined(separator: "\n"))
+                               exceptions.compiledException)
                 } else {
-                    completion(nil, "Mismatched conversation input/output.")
+                    let failedToGet = identifiers.keys.filter({ !fetchedConversations.identifierKeys().contains($0) })
+                    let mismatchedException = Exception("Mismatched conversation input/output.",
+                                                        extraParams: ["FailedToGet": failedToGet],
+                                                        metadata: [#file, #function, #line])
+                    
+                    let finalException = exception == nil ? mismatchedException : exception!.appending(underlyingException: mismatchedException)
+                    
+                    completion(nil, finalException)
                 }
             }
         }
@@ -246,21 +257,21 @@ public class User: Codable {
     //NOT MUTUALLY EXCLUSIVE RETURN.
     private func updateConversations(_ conversations: [Conversation],
                                      completion: @escaping (_ returnedConversations: [Conversation]?,
-                                                            _ errorDescriptor: String?) -> Void) {
+                                                            _ exception: Exception?) -> Void) {
         guard conversations.count > 0 else {
             completion([], nil)
             return
         }
         
         ConversationSerializer.shared.updateConversations(conversations) { (returnedConversations,
-                                                                            errorDescriptor) in
+                                                                            exception) in
             guard let updatedConversations = returnedConversations else {
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
             let dispatchGroup = DispatchGroup()
-            var errors = [String]()
+            var exceptions = [Exception]()
             
             for conversation in updatedConversations {
                 dispatchGroup.enter()
@@ -268,9 +279,9 @@ public class User: Codable {
                 if conversation.otherUser != nil {
                     dispatchGroup.leave()
                 } else {
-                    conversation.setOtherUser { (errorDescriptor) in
-                        if let error = errorDescriptor {
-                            errors.append(error)
+                    conversation.setOtherUser { (exception) in
+                        if let error = exception {
+                            exceptions.append(error)
                         }
                         
                         dispatchGroup.leave()
@@ -279,11 +290,14 @@ public class User: Codable {
             }
             
             dispatchGroup.notify(queue: .main) {
-                if updatedConversations.count + errors.count == conversations.count {
+                if updatedConversations.count + exceptions.count == conversations.count {
                     completion(updatedConversations.isEmpty ? nil : updatedConversations,
-                               errors.isEmpty ? nil : errors.joined(separator: "\n"))
+                               exceptions.compiledException)
                 } else {
-                    completion(nil, "Mismatched conversation input/output.")
+                    let failedToGet = conversations.identifierKeys().filter({ !updatedConversations.identifierKeys().contains($0) })
+                    completion(nil, Exception("Mismatched conversation input/output.",
+                                              extraParams: ["FailedToGet": failedToGet],
+                                              metadata: [#file, #function, #line]))
                 }
             }
         }

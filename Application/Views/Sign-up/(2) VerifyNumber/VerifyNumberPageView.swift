@@ -91,8 +91,8 @@ public struct VerifyNumberPageView: View {
                 
                 Spacer()
             }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
-        case .failed(let errorDescriptor):
-            Text(errorDescriptor)
+        case .failed(let exception):
+            Text(exception.userFacingDescriptor)
         }
     }
     
@@ -102,7 +102,7 @@ public struct VerifyNumberPageView: View {
     
     private func verifyUser(phoneNumber: String) {
         viewModel.verifyUser(phoneNumber: phoneNumber) { (returnedIdentifier,
-                                                          errorDescriptor,
+                                                          exception,
                                                           hasAccount) in
             guard !hasAccount else {
                 let alert = AKAlert(message: "It appears you already have an account. Please sign in instead.", actions: [AKAction(title: "Sign In", style: .preferred)])
@@ -121,9 +121,8 @@ public struct VerifyNumberPageView: View {
             }
             
             guard let identifier = returnedIdentifier else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
                 return
             }
             

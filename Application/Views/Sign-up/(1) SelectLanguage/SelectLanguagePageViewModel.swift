@@ -10,6 +10,7 @@
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import Translator
 
 public class SelectLanguagePageViewModel: ObservableObject {
@@ -21,19 +22,19 @@ public class SelectLanguagePageViewModel: ObservableObject {
     public enum State {
         case idle
         case loading
-        case failed(String)
-        case loaded(translations: [String: Translation])
+        case failed(Exception)
+        case loaded(translations: [String: Translator.Translation])
     }
     
     //==================================================//
     
     /* MARK: - Properties */
     
-    private let inputs = ["title": TranslationInput("Select Language"),
-                          "subtitle": TranslationInput("To begin, please select your language."),
-                          "instruction": TranslationInput("You speak:", alternate: "Language you speak:"),
-                          "continue": TranslationInput("Continue"),
-                          "back": TranslationInput("Back", alternate: "Go back")]
+    private let inputs = ["title": Translator.TranslationInput("Select Language"),
+                          "subtitle": Translator.TranslationInput("To begin, please select your language."),
+                          "instruction": Translator.TranslationInput("You speak:", alternate: "Language you speak:"),
+                          "continue": Translator.TranslationInput("Continue"),
+                          "back": Translator.TranslationInput("Back", alternate: "Go back")]
     
     private var languageNames = [String]()
     
@@ -53,14 +54,12 @@ public class SelectLanguagePageViewModel: ObservableObject {
         let dataModel = PageViewDataModel(inputs: inputs)
         
         dataModel.translateStrings { (returnedTranslations,
-                                      errorDescriptor) in
+                                      returnedException) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
+                Logger.log(exception)
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                
-                self.state = .failed(error)
+                self.state = .failed(exception)
                 return
             }
             

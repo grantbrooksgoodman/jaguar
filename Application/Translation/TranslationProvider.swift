@@ -33,20 +33,24 @@ public struct TranslationProvider: AKTranslationProvider {
         FirebaseTranslator.shared.getTranslations(for: convertedInputs,
                                                   languagePair: convertedLanguagePair,
                                                   requiresHUD: requiresHUD) { returnedTranslations,
-            errorDescriptors in
+            exception in
             guard let translations = returnedTranslations else {
-                Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
-                           metadata: [#file, #function, #line])
-                
                 var convertedErrorDescriptors = [String: AlertKit.TranslationInput]()
                 
-                for errorDescriptor in errorDescriptors!.keys {
-                    let convertedTranslationInput = AlertKit.TranslationInput(errorDescriptors![errorDescriptor]!.original,
-                                                                              alternate: errorDescriptors![errorDescriptor]!.alternate)
-                    
-                    convertedErrorDescriptors[errorDescriptor] = convertedTranslationInput
+                guard let exception = exception,
+                      let extraParams = exception.extraParams,
+                      let original = extraParams["TranslationInputOriginal"] as? String,
+                      let alternate = extraParams["TranslationInputAlternate"] as? String else {
+                    // #warning("This probably isn't the greatest way to deal with this.")
+                    convertedErrorDescriptors[exception?.descriptor ?? String(Int().random(min: 0, max: 10))] = AlertKit.TranslationInput("")
+                    completion(nil, convertedErrorDescriptors)
+                    return
                 }
                 
+                let convertedTranslationInput = AlertKit.TranslationInput(original,
+                                                                          alternate: alternate)
+                
+                convertedErrorDescriptors[exception.descriptor] = convertedTranslationInput
                 completion(nil, convertedErrorDescriptors)
                 
                 return

@@ -9,19 +9,21 @@
 /* Third-party Frameworks */
 import Translator
 
+import AlertKit
+
 public class PageViewDataModel {
     
     //==================================================//
     
     /* MARK: - Properties */
     
-    private var inputs: [String: TranslationInput]!
+    private var inputs: [String: Translator.TranslationInput]!
     
     //==================================================//
     
     /* MARK: - Constructor Function */
     
-    public init(inputs: [String: TranslationInput]) {
+    public init(inputs: [String: Translator.TranslationInput]) {
         self.inputs = inputs
     }
     
@@ -29,20 +31,25 @@ public class PageViewDataModel {
     
     /* MARK: - Other Functions */
     
-    public func translateStrings(completion: @escaping (_ returnedTranslations: [String: Translation]?,
-                                                        _ errorDescriptor: String?) -> Void) {
+    public func translateStrings(completion: @escaping (_ returnedTranslations: [String: Translator.Translation]?,
+                                                        _ returnedException: Exception?) -> Void) {
+        let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line])
+        
         FirebaseTranslator.shared.getTranslations(for: Array(inputs.values),
-                                                  languagePair: LanguagePair(from: "en",
-                                                                             to: RuntimeStorage.languageCode!),
+                                                  languagePair: Translator.LanguagePair(from: "en",
+                                                                                        to: RuntimeStorage.languageCode!),
                                                   using: .google) { returnedTranslations,
-            errorDescriptors in
+            exception in
+            timeout.cancel()
+            
             guard let translations = returnedTranslations else {
-                completion(nil, errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.")
+                completion(nil, exception)
                 return
             }
             
             guard let matchedTranslations = translations.matchedTo(self.inputs) else {
-                completion(nil, "Couldn't match translations with inputs.")
+                completion(nil, Exception("Couldn't match translations with inputs.",
+                                          metadata: [#file, #function, #line]))
                 return
             }
             

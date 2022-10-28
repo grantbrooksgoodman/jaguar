@@ -10,6 +10,7 @@
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import Firebase
 import FirebaseAuth
 import Translator
@@ -23,19 +24,19 @@ public class SignInPageViewModel: ObservableObject {
     public enum State {
         case idle
         case loading
-        case failed(String)
-        case loaded(translations: [String: Translation])
+        case failed(Exception)
+        case loaded(translations: [String: Translator.Translation])
     }
     
     //==================================================//
     
     /* MARK: - Properties */
     
-    private let inputs = ["phoneNumberPrompt": TranslationInput("Enter your phone number below:"),
-                          "codePrompt": TranslationInput("Enter the code sent to your device:"),
-                          "continue": TranslationInput("Continue"),
-                          "finish": TranslationInput("Finish"),
-                          "back": TranslationInput("Back", alternate: "Go back")]
+    private let inputs = ["phoneNumberPrompt": Translator.TranslationInput("Enter your phone number below:"),
+                          "codePrompt": Translator.TranslationInput("Enter the code sent to your device:"),
+                          "continue": Translator.TranslationInput("Continue"),
+                          "finish": Translator.TranslationInput("Finish"),
+                          "back": Translator.TranslationInput("Back", alternate: "Go back")]
     
     @Published private(set) var state = State.idle
     
@@ -49,14 +50,12 @@ public class SignInPageViewModel: ObservableObject {
         let dataModel = PageViewDataModel(inputs: inputs)
         
         dataModel.translateStrings { (returnedTranslations,
-                                      errorDescriptor) in
+                                      returnedException) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
+                Logger.log(exception)
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                
-                self.state = .failed(error)
+                self.state = .failed(exception)
                 return
             }
             

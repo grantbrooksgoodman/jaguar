@@ -180,16 +180,17 @@ public class Conversation: Codable {
     
     /* MARK: - Set/Update Functions */
     
-    public func setOtherUser(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+    public func setOtherUser(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         guard let otherUserIdentifier = participants.filter({ $0.userID != RuntimeStorage.currentUserID! })[0].userID else {
-            completion("Couldn't find other user ID.")
+            completion(Exception("Couldn't find other user ID.",
+                                 metadata: [#file, #function, #line]))
             return
         }
         
         UserSerializer.shared.getUser(withIdentifier: otherUserIdentifier) { returnedUser,
-            errorDescriptor in
+            exception in
             guard let user = returnedUser else {
-                completion(errorDescriptor ?? "An unknown error occurred.")
+                completion(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
@@ -198,25 +199,26 @@ public class Conversation: Codable {
         }
     }
     
-    public func updateHash(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+    public func updateHash(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         identifier.hash = hash
         
         GeneralSerializer.setValue(onKey: "/allConversations/\(identifier!.key!)/hash",
                                    withData: hash) { returnedError in
             guard returnedError == nil else {
-                completion(Logger.errorInfo(returnedError!))
+                completion(Exception(returnedError!,
+                                     metadata: [#file, #function, #line]))
                 return
             }
             
             let dispatchGroup = DispatchGroup()
-            var errors = [String]()
+            var exceptions = [Exception]()
             
             for participant in self.participants {
                 dispatchGroup.enter()
                 
-                GeneralSerializer.getValues(atPath: "/allUsers/\(participant.userID!)/openConversations") { (returnedValues, errorDescriptor) in
+                GeneralSerializer.getValues(atPath: "/allUsers/\(participant.userID!)/openConversations") { (returnedValues, exception) in
                     guard var conversationIdentifiers = returnedValues as? [String] else {
-                        errors.append(errorDescriptor ?? "An unknown error occurred.")
+                        exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
                         dispatchGroup.leave()
                         return
                     }
@@ -227,7 +229,7 @@ public class Conversation: Codable {
                     GeneralSerializer.setValue(onKey: "/allUsers/\(participant.userID!)/openConversations",
                                                withData: conversationIdentifiers) { (returnedError) in
                         if let error = returnedError {
-                            errors.append(Logger.errorInfo(error))
+                            exceptions.append(Exception(error, metadata: [#file, #function, #line]))
                         }
                         
                         dispatchGroup.leave()
@@ -236,22 +238,21 @@ public class Conversation: Codable {
             }
             
             dispatchGroup.notify(queue: .main) {
-                let finalError = errors.joined(separator: "\n")
-                completion(finalError == "" ? nil : finalError)
+                completion(exceptions.compiledException)
             }
         }
     }
     
-    public func updateLastModified(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+    public func updateLastModified(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         lastModifiedDate = Date()
         
         GeneralSerializer.setValue(onKey: "/allConversations/\(identifier!.key!)/lastModified",
                                    withData: Core.secondaryDateFormatter!.string(from: lastModifiedDate)) { returnedError in
             guard returnedError == nil else {
-                let error = Logger.errorInfo(returnedError!)
+                let error = Exception(returnedError!,
+                                      metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
+                Logger.log(error)
                 completion(error)
                 return
             }

@@ -27,7 +27,7 @@ public struct MessageSerializer {
                               inConversationWithIdentifier: String?,
                               translation: Translation,
                               completion: @escaping(_ returnedMessage: Message?,
-                                                    _ errorDescriptor: String?) -> Void) {
+                                                    _ exception: Exception?) -> Void) {
         RuntimeStorage.currentUser?.updateLastActiveDate()
         
         var data: [String: Any] = [:]
@@ -42,14 +42,15 @@ public struct MessageSerializer {
             Logger.log("Unable to generate key for new message.",
                        metadata: [#file, #function, #line])
             
-            completion(nil, "Unable to generate key for new message.")
+            completion(nil, Exception("Unable to generate key for new message.",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         GeneralSerializer.updateValue(onKey: "/allMessages/\(generatedKey)",
                                       withData: data) { (returnedError) in
             if let error = returnedError {
-                completion(nil, Logger.errorInfo(error))
+                completion(nil, Exception(error, metadata: [#file, #function, #line]))
             }
         }
         
@@ -65,7 +66,8 @@ public struct MessageSerializer {
             return
         }
         
-        GeneralSerializer.getValues(atPath: "/allConversations/\(conversationIdentifier)/messages") { (returnedMessages, errorDescriptor) in
+#warning("Fix this for ConversationTestingSerializer.")
+        GeneralSerializer.getValues(atPath: "/allConversations/\(conversationIdentifier)/messages") { (returnedMessages, exception) in
             if var messages = returnedMessages as? [String] {
                 messages.append(generatedKey)
                 
@@ -84,10 +86,10 @@ public struct MessageSerializer {
                         return
                     }
                     
-                    completion(nil, Logger.errorInfo(error))
+                    completion(nil, Exception(error, metadata: [#file, #function, #line]))
                 }
             } else {
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
             }
         }
     }
@@ -98,28 +100,30 @@ public struct MessageSerializer {
     
     public func getMessage(withIdentifier: String,
                            completion: @escaping(_ returnedMessage: Message?,
-                                                 _ errorDescriptor: String?) -> Void) {
+                                                 _ exception: Exception?) -> Void) {
         guard withIdentifier != "!" else {
-            completion(nil, "Null/first message processed.")
+            completion(nil, Exception("Null/first message processed.",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         Database.database().reference().child("allMessages").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   var data = snapshot as? [String: Any] else {
-                completion(nil, "No message exists with the identifier \"\(withIdentifier)\".")
+                completion(nil, Exception("No message exists with the provided identifier.",
+                                          extraParams: ["MessageID": withIdentifier],
+                                          metadata: [#file, #function, #line]))
                 return
             }
             
             data["identifier"] = withIdentifier
             
             self.deSerializeMessage(fromData: data) { (returnedMessage,
-                                                       errorDescriptor) in
+                                                       exception) in
                 guard let message = returnedMessage else {
-                    let error = errorDescriptor ?? "An unknown error occurred."
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
                     
-                    Logger.log(error,
-                               metadata: [#file, #function, #line])
+                    Logger.log(error)
                     completion(nil, error)
                     return
                 }
@@ -127,15 +131,16 @@ public struct MessageSerializer {
                 completion(message, nil)
             }
         }) { (error) in
-            completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
+            completion(nil, Exception(error,
+                                      metadata: [#file, #function, #line]))
         }
     }
     
     public func getMessages(withIdentifiers: [String],
                             completion: @escaping(_ returnedMessages: [Message]?,
-                                                  _ status: String?) -> Void) {
+                                                  _ exception: Exception?) -> Void) {
         var messages = [Message]()
-        var errorDescriptors = [String]()
+        var exceptions = [Exception]()
         
         if withIdentifiers == ["!"] {
             Logger.log("Null/first message processed.",
@@ -144,22 +149,23 @@ public struct MessageSerializer {
             completion([], nil)
         } else {
             guard !withIdentifiers.isEmpty else {
-                completion(nil, "No identifiers passed!")
+                completion(nil, Exception("No identifiers passed!",
+                                          metadata: [#file, #function, #line]))
                 return
             }
             
             for identifier in withIdentifiers {
                 getMessage(withIdentifier: identifier) { (returnedMessage,
-                                                          errorDescriptor) in
+                                                          exception) in
                     if let message = returnedMessage {
                         messages.append(message)
                     } else {
-                        errorDescriptors.append(errorDescriptor!)
+                        exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
                     }
                     
-                    if messages.count + errorDescriptors.count == withIdentifiers.count {
+                    if messages.count + exceptions.count == withIdentifiers.count {
                         completion(messages.isEmpty ? nil : messages,
-                                   errorDescriptors.isEmpty ? nil : "Failed: \(errorDescriptors.joined(separator: "\n"))")
+                                   exceptions.compiledException)
                     }
                 }
             }
@@ -172,39 +178,46 @@ public struct MessageSerializer {
     
     private func deSerializeMessage(fromData: [String: Any],
                                     completion: @escaping(_ deSerializedMessage: Message?,
-                                                          _ errorDescriptor: String?) -> Void) {
+                                                          _ exception: Exception?) -> Void) {
         guard let identifier = fromData["identifier"] as? String else {
-            completion(nil, "Unable to deserialize «identifier».")
+            completion(nil, Exception("Unable to deserialize «identifier».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let fromAccountIdentifier = fromData["fromAccount"] as? String else {
-            completion(nil, "Unable to deserialize «fromAccount».")
+            completion(nil, Exception("Unable to deserialize «fromAccount».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let languagePairString = fromData["languagePair"] as? String else {
-            completion(nil, "Unable to deserialize «languagePairString».")
+            completion(nil, Exception("Unable to deserialize «languagePairString».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let languagePair = languagePairString.asLanguagePair() else {
-            completion(nil, "Unable to convert «languagePairString» to LanguagePair.")
+            completion(nil, Exception("Unable to convert «languagePairString» to LanguagePair.",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let translationReference = fromData["translationReference"] as? String else {
-            completion(nil, "Unable to deserialize «translationReference».")
+            completion(nil, Exception("Unable to deserialize «translationReference».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let readDateString = fromData["readDate"] as? String else {
-            completion(nil, "Unable to deserialize «readDate».")
+            completion(nil, Exception("Unable to deserialize «readDate».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let sentDateString = fromData["sentDate"] as? String else {
-            completion(nil, "Unable to deserialize «sentDate».")
+            completion(nil, Exception("Unable to deserialize «sentDate».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
@@ -214,19 +227,19 @@ public struct MessageSerializer {
         formatter.locale = Locale(identifier: "en_GB")
         
         guard let sentDate = formatter.date(from: sentDateString) else {
-            completion(nil, "Unable to convert «sentDateString» to Date.")
+            completion(nil, Exception("Unable to convert «sentDateString» to Date.",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let archivedTranslation = TranslationArchiver.getFromArchive(withReference: translationReference, languagePair: languagePair) else {
             TranslationSerializer.findTranslation(withReference: translationReference,
                                                   languagePair: languagePair) { (returnedTranslation,
-                                                                                 errorDescriptor) in
+                                                                                 exception) in
                 guard let translation = returnedTranslation else {
-                    let error = errorDescriptor ?? "An unknown error occurred."
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
                     
-                    Logger.log(error,
-                               metadata: [#file, #function, #line])
+                    Logger.log(error)
                     completion(nil, error)
                     return
                 }

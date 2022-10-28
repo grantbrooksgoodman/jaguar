@@ -83,8 +83,8 @@ public struct SelectLanguagePageView: View {
                 
                 Spacer()
             }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
-        case .failed(let errorDescriptor):
-            Text(errorDescriptor)
+        case .failed(let exception):
+            Text(exception.userFacingDescriptor)
         }
     }
 }

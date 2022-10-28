@@ -64,11 +64,12 @@ public enum ConversationArchiver {
     }
     
     public static func getArchive(completion: @escaping (_ returnedTuple: (conversations: [Conversation], userID: String)?,
-                                                         _ errorDescriptor: String?) -> Void) {
+                                                         _ exception: Exception?) -> Void) {
         guard let conversationData = UserDefaults.standard.object(forKey: "conversationArchive") as? Data,
               let userID = UserDefaults.standard.object(forKey: "conversationArchiveUserID") as? String
         else {
-            completion(nil, "Couldn't decode conversation archive. May be empty.")
+            completion(nil, Exception("Couldn't decode conversation archive. May be empty.",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
@@ -80,16 +81,17 @@ public enum ConversationArchiver {
             completion((conversations: decodedConversations, userID: userID), nil)
             return
         } catch {
-            Logger.log(Logger.errorInfo(error),
-                       metadata: [#file, #function, #line])
+            Logger.log(Exception(error,
+                                 metadata: [#file, #function, #line]))
             
-            completion(nil, Logger.errorInfo(error))
+            completion(nil, Exception(error, metadata: [#file, #function, #line]))
         }
     }
     
-    public static func setArchive(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+    public static func setArchive(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         guard let currentUserID = RuntimeStorage.currentUserID else {
-            completion("No current user ID.")
+            completion(Exception("No current user ID.",
+                                 metadata: [#file, #function, #line]))
             return
         }
         
@@ -101,10 +103,10 @@ public enum ConversationArchiver {
             UserDefaults.standard.setValue(currentUserID, forKey: "conversationArchiveUserID")
             completion(nil)
         } catch {
-            Logger.log(Logger.errorInfo(error),
-                       metadata: [#file, #function, #line])
+            Logger.log(Exception(error,
+                                 metadata: [#file, #function, #line]))
             
-            completion(Logger.errorInfo(error))
+            completion(Exception(error, metadata: [#file, #function, #line]))
         }
     }
     

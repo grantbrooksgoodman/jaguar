@@ -11,6 +11,7 @@ import ContactsUI
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import PhoneNumberKit
 
 public struct NewConversationPageView: View {
@@ -35,7 +36,8 @@ public struct NewConversationPageView: View {
             Color.clear.onAppear(perform: viewModel.load)
         case .loading:
             ProgressView("")
-        case .loaded(translations: let translations):
+        case .loaded(translations: let translations,
+                     contacts: let contactPairs):
             VStack {
                 HStack {
                     HStack {
@@ -57,28 +59,28 @@ public struct NewConversationPageView: View {
                     .background(Color(.secondarySystemBackground))
                     .cornerRadius(8)
                     
-                    if self.showCancelButton  {
-                        Button("Cancel") {
-                            UIApplication.shared.endEditing(true)
-                            self.searchText = ""
-                            self.showCancelButton = false
-                        }
-                    }
+                    //                    if self.showCancelButton  {
+                    //                        Button("Cancel") {
+                    //                            UIApplication.shared.endEditing(true)
+                    //                            self.searchText = ""
+                    //                            self.showCancelButton = false
+                    //                        }
+                    //                    }
                 }
                 .padding([.leading, .trailing,.top])
                 
                 List {
-                    ForEach (viewModel.contacts.contacts.sorted(by: { $0.lastName < $1.lastName }).filter({ (contact) -> Bool in
+                    ForEach (contactPairs.contacts.sorted(by: { $0.lastName < $1.lastName }).filter({ (contact) -> Bool in
                         self.searchText.isEmpty ? true :
                         "\(contact)".lowercased().contains(self.searchText.lowercased())
                     })) { contact in
-                        let contactPair = viewModel.contacts.filter({ $0.contact.hash == contact.hash }).first!
+                        let pair = contactPairs.filter({ $0.contact.hash == contact.hash }).first!
                         
                         if contact.firstName != "" || contact.lastName != "" {
-                            if contactPair.users != nil {
+                            if pair.users != nil {
                                 Button("\(contact.firstName) \(contact.lastName)") {
                                     isPresenting = false
-                                    RuntimeStorage.store(contactPair, as: .selectedContactPair)
+                                    RuntimeStorage.store(pair, as: .selectedContactPair)
                                 }
                             } else {
                                 Text("\(contact.firstName) \(contact.lastName)")
@@ -88,10 +90,10 @@ public struct NewConversationPageView: View {
                 }
             }.onAppear {
                 RuntimeStorage.store(#file, as: .currentFile)
-                viewModel.requestAccess()
+                //                viewModel.requestAccess()
             }
-        case .failed(let errorDescriptor):
-            Text(errorDescriptor)
+        case .failed(let exception):
+            Text(exception.userFacingDescriptor)
         }
     }
 }

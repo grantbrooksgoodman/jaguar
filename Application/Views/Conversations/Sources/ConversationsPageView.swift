@@ -11,6 +11,7 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import AlertKit
+import FirebaseDatabase
 import MessageKit
 
 public struct ConversationsPageView: View {
@@ -33,7 +34,16 @@ public struct ConversationsPageView: View {
         case .idle:
             Color.clear.onAppear(perform: viewModel.load)
         case .loading:
-            ProgressView("" /*"Loading..."*/)
+            ProgressView("" /*"Loading..."*/) /* .onAppear {
+                                               ConversationTestingSerializer.createRandomConversation { exception in
+                                               if let exception = exception {
+                                               Logger.log(exception)
+                                               } else {
+                                               Logger.log("Successfully created random conversation!",
+                                               metadata: [#file, #function, #line])
+                                               }
+                                               }
+                                               } */
         case .loaded(let translations,
                      let openConversations):
             VStack {
@@ -75,11 +85,11 @@ public struct ConversationsPageView: View {
                 }
             }
             .onShake(perform: {
-                self.confirmSequenceUser()
+                self.confirmTrashDatabase()
             })
             .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
-        case .failed(let errorDescriptor):
-            Text(errorDescriptor)
+        case .failed(let exception):
+            Text(exception.userFacingDescriptor)
         }
     }
     
@@ -87,27 +97,131 @@ public struct ConversationsPageView: View {
     
     /* MARK: - Private Functions */
     
-    private func confirmSequenceUser() {
-        let confirmationAlert = AKConfirmationAlert(message: "Sign in next user?",
-                                                    confirmationStyle: .default)
-        
-        confirmationAlert.present { didConfirm in
+    private func confirmTrashDatabase() {
+        AKConfirmationAlert(title: "Destroy Database",
+                            message: "Are you sure you'd like to trash the database? This operation cannot be undone.",
+                            confirmationStyle: .destructivePreferred).present { didConfirm in
             if didConfirm == 1 {
-                UserTestingSerializer.shared.signInNextUserInSequence { errorDescriptor in
-                    guard errorDescriptor == nil else {
-                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                                   with: .errorAlert,
-                                   metadata: [#file, #function, #line])
+                AKConfirmationAlert(title: "Are you sure?",
+                                    message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
+                                    cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
+                                    confirmationStyle: .destructivePreferred).present { confirmed in
+                    if confirmed == 1 {
+                        trashDatabase()
+                    }
+                }
+            }
+        }
+    }
+    
+    private func removeConversationsForAllUsers(completion: @escaping(_ exception: Exception?) -> Void) {
+        Database.database().reference().child("/allUsers").observeSingleEvent(of: .value) { (returnedSnapshot) in
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  let data = snapshot as? [String: Any] else {
+                let exception = Exception("Couldn't get user list.",
+                                          metadata: [#file, #function, #line])
+                
+                Logger.log(exception,
+                           with: .errorAlert)
+                completion(exception)
+                
+                return
+            }
+            
+            var exceptions = [Exception]()
+            for (index, identifier) in Array(data.keys).enumerated() {
+                GeneralSerializer.setValue(onKey: "/allUsers/\(identifier)/openConversations",
+                                           withData: ["!"]) { returnedError in
+                    if let error = returnedError {
+                        let exception = Exception(error, metadata: [#file, #function, #line])
+                        
+                        Logger.log(exception)
+                        exceptions.append(exception)
+                    }
+                }
+                
+                if index == Array(data.keys).count - 1 {
+                    completion(exceptions.compiledException)
+                }
+            }
+        }
+    }
+    
+    private func testExceptionDepth() {
+        let totalToGenerate = 10
+        
+        var exceptions = [Exception]()
+        while exceptions.count < totalToGenerate {
+            let randomAction = Int().random(min: 0, max: 3)
+            
+            var randomException = Exception(SentenceGenerator.generateSentence(wordCount: 5),
+                                            isReportable: randomAction % 2 == 0,
+                                            extraParams: ["index": "nil"],
+                                            metadata: [#file, #function, Int().random(min: 0, max: 100)])
+            
+            switch randomAction {
+            case 1:
+                guard !exceptions.isEmpty else { continue }
+                let randomIndex = Int().random(min: 0, max: exceptions.count - 1)
+                
+                var randomElement = exceptions[randomIndex]
+                randomElement = randomElement.appending(underlyingException: randomException)
+                
+                exceptions.remove(at: randomIndex)
+                exceptions.insert(randomElement, at: randomIndex)
+            case 2:
+                guard !exceptions.isEmpty else { continue }
+                let randomIndex = Int().random(min: 0, max: exceptions.count - 1)
+                
+                let randomElement = exceptions[randomIndex]
+                randomException = randomException.appending(underlyingException: randomElement).appending(underlyingException: randomException)
+                
+                exceptions.append(randomException)
+            case 3:
+                for var exception in exceptions {
+                    exception = exception.appending(underlyingException: randomException).appending(underlyingException: exception)
+                }
+            default: /*0*/
+                exceptions.append(randomException)
+            }
+        }
+        
+        let compiledException = exceptions.compiledException
+        
+        guard let compiledException = compiledException else { return }
+        let underlyingExceptions = compiledException.allUnderlyingExceptions()
+        
+        print("Total desired: \(totalToGenerate)\nTotal exceptions generated: \(exceptions.count)\nAll underlying exceptions result: \(underlyingExceptions.count)")
+    }
+    
+    private func trashDatabase() {
+        removeConversationsForAllUsers { exception in
+            guard exception == nil else {
+                AKErrorAlert(error: exception!.asAkError()).present()
+                return
+            }
+            
+            let keys = ["Conversations", "Messages"]
+            
+            var exceptions = [Exception]()
+            for (index, key) in keys.enumerated() {
+                GeneralSerializer.setValue(onKey: "/all\(key)",
+                                           withData: NSNull()) { returnedError in
+                    if let error = returnedError {
+                        exceptions.append(Exception(error, metadata: [#file, #function, #line]))
+                    }
+                }
+                
+                if index == keys.count - 1 {
+                    guard exceptions.count == 0 else {
+                        AKErrorAlert(error: exceptions.compiledException!.asAkError()).present()
                         return
                     }
                     
-                    ConversationArchiver.clearArchive()
-                    
-                    RuntimeStorage.store(RuntimeStorage.currentUser!.languageCode!, as: .languageCode)
-                    AKCore.shared.setLanguageCode(RuntimeStorage.currentUser!.languageCode)
-                    
-                    Core.gcd.after(milliseconds: 100) {
-                        //                                setUpConversationArchive()
+                    AKAlert(message: "Successfully trashed database.",
+                            cancelButtonTitle: "OK").present { _ in
+                        RuntimeStorage.remove(.conversations)
+                        ConversationArchiver.clearArchive()
                         viewModel.load()
                     }
                 }

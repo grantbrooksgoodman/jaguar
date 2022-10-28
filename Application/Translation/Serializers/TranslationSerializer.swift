@@ -21,7 +21,7 @@ public enum TranslationSerializer {
     /* MARK: - Uploading Functions */
     
     public static func uploadTranslation(_ translation: Translator.Translation,
-                                         completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
+                                         completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         let languagePair = translation.languagePair
         let serializedTranslation = translation.serialize()
         let dictionary = [serializedTranslation.key: serializedTranslation.value]
@@ -38,28 +38,31 @@ public enum TranslationSerializer {
                 return
             }
             
-            Logger.log("Couldn't upload translation.\n\(Logger.errorInfo(error))",
-                       verbose: true,
-                       metadata: [#file, #function, #line])
+            let exception = Exception(error,
+                                      extraParams: ["UserFacingDescriptor": "Couldn't upload translation."],
+                                      metadata: [#file, #function, #line])
             
-            completion(Logger.errorInfo(error))
+            Logger.log(exception,
+                       verbose: true)
+            
+            completion(exception)
         }
     }
     
     public static func uploadTranslations(_ translations: [Translator.Translation],
-                                          completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
+                                          completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         let languagePairs = translations.languagePairs()
-        var finalErrorDescriptor = ""
-        
         let dispatchGroup = DispatchGroup()
+        
+        var exceptions = [Exception]()
         
         for pair in languagePairs {
             dispatchGroup.enter()
             
             uploadTranslations(translations.where(languagePair: pair),
-                               for: pair) { (errorDescriptor) in
-                if let error = errorDescriptor {
-                    finalErrorDescriptor += "\(error)\n"
+                               for: pair) { (exception) in
+                if let error = exception {
+                    exceptions.append(error.appending(extraParams: ["languagePair": pair.asString()]))
                 }
                 
                 dispatchGroup.leave()
@@ -67,7 +70,7 @@ public enum TranslationSerializer {
         }
         
         dispatchGroup.notify(queue: .main) {
-            completion(finalErrorDescriptor == "" ? nil : finalErrorDescriptor.trimmingTrailingNewlines)
+            completion(exceptions.compiledException)
         }
     }
     
@@ -75,17 +78,18 @@ public enum TranslationSerializer {
     
     /* MARK: - Downloading Functions */
     
-    public static func downloadTranslations(completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
+    public static func downloadTranslations(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
 #warning("Figure out whether the limit will cause any issues. It shouldn't, because we have findTranslation() as a backup, but still.")
         GeneralSerializer.queryValues(atPath: "allTranslations/en-\(RuntimeStorage.languageCode!)",
                                       limit: 50) { (returnedValues,
-                                                    errorDescriptor) in
+                                                    exception) in
             guard let values = returnedValues as? [String: String] else {
-                let error = errorDescriptor ?? "No online translation archive for this language pair."
+                let error = exception ?? Exception("No online translation archive for this language pair.",
+                                                   extraParams: ["LanguagePair": "en-\(RuntimeStorage.languageCode!)"],
+                                                   metadata: [#file, #function, #line])
                 
                 if RuntimeStorage.languageCode! != "en" {
-                    Logger.log(error,
-                               metadata: [#file, #function, #line])
+                    Logger.log(error)
                 }
                 
                 completion(error)
@@ -93,9 +97,11 @@ public enum TranslationSerializer {
             }
             
             guard let decodedValues = values.hashDecoded() else {
-                Logger.log("Unable to decode values.",
-                           metadata: [#file, #function, #line])
-                completion("Unable to decode values.")
+                let exception = Exception("Unable to decode values.",
+                                          metadata: [#file, #function, #line])
+                Logger.log(exception)
+                completion(exception)
+                
                 return
             }
             
@@ -137,19 +143,20 @@ public enum TranslationSerializer {
     public static func findTranslation(withReference: String,
                                        languagePair: Translator.LanguagePair,
                                        completion: @escaping(_ returnedTranslation: Translator.Translation?,
-                                                             _ errorDescriptor: String?) -> Void) {
+                                                             _ exception: Exception?) -> Void) {
         let path = "/allTranslations/\(languagePair.asString())"
         
         GeneralSerializer.getValues(atPath: "\(path)/\(withReference)") { (returnedValues,
-                                                                           errorDescriptor) in
+                                                                           exception) in
             guard let value = returnedValues as? String else {
                 if returnedValues as? NSNull != nil {
-                    completion(nil, "No translations for language pair '\(languagePair.asString())'.")
+                    completion(nil, Exception("No translations for the provided language pair.",
+                                              extraParams: ["LanguagePair": languagePair.asString()],
+                                              metadata: [#file, #function, #line]))
                 } else {
-                    let error = errorDescriptor ?? "An unknown error occurred."
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
                     
-                    Logger.log(error,
-                               metadata: [#file, #function, #line])
+                    Logger.log(error)
                     completion(nil, error)
                 }
                 
@@ -158,7 +165,8 @@ public enum TranslationSerializer {
             
             guard let decodedInput = value.decoded(getInput: true),
                   let decodedOutput = value.decoded(getInput: false) else {
-                completion(nil, "Failed to decode translation.")
+                completion(nil, Exception("Failed to decode translation.",
+                                          metadata: [#file, #function, #line]))
                 return
             }
             
@@ -173,12 +181,13 @@ public enum TranslationSerializer {
     public static func findTranslation(for input: Translator.TranslationInput,
                                        languagePair: Translator.LanguagePair,
                                        completion: @escaping(_ returnedString: String?,
-                                                             _ errorDescriptor: String?) -> Void) {
+                                                             _ exception: Exception?) -> Void) {
         let path = "/allTranslations/\(languagePair.asString())"
         
-        GeneralSerializer.getValues(atPath: "\(path)/\(input.value().compressedHash)") { (returnedValues, errorDescriptor) in
+        GeneralSerializer.getValues(atPath: "\(path)/\(input.value().compressedHash)") { (returnedValues, exception) in
             guard let value = returnedValues as? String else {
-                let error = errorDescriptor ?? "No uploaded translation exists."
+                let error = exception ?? Exception("No uploaded translation exists.",
+                                                   metadata: [#file, #function, #line])
                 
                 //                Logger.log(error,
                 //                           metadata: [#file, #function, #line])
@@ -187,7 +196,8 @@ public enum TranslationSerializer {
             }
             
             guard let decoded = value.decoded(getInput: false) else {
-                completion(nil, "Failed to decode translation.")
+                completion(nil, Exception("Failed to decode translation.",
+                                          metadata: [#file, #function, #line]))
                 return
             }
             
@@ -207,10 +217,10 @@ public enum TranslationSerializer {
             dispatchGroup.enter()
             
             findTranslation(for: input,
-                            languagePair: languagePair) { (returnedString, errorDescriptor) in
+                            languagePair: languagePair) { (returnedString, exception) in
                 if let translatedString = returnedString {
                     translationDictionary[input.value()] = translatedString
-                } else if errorDescriptor != nil {
+                } else if exception != nil {
                     translationDictionary[input.value()] = "!"
                     didError = true
                 }
@@ -246,7 +256,7 @@ public enum TranslationSerializer {
     
     public static func removeTranslation(for input: Translator.TranslationInput,
                                          languagePair: Translator.LanguagePair,
-                                         completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
+                                         completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
                                       withData: [input.value().compressedHash: NSNull()]) { (returnedError) in
             guard let error = returnedError else {
@@ -258,17 +268,20 @@ public enum TranslationSerializer {
                 return
             }
             
-            Logger.log("Couldn't remove translation.\n\(Logger.errorInfo(error))",
-                       verbose: true,
-                       metadata: [#file, #function, #line])
+            let exception = Exception(error,
+                                      extraParams: ["UserFacingDescriptor": "Couldn't remove translation."],
+                                      metadata: [#file, #function, #line])
             
-            completion(Logger.errorInfo(error))
+            Logger.log(exception,
+                       verbose: true)
+            
+            completion(exception)
         }
     }
     
     public static func removeTranslations(for inputs: [Translator.TranslationInput],
                                           languagePair: Translator.LanguagePair,
-                                          completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
+                                          completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         var nulledDictionary = [String: Any]()
         for input in inputs {
             nulledDictionary[input.value()] = NSNull()
@@ -286,11 +299,14 @@ public enum TranslationSerializer {
                 return
             }
             
-            Logger.log("Couldn't remove translations.\n\(Logger.errorInfo(error))",
-                       verbose: true,
-                       metadata: [#file, #function, #line])
+            let exception = Exception(error,
+                                      extraParams: ["UserFacingDescriptor": "Couldn't remove translations."],
+                                      metadata: [#file, #function, #line])
             
-            completion(Logger.errorInfo(error))
+            Logger.log(exception,
+                       verbose: true)
+            
+            completion(exception)
         }
     }
     
@@ -300,9 +316,10 @@ public enum TranslationSerializer {
     
     private static func uploadTranslations(_ translations: [Translator.Translation],
                                            for languagePair: Translator.LanguagePair,
-                                           completion: @escaping(_ errorDescriptor: String?) -> Void = { _ in }) {
+                                           completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         guard translations.homogeneousLanguagePairs() else {
-            completion("Translations are not all from the same language!")
+            completion(Exception("Translations are not all from the same language!",
+                                 metadata: [#file, #function, #line]))
             return
         }
         
@@ -326,11 +343,14 @@ public enum TranslationSerializer {
                 return
             }
             
-            Logger.log("Couldn't upload translations.\n\(Logger.errorInfo(error))",
-                       verbose: true,
-                       metadata: [#file, #function, #line])
+            let exception = Exception(error,
+                                      extraParams: ["UserFacingDescriptor": "Couldn't upload translations."],
+                                      metadata: [#file, #function, #line])
             
-            completion(Logger.errorInfo(error))
+            Logger.log(exception,
+                       verbose: true)
+            
+            completion(exception)
         }
     }
 }

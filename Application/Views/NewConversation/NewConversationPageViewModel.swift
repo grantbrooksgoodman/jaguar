@@ -11,6 +11,7 @@ import ContactsUI
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import Translator
 
 public class NewConversationPageViewModel: ObservableObject {
@@ -22,8 +23,9 @@ public class NewConversationPageViewModel: ObservableObject {
     public enum State {
         case idle
         case loading
-        case failed(String)
-        case loaded(translations: [String: Translation])
+        case failed(Exception)
+        case loaded(translations: [String: Translator.Translation],
+                    contacts: [ContactPair])
     }
     
     //==================================================//
@@ -32,7 +34,7 @@ public class NewConversationPageViewModel: ObservableObject {
     
     @Published var contacts = [ContactPair]()
     
-    private let inputs = ["search": TranslationInput("Search")]
+    private let inputs = ["search": Translator.TranslationInput("Search")]
     
     @Published private(set) var state = State.idle
     
@@ -45,25 +47,76 @@ public class NewConversationPageViewModel: ObservableObject {
         
         let dataModel = PageViewDataModel(inputs: inputs)
         
+        let metadata: [Any] = [#file, #function, #line]
+        let timeout = Timeout(alertingAfter: 10, metadata: metadata) {
+            self.state = .failed(Exception("The operation timed out. Please try again later.",
+                                           metadata: metadata))
+        }
+        
         dataModel.translateStrings { (returnedTranslations,
-                                      errorDescriptor) in
+                                      returnedException) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
+                Logger.log(exception)
+                self.state = .failed(exception)
                 
-                self.state = .failed(error)
                 return
             }
             
-            self.state = .loaded(translations: translations)
+            self.loadContacts { contactPairs, exception in
+                timeout.cancel()
+                
+                guard let pairs = contactPairs else {
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
+                    
+                    Logger.log(error)
+                    self.state = .failed(error)
+                    
+                    return
+                }
+                
+                self.state = .loaded(translations: translations,
+                                     contacts: pairs)
+            }
         }
     }
     
     //==================================================//
     
     /* MARK: - Contact Processing */
+    
+    public func loadContacts(completion: @escaping(_ contactPairs: [ContactPair]?,
+                                                   _ exception: Exception?) -> Void) {
+        let sorted = ContactService.fetchAllContacts().sorted
+        guard var contactsToReturn = sorted[0] as? [ContactPair],
+              let contactsToFetch = sorted[1] as? [Contact] else {
+            let exception = Exception("Unable to sort contacts.",
+                                      metadata: [#file, #function, #line])
+            
+            Logger.log(exception, with: .errorAlert)
+            completion(nil, exception)
+            
+            return
+        }
+        
+        UserSerializer.shared.findUsers(forContacts: contactsToFetch) { returnedContactPairs, exception in
+            guard let contactPairs = returnedContactPairs else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
+                
+                let isEmpty = contactsToReturn.uniquePairs.isEmpty
+                completion(isEmpty ? nil : contactsToReturn.uniquePairs,
+                           isEmpty ? exception ?? Exception(metadata: [#file, #function, #line]) : nil)
+                return
+            }
+            
+            ContactArchiver.addToArchive(contactPairs)
+            contactsToReturn.append(contentsOf: contactPairs)
+            
+            completion(contactsToReturn.uniquePairs, nil)
+        }
+    }
     
     public func requestAccess() {
         let contactStore = CNContactStore()
@@ -75,9 +128,7 @@ public class NewConversationPageViewModel: ObservableObject {
             contactStore.requestAccess(for: .contacts) { granted,
                 error in
                 guard granted else {
-                    Logger.log(error == nil ? "An unknown error occurred." : Logger.errorInfo(error!),
-                               with: .errorAlert,
-                               metadata: [#file, #function, #line])
+                    Logger.log(error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line]), with: .errorAlert)
                     return
                 }
                 
@@ -88,9 +139,7 @@ public class NewConversationPageViewModel: ObservableObject {
                 error in
                 
                 guard granted else {
-                    Logger.log(error == nil ? "An unknown error occurred." : Logger.errorInfo(error!),
-                               with: .errorAlert,
-                               metadata: [#file, #function, #line])
+                    Logger.log(error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line]), with: .errorAlert)
                     return
                 }
                 
@@ -104,7 +153,7 @@ public class NewConversationPageViewModel: ObservableObject {
     }
     
     public func synchronizeContacts() {
-        let sorted = UserSerializer.shared.sortContacts(ContactService.fetchAllContacts())
+        let sorted = ContactService.fetchAllContacts().sorted
         guard var contactsToReturn = sorted[0] as? [ContactPair],
               let contactsToFetch = sorted[1] as? [Contact] else {
             Logger.log("Unable to sort contacts.",
@@ -115,11 +164,10 @@ public class NewConversationPageViewModel: ObservableObject {
         
         self.contacts = contactsToReturn
         
-        UserSerializer.shared.validUsers(fromContacts: contactsToFetch) { returnedContactPairs, errorDescriptor in
+        UserSerializer.shared.findUsers(forContacts: contactsToFetch) { returnedContactPairs, exception in
             guard let contactPairs = returnedContactPairs else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
                 return
             }
             

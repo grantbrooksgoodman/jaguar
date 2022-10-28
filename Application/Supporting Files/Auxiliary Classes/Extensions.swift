@@ -134,7 +134,7 @@ public extension Date {
     /* MARK: - Functions */
     
     func elapsedInterval() -> String {
-        let interval = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute], from: self, to: Date())
+        let interval = Core.currentCalendar!.dateComponents([.year, .month, .day, .hour, .minute], from: self, to: Date())
         
         if let yearsPassed = interval.year,
            yearsPassed > 0 {
@@ -158,7 +158,7 @@ public extension Date {
     
     ///Function that gets a nicely formatted date string from a provided Date.
     func formattedString() -> String {
-        let differenceBetweenDates = Calendar.current.startOfDay(for: Date()).distance(to: Calendar.current.startOfDay(for: self))
+        let differenceBetweenDates = Core.currentCalendar!.startOfDay(for: Date()).distance(to: Core.currentCalendar!.startOfDay(for: self))
         
         let stylizedDateFormatter = DateFormatter()
         stylizedDateFormatter.dateStyle = .short
@@ -176,6 +176,10 @@ public extension Date {
         }
         
         return stylizedDateFormatter.string(from: self)
+    }
+    
+    func seconds(from date: Date) -> Int {
+        return Core.currentCalendar!.dateComponents([.second], from: date, to: self).second ?? 0
     }
     
     //--------------------------------------------------//
@@ -318,7 +322,7 @@ public extension String {
             return "NULL"
         }
         
-        switch Calendar.current.component(.weekday, from: fromDate) {
+        switch Core.currentCalendar!.component(.weekday, from: fromDate) {
         case 1:
             return "Sunday"
         case 2:

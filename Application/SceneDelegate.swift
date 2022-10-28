@@ -14,6 +14,8 @@ import UIKit
 import Firebase
 import FirebaseDatabase
 
+import AlertKit
+
 public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecognizerDelegate {
     
     //==================================================//
@@ -39,11 +41,14 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         
+        let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line])
+        
         UserTestingSerializer.shared.getRandomUserID { (returnedIdentifier,
-                                                        errorDescriptor) in
+                                                        exception) in
+            timeout.cancel()
+            
             guard let identifier = returnedIdentifier else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                           metadata: [#file, #function, #line])
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             

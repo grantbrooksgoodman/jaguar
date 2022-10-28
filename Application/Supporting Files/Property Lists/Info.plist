@@ -7,7 +7,7 @@
 		<string>synchronizeContacts</string>
 	</array>
 	<key>CFBuildDate</key>
-	<string>1665385512</string>
+	<string>1666999595</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -23,9 +23,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleReleaseVersion</key>
-	<string>4477</string>
+	<string>4778</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.29.89</string>
+	<string>0.31.95</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -46,7 +46,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>4477</string>
+	<string>4778</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>dbapi-2</string>

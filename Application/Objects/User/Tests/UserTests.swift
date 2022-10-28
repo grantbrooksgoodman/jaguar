@@ -31,24 +31,22 @@ final class UserTests: XCTestCase {
         let expectation = XCTestExpectation(description: "No error returned")
         
         UserSerializer.shared.getUser(withIdentifier: "QDpQ8qwwdMOS98QcEMjL9aV1oPn1") { (returnedUser,
-                                                                                         errorDescriptor) in
+                                                                                         exception) in
             guard let user = returnedUser else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
             user.deSerializeConversations { (returnedConversations,
-                                             errorDescriptor) in
+                                             exception) in
                 guard let conversations = returnedConversations else {
-                    let error = errorDescriptor ?? "An unknown error occurred."
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
                     
-                    Logger.log(error,
-                               metadata: [#file, #function, #line])
-                    XCTFail(error)
+                    Logger.log(error)
+                    XCTFail(error.descriptor)
                     return
                 }
                 

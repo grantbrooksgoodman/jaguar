@@ -83,6 +83,8 @@ public extension Array where Element == CNLabeledValue<CNPhoneNumber> {
 }
 
 public extension Array where Element == Contact {
+    /* MARK: - Functions */
+    
     func asBlankContactPairs() -> [ContactPair] {
         var contactPairs = [ContactPair]()
         
@@ -102,6 +104,26 @@ public extension Array where Element == Contact {
         }
         
         return hashes
+    }
+    
+    //--------------------------------------------------//
+    
+    /* MARK: - Variables */
+    
+    var sorted: [[Any]] {
+        var contactsToReturn = [ContactPair]()
+        var contactsToFetch = [Contact]()
+        
+        for contact in self {
+            guard let retrievedContact = ContactArchiver.getFromArchive(contact.hash) else {
+                contactsToFetch.append(contact)
+                continue
+            }
+            
+            contactsToReturn.append(retrievedContact)
+        }
+        
+        return [contactsToReturn, contactsToFetch]
     }
 }
 

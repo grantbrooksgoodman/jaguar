@@ -120,19 +120,19 @@ public struct SystemInformation {
     }
     
     public static var modelCode: String {
-        #if os(iOS) && !arch(x86_64) && !arch(i386)
+#if os(iOS) && !arch(x86_64) && !arch(i386)
         return try! informationString(withLevels: CTL_HW, HW_MODEL)
-        #else
+#else
         return try! informationString(withLevels: CTL_HW, HW_MACHINE)
-        #endif
+#endif
     }
     
     public static var modelName: String {
-        #if os(iOS) && !arch(x86_64) && !arch(i386)
+#if os(iOS) && !arch(x86_64) && !arch(i386)
         return try! informationString(withLevels: CTL_HW, HW_MACHINE)
-        #else
+#else
         return try! informationString(withLevels: CTL_HW, HW_MODEL)
-        #endif
+#endif
     }
     
     public static var activeCpus: Int64 {

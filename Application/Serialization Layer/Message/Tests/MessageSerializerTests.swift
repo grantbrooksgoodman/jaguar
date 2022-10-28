@@ -32,13 +32,12 @@ final class MessageSerializerTests: XCTestCase {
         
         let messageIdentifiers = [String]()
         MessageSerializer.shared.getMessages(withIdentifiers: messageIdentifiers) { (returnedMessages,
-                                                                                     errorDescriptor) in
+                                                                                     exception) in
             guard returnedMessages != nil else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             

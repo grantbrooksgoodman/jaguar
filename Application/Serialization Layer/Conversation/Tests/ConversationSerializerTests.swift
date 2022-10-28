@@ -33,13 +33,12 @@ final class ConversationSerializerTests: XCTestCase {
         let participants = [String]()
         
         ConversationSerializer.shared.createConversation(initialMessageIdentifier: "!",
-                                                         participants: participants) { (returnedIdentifier, errorDescriptor) in
+                                                         participants: participants) { (returnedIdentifier, exception) in
             guard let identifier = returnedIdentifier else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
@@ -57,13 +56,12 @@ final class ConversationSerializerTests: XCTestCase {
     func testGetConversation() {
         let expectation = XCTestExpectation(description: "No error returned")
         
-        ConversationSerializer.shared.getConversation(withIdentifier: "") { (returnedConversation, errorDescriptor) in
+        ConversationSerializer.shared.getConversation(withIdentifier: "") { (returnedConversation, exception) in
             guard returnedConversation != nil else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
@@ -76,13 +74,12 @@ final class ConversationSerializerTests: XCTestCase {
     func testGetConversations() {
         let expectation = XCTestExpectation(description: "No error returned")
         
-        ConversationSerializer.shared.getConversations(withIdentifiers: []) { (returnedConversations, errorDescriptor) in
+        ConversationSerializer.shared.getConversations(withIdentifiers: []) { (returnedConversations, exception) in
             guard returnedConversations != nil else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             

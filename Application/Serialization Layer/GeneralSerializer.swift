@@ -25,11 +25,12 @@ public enum GeneralSerializer {
      - Parameter completion: Returns the Firebase snapshot value.
      */
     public static func getValues(atPath: String, completion: @escaping (_ returnedValues: Any?,
-                                                                        _ errorDescriptor: String?) -> Void) {
+                                                                        _ returnedException: Exception?) -> Void) {
         Database.database().reference().child(atPath).observeSingleEvent(of: .value) { returnedSnapshot in
             completion(returnedSnapshot.value, nil)
         } withCancel: { returnedError in
-            completion(nil, Logger.errorInfo(returnedError))
+            completion(nil, Exception(returnedError,
+                                      metadata: [#file, #function, #line]))
         }
     }
     
@@ -40,10 +41,10 @@ public enum GeneralSerializer {
     public static func queryValues(atPath: String,
                                    limit: Int,
                                    completion: @escaping (_ returnedValues: Any?,
-                                                          _ errorDescriptor: String?) -> Void) {
+                                                          _ exception: Exception?) -> Void) {
         Database.database().reference().child(atPath).queryLimited(toFirst: UInt(limit)).getData { (returnedError, returnedSnapshot) in
             if let error = returnedError {
-                completion(nil, Logger.errorInfo(error))
+                completion(nil, Exception(error, metadata: [#file, #function, #line]))
             }
             
             completion(returnedSnapshot.value, nil)

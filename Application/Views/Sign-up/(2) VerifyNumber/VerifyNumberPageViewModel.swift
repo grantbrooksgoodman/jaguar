@@ -10,6 +10,7 @@
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import Firebase
 import FirebaseAuth
 import PhoneNumberKit
@@ -24,19 +25,19 @@ public class VerifyNumberPageViewModel: ObservableObject {
     public enum State {
         case idle
         case loading
-        case failed(String)
-        case loaded(translations: [String: Translation])
+        case failed(Exception)
+        case loaded(translations: [String: Translator.Translation])
     }
     
     //==================================================//
     
     /* MARK: - Properties */
     
-    private let inputs = ["title": TranslationInput("Enter Phone Number"),
-                          "subtitle": TranslationInput("Next, enter your phone number with your country prefix.\n\nA verification code will be sent to your number. Standard messaging rates apply."),
-                          "instruction": TranslationInput("Enter your phone number below:"),
-                          "continue": TranslationInput("Continue"),
-                          "back": TranslationInput("Back", alternate: "Go back")]
+    private let inputs = ["title": Translator.TranslationInput("Enter Phone Number"),
+                          "subtitle": Translator.TranslationInput("Next, enter your phone number with your country prefix.\n\nA verification code will be sent to your number. Standard messaging rates apply."),
+                          "instruction": Translator.TranslationInput("Enter your phone number below:"),
+                          "continue": Translator.TranslationInput("Continue"),
+                          "back": Translator.TranslationInput("Back", alternate: "Go back")]
     
     @Published private(set) var state = State.idle
     
@@ -50,14 +51,12 @@ public class VerifyNumberPageViewModel: ObservableObject {
         let dataModel = PageViewDataModel(inputs: inputs)
         
         dataModel.translateStrings { (returnedTranslations,
-                                      errorDescriptor) in
+                                      returnedException) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
+                Logger.log(exception)
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                
-                self.state = .failed(error)
+                self.state = .failed(exception)
                 return
             }
             
@@ -71,27 +70,28 @@ public class VerifyNumberPageViewModel: ObservableObject {
     
     public func verifyPhoneNumber(_ string: String,
                                   completion: @escaping (_ returnedIdentifier: String?,
-                                                         _ errorDescriptor: String?) -> Void) {
+                                                         _ exception: Exception?) -> Void) {
         Auth.auth().languageCode = RuntimeStorage.languageCode!
         PhoneAuthProvider.provider().verifyPhoneNumber(string,
                                                        uiDelegate: nil) { (returnedIdentifier,
                                                                            returnedError) in
             completion(returnedIdentifier,
-                       returnedError == nil ? nil : Logger.errorInfo(returnedError!))
+                       returnedError == nil ? nil : Exception(returnedError!,
+                                                              metadata: [#file, #function, #line]))
         }
     }
     
     public func verifyUser(phoneNumber: String,
                            completion: @escaping (_ returnedIdentifier: String?,
-                                                  _ errorDescriptor: String?,
+                                                  _ exception: Exception?,
                                                   _ hasAccount: Bool) -> Void) {
-        UserSerializer.shared.validUsers(forPhoneNumbers: [phoneNumber]) { returnedUsers, errorDescriptor in
+        UserSerializer.shared.findUsers(forPhoneNumbers: [phoneNumber]) { returnedUsers, exception in
             if returnedUsers == nil || returnedUsers?.count == 0 {
                 self.verifyPhoneNumber("+\(phoneNumber)") { (returnedIdentifier,
-                                                             errorDescriptor) in
+                                                             exception) in
                     guard let identifier = returnedIdentifier else {
                         completion(nil,
-                                   errorDescriptor ?? "An unknown error occurred.",
+                                   exception ?? Exception(metadata: [#file, #function, #line]),
                                    false)
                         return
                     }

@@ -69,9 +69,10 @@ public enum ContactArchiver {
     }
     
     public static func getArchive(completion: @escaping (_ returnedContactPairs: [ContactPair]?,
-                                                         _ errorDescriptor: String?) -> Void) {
+                                                         _ exception: Exception?) -> Void) {
         guard let contactData = UserDefaults.standard.object(forKey: "contactArchive") as? Data else {
-            completion(nil, "Couldn't decode contact archive. May be empty.")
+            completion(nil, Exception("Couldn't decode contact archive. May be empty.",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
@@ -84,14 +85,14 @@ public enum ContactArchiver {
             completion(decodedContacts, nil)
             return
         } catch {
-            Logger.log(Logger.errorInfo(error),
-                       metadata: [#file, #function, #line])
+            Logger.log(Exception(error,
+                                 metadata: [#file, #function, #line]))
             
-            completion(nil, Logger.errorInfo(error))
+            completion(nil, Exception(error, metadata: [#file, #function, #line]))
         }
     }
     
-    public static func setArchive(completion: @escaping (_ errorDescriptor: String?) -> Void = { _ in }) {
+    public static func setArchive(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         do {
             let encoder = JSONEncoder()
             let encodedContacts = try encoder.encode(contactArchive)
@@ -99,10 +100,10 @@ public enum ContactArchiver {
             UserDefaults.standard.setValue(encodedContacts, forKey: "contactArchive")
             completion(nil)
         } catch {
-            Logger.log(Logger.errorInfo(error),
-                       metadata: [#file, #function, #line])
+            Logger.log(Exception(error,
+                                 metadata: [#file, #function, #line]))
             
-            completion(Logger.errorInfo(error))
+            completion(Exception(error, metadata: [#file, #function, #line]))
         }
     }
     

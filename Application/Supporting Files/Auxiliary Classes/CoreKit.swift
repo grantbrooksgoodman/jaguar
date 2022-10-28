@@ -1,9 +1,8 @@
 //
 //  CoreKit.swift
-//  Jaguar
 //
-//  Created by Grant Brooks Goodman on 07/10/2022.
-//  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
+//  Created by Grant Brooks Goodman.
+//  Copyright © NEOTechnica Corporation. All rights reserved.
 //
 
 /* First-party Frameworks */

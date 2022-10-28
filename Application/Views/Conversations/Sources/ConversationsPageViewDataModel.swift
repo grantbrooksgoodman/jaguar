@@ -22,7 +22,7 @@ public class ConversationsPageViewDataModel: ObservableObject {
     // Enums
     public enum ConversationsPageViewNavigationFlowResult {
         case chooseCallingCode(ContactPair, [User])
-        case displayError(String)
+        case displayError(Exception)
         case handleDuplicates(ContactPair, [User])
         case selectNumber(ContactPair, [User])
         case startConversation(ContactPair)
@@ -44,7 +44,9 @@ public class ConversationsPageViewDataModel: ObservableObject {
         let exactMatches = contactPair.exactMatches(withUsers: users)
         
         guard let duplicates = users.rawPhoneNumbers().duplicates else {
-            completion(.displayError("No duplicate phone numbers among the provided users."))
+            completion(.displayError(Exception("No duplicate phone numbers among the provided users.",
+                                               extraParams: ["RawPhoneNumbers": users.rawPhoneNumbers()],
+                                               metadata: [#file, #function, #line])))
             return
         }
         
@@ -61,7 +63,8 @@ public class ConversationsPageViewDataModel: ObservableObject {
             partialMatches.append(contentsOf: exactMatches)
             
             guard !partialMatches.isEmpty else {
-                completion(.displayError("No partial matches!"))
+                completion(.displayError(Exception("No partial matches!",
+                                                   metadata: [#file, #function, #line])))
                 return
             }
             
@@ -85,7 +88,8 @@ public class ConversationsPageViewDataModel: ObservableObject {
             phoneNumbers.append(contentsOf: duplicates)
             
             guard !phoneNumbers.isEmpty else {
-                completion(.displayError("No phone numbers!"))
+                completion(.displayError(Exception("No phone numbers!",
+                                                   metadata: [#file, #function, #line])))
                 return
             }
             
@@ -95,9 +99,9 @@ public class ConversationsPageViewDataModel: ObservableObject {
             }
             
             presentSelectNumberActionSheet(contactPair: contactPair,
-                                           phoneNumbers: phoneNumbers) { selectedPhoneNumber, errorDescriptor in
+                                           phoneNumbers: phoneNumbers) { selectedPhoneNumber, exception in
                 guard let phoneNumber = selectedPhoneNumber else {
-                    completion(.displayError(errorDescriptor ?? "An unknown error occurred."))
+                    completion(.displayError(exception ?? Exception(metadata: [#file, #function, #line])))
                     return
                 }
                 
@@ -110,7 +114,7 @@ public class ConversationsPageViewDataModel: ObservableObject {
                     completion(.startConversation(ContactPair(contact: contactPair.contact,
                                                               users: [filteredUser])))
                 } else {
-                    completion(.displayError("Duplicates doesn't contain phone number, and there's no filtered user."))
+                    completion(.displayError(Exception("Duplicates doesn't contain phone number, and there's no filtered user.", metadata: [#file, #function, #line])))
                 }
             }
         }
@@ -119,7 +123,9 @@ public class ConversationsPageViewDataModel: ObservableObject {
     public func routeNavigation(withContactPair: ContactPair,
                                 completion: @escaping(_ result: ConversationsPageViewNavigationFlowResult) -> Void) {
         guard let users = withContactPair.users else {
-            completion(.displayError("No users for this contact pair."))
+            completion(.displayError(Exception("No users for this contact pair.",
+                                               extraParams: ["ContactPairHash": withContactPair.contact.hash],
+                                               metadata: [#file, #function, #line])))
             return
         }
         
@@ -146,11 +152,11 @@ public class ConversationsPageViewDataModel: ObservableObject {
             //one valid number, matches with one on server, just start conversation
             let userToStartWith = withContactPair.exactMatches(withUsers: users).first ?? users[0]
             
-            self.canStartConversation(withUser: userToStartWith) { canStart, errorDescriptor in
+            self.canStartConversation(withUser: userToStartWith) { canStart, exception in
                 if canStart {
                     completion(.startConversation(withContactPair))
                 } else {
-                    completion(.displayError(errorDescriptor ?? "An unknown error occurred."))
+                    completion(.displayError(exception ?? Exception(metadata: [#file, #function, #line])))
                 }
             }
         }
@@ -162,21 +168,26 @@ public class ConversationsPageViewDataModel: ObservableObject {
     
     private func canStartConversation(withUser: User,
                                       completion: @escaping(_ canStart: Bool,
-                                                            _ errorDescriptor: String?) -> Void) {
+                                                            _ exception: Exception?) -> Void) {
         guard withUser.identifier != RuntimeStorage.currentUser!.identifier else {
-            completion(false, "Cannot start a conversation with yourself.")
+            completion(false, Exception("Cannot start a conversation with yourself.",
+                                        extraParams: ["CurrentUser.Identifier": RuntimeStorage.currentUser!.identifier!,
+                                                      "CurrentUserID": RuntimeStorage.currentUserID!],
+                                        metadata: [#file, #function, #line]))
             return
         }
         
         RuntimeStorage.currentUser!.deSerializeConversations(completion: { (returnedConversations,
-                                                                            errorDescriptor) in
+                                                                            exception) in
             guard let conversations = returnedConversations else {
-                completion(false, errorDescriptor ?? "An unknown error occurred.")
+                completion(false, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
             guard !conversations.contains(where: { $0.participants.contains(where: { $0.userID == withUser.identifier }) }) else {
-                completion(false, "Conversation with this user already exists.")
+                completion(false, Exception("Conversation with this user already exists.",
+                                            extraParams: ["UserID": withUser.identifier!],
+                                            metadata: [#file, #function, #line]))
                 return
             }
             
@@ -185,19 +196,19 @@ public class ConversationsPageViewDataModel: ObservableObject {
     }
     
     public func createConversation(withUser: User,
-                                   completion: @escaping(_ errorDescriptor: String?) -> Void) {
+                                   completion: @escaping(_ exception: Exception?) -> Void) {
         ConversationSerializer.shared.createConversation(initialMessageIdentifier: "!",
                                                          participants: [RuntimeStorage.currentUserID!,
-                                                                        withUser.identifier]) { (returnedConversation, errorDescriptor) in
+                                                                        withUser.identifier]) { (returnedConversation, exception) in
             
             guard let conversation = returnedConversation else {
-                completion(errorDescriptor ?? "An unknown error occurred.")
+                completion(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
-            conversation.setOtherUser { (errorDescriptor) in
-                guard errorDescriptor == nil else {
-                    completion(errorDescriptor ?? "An unknown error occurred.")
+            conversation.setOtherUser { (exception) in
+                guard exception == nil else {
+                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
                 
@@ -207,9 +218,9 @@ public class ConversationsPageViewDataModel: ObservableObject {
                 }
                 
                 RuntimeStorage.currentUser!.deSerializeConversations { (returnedConversations,
-                                                                        errorDescriptor) in
+                                                                        exception) in
                     guard let updatedConversations = returnedConversations else {
-                        completion(errorDescriptor ?? "An unknown error occurred.")
+                        completion(exception ?? Exception(metadata: [#file, #function, #line]))
                         return
                     }
                     
@@ -231,21 +242,18 @@ public class ConversationsPageViewDataModel: ObservableObject {
     private func presentSelectNumberActionSheet(contactPair: ContactPair,
                                                 phoneNumbers: [String],
                                                 completion: @escaping(_ selectedPhoneNumber: String?,
-                                                                      _ errorDescriptor: String?) -> Void) {
+                                                                      _ exception: Exception?) -> Void) {
         let originalPrompt = "Which of \(contactPair.contact.firstName)'s numbers would you like to use to start this conversation?"
         
-        let messageInput = Translator.TranslationInput(originalPrompt, alternate: "Select which number you would like to use to start this conversation.")
+        let messageInput = Translator.TranslationInput(originalPrompt,
+                                                       alternate: "Select which number you would like to use to start this conversation.")
         
-        FirebaseTranslator.shared.getTranslations(for: [TranslationInput("Select Number"),
+        FirebaseTranslator.shared.getTranslations(for: [Translator.TranslationInput("Select Number"),
                                                         messageInput,
-                                                        TranslationInput("Cancel")],
-                                                  languagePair: LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, errorDescriptors in
+                                                        Translator.TranslationInput("Cancel")],
+                                                  languagePair: Translator.LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, exception in
             guard let translations = returnedTranslations else {
-                if let errors = errorDescriptors {
-                    completion(nil, errors.keys.joined(separator: "\n"))
-                } else {
-                    completion(nil, "An unknown error occurred.")
-                }
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             

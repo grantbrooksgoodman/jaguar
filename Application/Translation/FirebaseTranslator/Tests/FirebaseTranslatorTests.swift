@@ -36,13 +36,12 @@ final class FirebaseTranslatorTests: XCTestCase {
         FirebaseTranslator.shared.translate(TranslationInput("Hola mi amigo."),
                                             with: LanguagePair(from: "es",
                                                                to: "en")) { (returnedTranslation,
-                                                                             errorDescriptor) in
+                                                                             exception) in
             guard let translation = returnedTranslation else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
@@ -64,23 +63,22 @@ final class FirebaseTranslatorTests: XCTestCase {
                                       output: "¡Hola!",
                                       languagePair: pair)
         
-        TranslationSerializer.uploadTranslation(translation) { (errorDescriptor) in
-            guard let error = errorDescriptor else {
+        TranslationSerializer.uploadTranslation(translation) { (exception) in
+            guard let error = exception else {
                 TranslationSerializer.removeTranslation(for: input,
-                                                        languagePair: pair) { (errorDescriptor) in
-                    guard errorDescriptor != nil else {
+                                                        languagePair: pair) { (exception) in
+                    guard exception != nil else {
                         expectation.fulfill()
                         return
                     }
                     
-                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                               metadata: [#file, #function, #line])
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                 }
                 
                 return
             }
             
-            XCTFail(error)
+            XCTFail(error.descriptor)
         }
         
         wait(for: [expectation], timeout: 10)
@@ -94,13 +92,12 @@ final class FirebaseTranslatorTests: XCTestCase {
         FirebaseTranslator.shared.translate(blankInput,
                                             with: sampleLanguagePair,
                                             using: .google) { (returnedTranslation,
-                                                               errorDescriptor) in
+                                                               exception) in
             guard let translation = returnedTranslation else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
@@ -121,13 +118,13 @@ final class FirebaseTranslatorTests: XCTestCase {
                                                 languagePair: LanguagePair(from: "en",
                                                                            to: "pt"))
         
-        TranslationSerializer.uploadTranslations([spanishTranslation, portugueseTranslation]) { (errorDescriptor) in
-            guard let error = errorDescriptor else {
+        TranslationSerializer.uploadTranslations([spanishTranslation, portugueseTranslation]) { (exception) in
+            guard let error = exception else {
                 expectation.fulfill()
                 return
             }
             
-            XCTFail(error)
+            XCTFail(error.descriptor)
         }
         
         wait(for: [expectation], timeout: 10)
@@ -140,13 +137,12 @@ final class FirebaseTranslatorTests: XCTestCase {
                                             with: LanguagePair(from: "en",
                                                                to: "ru"),
                                             using: .yandex) { (returnedTranslation,
-                                                               errorDescriptor) in
+                                                               exception) in
             guard let translation = returnedTranslation else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             

@@ -39,6 +39,8 @@ public enum LocalizationCase: String /* Add pre-localized strings here. */ {
     case today
     case yesterday
     
+    case timedOut
+    
     var description: String {
         return rawValue.snakeCase()
     }
@@ -54,9 +56,8 @@ public enum Localizer {
                                           language code: String? = nil) -> String? {
         let language = code ?? RuntimeStorage.languageCode!
         
-        guard let essentialLocalizations = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "EssentialLocalizations", ofType: "plist") ?? "") as? [String: [String: String]] else { return nil }
-        
-        guard let dictionary = essentialLocalizations[`case`.description] else { return nil }
+        guard let essentialLocalizations = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "EssentialLocalizations", ofType: "plist") ?? "") as? [String: [String: String]],
+              let dictionary = essentialLocalizations[`case`.description] else { return nil }
         
         return dictionary[language]
     }

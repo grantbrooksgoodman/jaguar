@@ -186,17 +186,19 @@ public struct BuildInfoOverlayView: View {
             }
             
             if actionID == sendFeedbackAction.identifier {
-                AKCore.shared.reportProvider().fileReport(type: .feedback,
-                                                          body: "Appended below are various data points useful in analysing any potential problems within the application. Please do not edit the information contained in the lines below, with the exception of the last field, in which any general feedback is appreciated.",
+                AKCore.shared.reportProvider().fileReport(forBug: false,
+                                                          body: "Any general feedback is appreciated in the appropriate section.",
                                                           prompt: "General Feedback",
-                                                          extraInfo: nil,
-                                                          metadata: [RuntimeStorage.currentFile!, #function, #line])
+                                                          metadata: [RuntimeStorage.currentFile!,
+                                                                     #function,
+                                                                     #line])
             } else if actionID == reportBugAction.identifier {
-                AKCore.shared.reportProvider().fileReport(type: .bug,
+                AKCore.shared.reportProvider().fileReport(forBug: true,
                                                           body: "In the appropriate section, please describe the error encountered and the steps to reproduce it.",
                                                           prompt: "Description/Steps to Reproduce",
-                                                          extraInfo: nil,
-                                                          metadata: [RuntimeStorage.currentFile!, #function, #line])
+                                                          metadata: [RuntimeStorage.currentFile!,
+                                                                     #function,
+                                                                     #line])
             }
         }
     }

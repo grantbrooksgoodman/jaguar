@@ -101,13 +101,11 @@ public struct ChatPageView: UIViewControllerRepresentable {
             }
             
             MessageSerializer.shared.getMessage(withIdentifier: identifier) { (returnedMessage,
-                                                                               errorDescriptor) in
+                                                                               exception) in
                 guard let message = returnedMessage else {
-                    if let error = errorDescriptor,
-                       error != "Null/first message processed." {
-                        Logger.log(error,
-                                   with: .errorAlert,
-                                   metadata: [#file, #function, #line])
+                    if let error = exception,
+                       error.descriptor != "Null/first message processed." {
+                        Logger.log(error, with: .errorAlert)
                     }
                     
                     return
@@ -140,12 +138,14 @@ public struct ChatPageView: UIViewControllerRepresentable {
     }
     
     private func setUpReadDateObserver() {
-        #warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.")
+#warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.")
         Database.database().reference().child("/allMessages").observe(.childChanged) { returnedSnapshot, _ in
             guard let lastMessage = conversation.sortedFilteredMessages().last else {
-                Logger.log("Couldn't get last message.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+                let exception = Exception("Couldn't get last message.",
+                                          extraParams: ["UnsortedMessageCount": conversation.messages.count,
+                                                        "SortedMessageCount": conversation.sortedFilteredMessages().count],
+                                          metadata: [#file, #function, #line])
+                Logger.log(exception, with: .errorAlert)
                 return
             }
             

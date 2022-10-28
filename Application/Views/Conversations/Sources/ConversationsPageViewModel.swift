@@ -23,7 +23,7 @@ public class ConversationsPageViewModel: ObservableObject {
     public enum State {
         case idle
         case loading
-        case failed(String)
+        case failed(Exception)
         case loaded(translations: [String: Translator.Translation],
                     conversations: [Conversation])
     }
@@ -48,11 +48,10 @@ public class ConversationsPageViewModel: ObservableObject {
         ContactService.clearCache()
         
         UserSerializer.shared.getUser(withIdentifier: RuntimeStorage.currentUserID!) { (returnedUser,
-                                                                                        errorDescriptor) in
+                                                                                        exception) in
             guard let user = returnedUser else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
                 return
             }
             
@@ -63,12 +62,14 @@ public class ConversationsPageViewModel: ObservableObject {
             RuntimeStorage.store(user.languageCode!, as: .languageCode)
             AKCore.shared.setLanguageCode(user.languageCode)
             
+            //            RuntimeStorage.store("en", as: .languageCode)
+            //            AKCore.shared.setLanguageCode("en")
+            
             user.deSerializeConversations { (returnedConversations,
-                                             errorDescriptor) in
+                                             exception) in
                 guard let conversations = returnedConversations else {
-                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                               with: .errorAlert,
-                               metadata: [#file, #function, #line])
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                               with: .errorAlert)
                     return
                 }
                 
@@ -86,8 +87,13 @@ public class ConversationsPageViewModel: ObservableObject {
     /* MARK: - Public Functions */
     
     public func conversationsToUse(for: [Conversation]) -> [Conversation] {
-        guard RuntimeStorage.conversations!.isEmpty else {
-            return RuntimeStorage.conversations!.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
+        guard let conversations = RuntimeStorage.conversations,
+              conversations.isEmpty else {
+            return `for`.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
+        }
+        
+        guard conversations.isEmpty else {
+            return conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
         }
         
         return `for`.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
@@ -109,19 +115,17 @@ public class ConversationsPageViewModel: ObservableObject {
             }
             
             let identifier = RuntimeStorage.conversations!.reversed()[offset].identifier.key!
-            ConversationSerializer.shared.deleteConversation(withIdentifier: identifier) { (errorDescriptor) in
-                if let error = errorDescriptor {
+            ConversationSerializer.shared.deleteConversation(withIdentifier: identifier) { (exception) in
+                if let error = exception {
                     Logger.log(error,
-                               with: .errorAlert,
-                               metadata: [#file, #function, #line])
+                               with: .errorAlert)
                 }
                 
                 RuntimeStorage.currentUser!.deSerializeConversations { (returnedConversations,
-                                                                        errorDescriptor) in
+                                                                        exception) in
                     guard let updatedConversations = returnedConversations else {
-                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                                   with: .errorAlert,
-                                   metadata: [#file, #function, #line])
+                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                                   with: .errorAlert)
                         return
                     }
                     
@@ -136,14 +140,13 @@ public class ConversationsPageViewModel: ObservableObject {
     
     /* MARK: - User Prompting */
     
-    private func presentNoUserAlert(errorDescriptor: String? = nil) {
+    private func presentNoUserAlert(exception: Exception? = nil) {
         let noUserString = "No user exists with the provided phone number."
         
-        Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                   with: errorDescriptor == noUserString ? .none : .errorAlert,
-                   metadata: [#file, #function, #line])
+        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                   with: exception?.descriptor == noUserString ? .none : .errorAlert)
         
-        if errorDescriptor == noUserString {
+        if exception?.descriptor == noUserString {
             let alert = AKAlert(message: "\(noUserString)\n\nWould you like to send them an invite to sign up?",
                                 actions: [AKAction(title: "Send Invite",
                                                    style: .preferred)])
@@ -218,12 +221,12 @@ public class ConversationsPageViewModel: ObservableObject {
         FirebaseTranslator.shared.getTranslations(for: [TranslationInput("Select Number"),
                                                         messageInput,
                                                         TranslationInput("Cancel")],
-                                                  languagePair: LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, errorDescriptors in
+                                                  languagePair: LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, exception in
             guard let translations = returnedTranslations else {
-                if let errors = errorDescriptors {
-                    Logger.log(errors.keys.joined(separator: "\n"),
-                               metadata: [#file, #function, #line])
+                if let error = exception {
+                    Logger.log(error)
                 }
+                
                 return
             }
             
@@ -263,11 +266,10 @@ public class ConversationsPageViewModel: ObservableObject {
         FirebaseTranslator.shared.getTranslations(for: [TranslationInput("Select Region"),
                                                         messageInput,
                                                         TranslationInput("Cancel")],
-                                                  languagePair: LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, errorDescriptors in
+                                                  languagePair: LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, exception in
             guard let translations = returnedTranslations else {
-                if let errors = errorDescriptors {
-                    Logger.log(errors.keys.joined(separator: "\n"),
-                               metadata: [#file, #function, #line])
+                if let error = exception {
+                    Logger.log(error)
                 }
                 return
             }
@@ -308,10 +310,9 @@ public class ConversationsPageViewModel: ObservableObject {
         dataModel.handleDuplicates(contactPair: contactPair,
                                    users: users) { result in
             switch result {
-            case .displayError(let errorDescriptor):
-                Logger.log(errorDescriptor,
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+            case .displayError(let exception):
+                Logger.log(exception,
+                           with: .errorAlert)
             case .handleDuplicates(let contactPair, let users):
                 self.handleDuplicates(contactPair: contactPair, users: users)
             case .chooseCallingCode(let contactPair, let users):
@@ -325,9 +326,9 @@ public class ConversationsPageViewModel: ObservableObject {
     }
     
     private func routeNavigation(withNumber: String) {
-        UserSerializer.shared.validUsers(forPhoneNumbers: [withNumber]) { returnedUsers, errorDescriptor in
+        UserSerializer.shared.findUsers(forPhoneNumbers: [withNumber]) { returnedUsers, exception in
             guard let users = returnedUsers else {
-                self.presentNoUserAlert(errorDescriptor: errorDescriptor)
+                self.presentNoUserAlert(exception: exception)
                 return
             }
             
@@ -350,10 +351,9 @@ public class ConversationsPageViewModel: ObservableObject {
         
         dataModel.routeNavigation(withContactPair: contactPair) { result in
             switch result {
-            case .displayError(let error):
-                Logger.log(error,
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+            case .displayError(let exception):
+                Logger.log(exception,
+                           with: .errorAlert)
             case .handleDuplicates(let contactPair, let users):
                 self.handleDuplicates(contactPair: contactPair, users: users)
             case .startConversation(let contactPair):
@@ -364,11 +364,10 @@ public class ConversationsPageViewModel: ObservableObject {
                     return
                 }
                 
-                self.dataModel.createConversation(withUser: users[0]) { errorDescriptor in
-                    guard errorDescriptor == nil else {
-                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                                   with: .errorAlert,
-                                   metadata: [#file, #function, #line])
+                self.dataModel.createConversation(withUser: users[0]) { exception in
+                    guard exception == nil else {
+                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                                   with: .errorAlert)
                         return
                     }
                     
@@ -397,10 +396,9 @@ public class ConversationsPageViewModel: ObservableObject {
             self.state = .loading
             
             MessageSerializer.shared.getMessage(withIdentifier: newMessageID) { (returnedMessage,
-                                                                                 errorDescriptor) in
+                                                                                 exception) in
                 guard let message = returnedMessage else {
-                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                               metadata: [#file, #function, #line])
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
                 
@@ -421,14 +419,12 @@ public class ConversationsPageViewModel: ObservableObject {
         let dataModel = PageViewDataModel(inputs: self.inputs)
         
         dataModel.translateStrings { (returnedTranslations,
-                                      errorDescriptor) in
+                                      returnedException) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
+                Logger.log(exception)
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                
-                self.state = .failed(error)
+                self.state = .failed(exception)
                 return
             }
             
@@ -450,31 +446,5 @@ public extension Array where Element == String {
     var duplicates: [String]? {
         let duplicates = Array(Set(filter({ (s: String) in filter({ $0 == s }).count > 1})))
         return duplicates.isEmpty ? nil : duplicates
-    }
-}
-
-/* MARK: - String */
-public extension String {
-    func simpleErrorDescriptor() -> String {
-        // TODO: Make custom error class with this.
-        switch self {
-        case "Cannot start a conversation with yourself.":
-            return "You cannot start a conversation with yourself."
-            
-        case "Conversation with this user already exists.":
-            return "You already have an open conversation with this user."
-            
-        case "Invalid format.", "The format of the phone number provided is incorrect. Please enter the phone number in a format that can be parsed into E.164 format. E.164 phone numbers are written in the format [+][country code][subscriber number including area code].", "TOO_SHORT":
-            return "The format of the phone number provided is incorrect.\n\nPlease verify that you have fully entered your phone number, including the country and area codes."
-            
-        case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code sms and be sure use the verification code provided by the user.":
-            return "The verification code entered was invalid. Please try again."
-            
-        case "We have blocked all requests from this device due to unusual activity. Try again later.":
-            return "Due to unusual activity, all requests from this device have been temporarily blocked. Please try again later."
-            
-        default:
-            return self
-        }
     }
 }

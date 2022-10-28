@@ -46,8 +46,9 @@ public enum ContactService {
                 }
             })
         } catch {
-            Logger.log("Unable to fetch contacts.\n\(Logger.errorInfo(error))",
-                       metadata: [#file, #function, #line])
+            Logger.log(Exception(error,
+                                 extraParams: ["UserFacingDescriptor": "Unable to fetch contacts."],
+                                 metadata: [#file, #function, #line]))
         }
         
         contacts = contacts.sorted {
@@ -75,17 +76,15 @@ public enum ContactService {
             try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { contact,
                 _ in
                 for phoneNumber in contact.phoneNumbers {
-                    if phoneNumber.value.stringValue.digits == queryDigits ||
-                        phoneNumber.value.stringValue.digits.dropPrefix(1) == queryDigits ||
-                        phoneNumber.value.stringValue.digits.dropPrefix(2) == queryDigits ||
-                        phoneNumber.value.stringValue.digits.dropPrefix(3) == queryDigits {
+                    if phoneNumber.value.stringValue.possibleRawNumbers().contains(queryDigits) {
                         contactName = (contact.givenName, contact.familyName)
                     }
                 }
             })
         } catch {
-            Logger.log("Unable to fetch contact name.\n\(Logger.errorInfo(error))",
-                       metadata: [#file, #function, #line])
+            Logger.log(Exception(error,
+                                 extraParams: ["UserFacingDescriptor": "Unable to fetch contact name."],
+                                 metadata: [#file, #function, #line]))
             return nil
         }
         
@@ -113,20 +112,17 @@ public enum ContactService {
             try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { contact,
                 _ in
                 for phoneNumber in contact.phoneNumbers {
-                    if phoneNumber.value.stringValue.digits == queryDigits ||
-                        phoneNumber.value.stringValue.digits.dropPrefix(1) == queryDigits ||
-                        phoneNumber.value.stringValue.digits.dropPrefix(2) == queryDigits ||
-                        phoneNumber.value.stringValue.digits.dropPrefix(3) == queryDigits,
+                    if phoneNumber.value.stringValue.possibleRawNumbers().contains(queryDigits),
                        contact.imageDataAvailable,
-                       let imageData = contact.imageData
-                    {
+                       let imageData = contact.imageData {
                         thumbnailImage = UIImage(data: imageData)
                     }
                 }
             })
         } catch {
-            Logger.log("Unable to fetch contact image data.\n\(Logger.errorInfo(error))",
-                       metadata: [#file, #function, #line])
+            Logger.log(Exception(error,
+                                 extraParams: ["UserFacingDescriptor": "Unable to fetch contact image data."],
+                                 metadata: [#file, #function, #line]))
             return nil
         }
         

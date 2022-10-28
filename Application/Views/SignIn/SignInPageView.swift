@@ -120,8 +120,8 @@ public struct SignInPageView: View {
                 
                 Spacer()
             }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
-        case .failed(let errorDescriptor):
-            Text(errorDescriptor)
+        case .failed(let exception):
+            Text(exception.userFacingDescriptor)
         }
     }
     
@@ -133,10 +133,10 @@ public struct SignInPageView: View {
         viewModel.authenticateUser(identifier: verificationIdentifier,
                                    verificationCode: verificationCode) { (userID, returnedError) in
             guard let identifier = userID else {
-                let error = returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!)
+                let error = returnedError == nil ? Exception(metadata: [#file, #function, #line]) : Exception(returnedError!,
+                                                                                                              metadata: [#file, #function, #line])
                 Logger.log(error,
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+                           with: .errorAlert)
                 return
             }
             
@@ -152,10 +152,10 @@ public struct SignInPageView: View {
                                                              returnedError) in
             
             guard let identifier = returnedIdentifier else {
-                let error = returnedError == nil ? "An unknown error occurred." : Logger.errorInfo(returnedError!)
+                let error = returnedError == nil ? Exception(metadata: [#file, #function, #line]) : Exception(returnedError!,
+                                                                                                              metadata: [#file, #function, #line])
                 Logger.log(error,
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+                           with: .errorAlert)
                 return
             }
             

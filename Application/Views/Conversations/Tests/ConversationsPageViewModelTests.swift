@@ -35,13 +35,12 @@ final class ConversationsPageViewModelTests: XCTestCase {
         
         let englishUserID = ""
         UserSerializer.shared.getUser(withIdentifier: englishUserID) { (returnedUser,
-                                                                        errorDescriptor) in
+                                                                        exception) in
             guard returnedUser != nil else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
@@ -56,13 +55,12 @@ final class ConversationsPageViewModelTests: XCTestCase {
         
         let spanishUserID = ""
         UserSerializer.shared.getUser(withIdentifier: spanishUserID) { (returnedUser,
-                                                                        errorDescriptor) in
+                                                                        exception) in
             guard returnedUser != nil else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
@@ -84,13 +82,12 @@ final class ConversationsPageViewModelTests: XCTestCase {
         let dataModel = PageViewDataModel(inputs: conversationsPVM.inputs)
         
         dataModel.translateStrings { (returnedTranslations,
-                                      errorDescriptor) in
+                                      exception) in
             guard returnedTranslations != nil else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
+                Logger.log(error)
+                XCTFail(error.descriptor)
                 return
             }
             
@@ -99,105 +96,5 @@ final class ConversationsPageViewModelTests: XCTestCase {
         }
         
         wait(for: [expectation], timeout: 200)
-    }
-    
-    //==================================================//
-    
-    /* MARK: Conversation Updating Tests */
-    
-    func testUpdateConversationsForEnglishUser() {
-        let expectation = XCTestExpectation(description: "No error returned")
-        
-        let dispatchGroup = DispatchGroup()
-        
-        let englishUserID = ""
-        //        let spanishUserID = ""
-        
-        dispatchGroup.enter()
-        UserSerializer.shared.getUser(withIdentifier: englishUserID) { (returnedUser,
-                                                                        errorDescriptor) in
-            guard let user = returnedUser else {
-                let error = errorDescriptor ?? "An unknown error occurred."
-                
-                dispatchGroup.leave()
-                
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
-                return
-            }
-            
-            RuntimeStorage.store(user, as: .currentUser)
-            RuntimeStorage.store(englishUserID, as: .currentUserID)
-            dispatchGroup.leave()
-        }
-        
-        dispatchGroup.notify(queue: .main) {
-            let conversationsPVM = ConversationsPageViewModel()
-            conversationsPVM.updateConversations { (returnedConversations,
-                                                    errorDescriptor) in
-                guard returnedConversations != nil else {
-                    let error = errorDescriptor ?? "An unknown error occurred."
-                    
-                    Logger.log(error,
-                               metadata: [#file, #function, #line])
-                    XCTFail(error)
-                    return
-                }
-                
-                print("\(#function.components(separatedBy: "(")[0]): Finished!")
-                expectation.fulfill()
-            }
-        }
-        
-        wait(for: [expectation], timeout: 30)
-    }
-    
-    func testUpdateConversationsForSpanishUser() {
-        let expectation = XCTestExpectation(description: "No error returned")
-        
-        let dispatchGroup = DispatchGroup()
-        
-        //        let englishUserID = ""
-        let spanishUserID = ""
-        
-        dispatchGroup.enter()
-        UserSerializer.shared.getUser(withIdentifier: spanishUserID) { (returnedUser,
-                                                                        errorDescriptor) in
-            guard let user = returnedUser else {
-                let error = errorDescriptor ?? "An unknown error occurred."
-                
-                dispatchGroup.leave()
-                
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                XCTFail(error)
-                return
-            }
-            
-            RuntimeStorage.store(user, as: .currentUser)
-            RuntimeStorage.store(spanishUserID, as: .currentUserID)
-            dispatchGroup.leave()
-        }
-        
-        dispatchGroup.notify(queue: .main) {
-            let conversationsPVM = ConversationsPageViewModel()
-            conversationsPVM.updateConversations { (returnedConversations,
-                                                    errorDescriptor) in
-                guard returnedConversations != nil else {
-                    let error = errorDescriptor ?? "An unknown error occurred."
-                    
-                    Logger.log(error,
-                               metadata: [#file, #function, #line])
-                    XCTFail(error)
-                    return
-                }
-                
-                print("\(#function.components(separatedBy: "(")[0]): Finished!")
-                expectation.fulfill()
-            }
-        }
-        
-        wait(for: [expectation], timeout: 30)
     }
 }

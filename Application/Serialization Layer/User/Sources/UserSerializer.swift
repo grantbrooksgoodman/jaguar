@@ -27,7 +27,7 @@ public struct UserSerializer {
                            languageCode: String,
                            phoneNumber: String,
                            region: String,
-                           completion: @escaping(_ errorDescriptor: String?) -> Void) {
+                           completion: @escaping(_ exception: Exception?) -> Void) {
         let data = ["languageCode": languageCode,
                     "callingCode": callingCode.digits,
                     "phoneNumber": phoneNumber.digits,
@@ -37,11 +37,12 @@ public struct UserSerializer {
         GeneralSerializer.updateValue(onKey: "/allUsers/\(identifier)",
                                       withData: data) { (returnedError) in
             guard returnedError == nil else {
-                completion(Logger.errorInfo(returnedError!))
+                completion(Exception(returnedError!,
+                                     metadata: [#file, #function, #line]))
                 return
             }
             
-            GeneralSerializer.getValues(atPath: "/userHashes/\(phoneNumber.digits.compressedHash)") { returnedValues, errorDescriptor in
+            GeneralSerializer.getValues(atPath: "/userHashes/\(phoneNumber.digits.compressedHash)") { returnedValues, exception in
                 var newValues = [identifier]
                 
                 if let values = returnedValues as? [String] {
@@ -55,7 +56,7 @@ public struct UserSerializer {
                         return
                     }
                     
-                    completion(Logger.errorInfo(error))
+                    completion(Exception(error, metadata: [#file, #function, #line]))
                 }
             }
         }
@@ -65,19 +66,130 @@ public struct UserSerializer {
     
     /* MARK: - Query Functions */
     
-    public func getUsers(possibleHashes: [String],
-                         possibleCallingCodes: [String],
-                         completion: @escaping(_ returnedUsers: [User]?,
-                                               _ errorDescriptor: String?) -> Void) {
-        getUserIDs(fromHashes: possibleHashes) { returnedUserIDs, errorDescriptor in
-            guard let userIDs = returnedUserIDs else {
-                completion(nil, "No user exists with the possible hashes.")
+    public func findUsers(forContacts: [Contact],
+                          completion: @escaping (_ returnedContactPairs: [ContactPair]?,
+                                                 _ exception: Exception?) -> Void) {
+        guard !forContacts.isEmpty else {
+            completion(nil, Exception("No contacts passed!",
+                                      metadata: [#file, #function, #line]))
+            return
+        }
+        
+        var validContacts = [ContactPair]()
+        var exceptions = [Exception]()
+        
+        for (index, contact) in forContacts.enumerated() {
+            if contact.phoneNumbers.count > 0 {
+                self.findUsers(forPhoneNumbers: contact.phoneNumbers.digits) { returnedUsers, exception in
+                    if let users = returnedUsers {
+                        //#warning("FIX THIS")
+                        validContacts.append(ContactPair(contact: contact,
+                                                         users: users))
+                        
+                        completion(validContacts.isEmpty ? nil : validContacts,
+                                   exceptions.compiledException)
+                    } else {
+                        exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
+                    }
+                    
+                    if index == forContacts.count - 1 {
+                        completion(validContacts.isEmpty ? nil : validContacts,
+                                   exceptions.compiledException)
+                    }
+                }
+            } else {
+                if index == forContacts.count - 1 {
+                    completion(validContacts.isEmpty ? nil : validContacts,
+                               exceptions.compiledException)
+                }
+            }
+        }
+    }
+    
+    public func findUsers(forPhoneNumbers: [String],
+                          completion: @escaping(_ returnedUsers: [User]?,
+                                                _ exception: Exception?) -> Void) {
+        var users = [User]()
+        var exceptions = [Exception]()
+        
+        for (index, phoneNumber) in forPhoneNumbers.enumerated() {
+            let possibleHashes = PhoneNumberService.possibleHashes(forNumber: phoneNumber.digits)
+            let possibleCallingCodes = PhoneNumberService.possibleCallingCodes(forNumber: phoneNumber)
+            
+            getUsers(possibleHashes: possibleHashes,
+                     possibleCallingCodes: possibleCallingCodes) { returnedUsers, exception in
+                if let unwrappedUsers = returnedUsers {
+                    users.append(contentsOf: unwrappedUsers)
+                } else {
+                    exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
+                }
+                
+                if index == forPhoneNumbers.count - 1 {
+                    completion(users.isEmpty ? nil : users,
+                               exceptions.compiledException)
+                }
+            }
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Retrieval by Hash */
+    
+    private func getUserIDs(fromHash: String,
+                            completion: @escaping (_ returnedUserIDs: [String]?,
+                                                   _ exception: Exception?) -> Void) {
+        GeneralSerializer.getValues(atPath: "/userHashes/\(fromHash)") { returnedValues, exception in
+            
+            guard let values = returnedValues as? [String] else {
+                completion(nil, Exception("No user IDs for this hash.",
+                                          extraParams: ["Hash": fromHash],
+                                          metadata: [#file, #function, #line]))
                 return
             }
             
-            getUsers(withIdentifiers: userIDs) { returnedUsers, errorDescriptor in
+            completion(values, nil)
+        }
+    }
+    
+    private func getUserIDs(fromHashes: [String],
+                            completion: @escaping (_ returnedUserIDs: [String]?,
+                                                   _ exception: Exception?) -> Void) {
+        var userIDs = [String]()
+        var exceptions = [Exception]()
+        
+        for (index, hash) in fromHashes.enumerated() {
+            getUserIDs(fromHash: hash) { returnedUserIDs, exception in
+                if let identifiers = returnedUserIDs {
+                    userIDs.append(contentsOf: identifiers)
+                } else {
+                    exceptions.append(exception?.appending(extraParams: ["hash": hash]) ?? Exception(extraParams: ["hash": hash],
+                                                                                                     metadata: [#file, #function, #line]))
+                }
+                
+                if index == fromHashes.count - 1 {
+                    completion(userIDs.isEmpty ? nil : userIDs,
+                               exceptions.compiledException)
+                }
+            }
+        }
+    }
+    
+    private func getUsers(possibleHashes: [String],
+                          possibleCallingCodes: [String],
+                          completion: @escaping(_ returnedUsers: [User]?,
+                                                _ exception: Exception?) -> Void) {
+        getUserIDs(fromHashes: possibleHashes) { returnedUserIDs, exception in
+            guard let userIDs = returnedUserIDs else {
+                completion(nil, Exception("No user exists with the possible hashes.",
+                                          extraParams: ["PossibleHashes": possibleHashes],
+                                          metadata: [#file, #function, #line]))
+                return
+            }
+            
+            getUsers(withIdentifiers: userIDs) { returnedUsers, exception in
                 guard let users = returnedUsers else {
-                    completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                    completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
                 
@@ -89,7 +201,10 @@ public struct UserSerializer {
                 }
                 
                 guard !possibleUsers.isEmpty else {
-                    completion(nil, "Found users, but none with this calling code.")
+                    completion(nil, Exception("Found users, but none with this calling code.",
+                                              extraParams: ["UserIDs": users.identifiers(),
+                                                            "PossibleCallingCodes": possibleCallingCodes],
+                                              metadata: [#file, #function, #line]))
                     return
                 }
                 
@@ -98,185 +213,58 @@ public struct UserSerializer {
         }
     }
     
-    public func getUsers(withIdentifiers: [String],
-                         completion: @escaping(_ returnedUsers: [User]?,
-                                               _ errorDescriptor: String?) -> Void) {
-        var users = [User]()
-        var errors = [String]()
-        
-        for (index, identifier) in withIdentifiers.enumerated() {
-            getUser(withIdentifier: identifier) { returnedUser, errorDescriptor in
-                if let user = returnedUser {
-                    users.append(user)
-                } else {
-                    errors.append(errorDescriptor ?? "An unknown error occurred.")
-                }
-                
-                if index == withIdentifiers.count - 1 {
-                    completion(users.isEmpty ? nil : users,
-                               errors.isEmpty ? nil : errors.joined(separator: "\n"))
-                }
-            }
-        }
-    }
-    
-    public func getUserIDs(fromHashes: [String],
-                           completion: @escaping (_ returnedUserIDs: [String]?,
-                                                  _ errorDescriptor: String?) -> Void) {
-        var userIDs = [String]()
-        var errors = [String]()
-        
-        for (index, hash) in fromHashes.enumerated() {
-            getUserIDs(fromHash: hash) { returnedUserIDs, errorDescriptor in
-                if let identifiers = returnedUserIDs {
-                    userIDs.append(contentsOf: identifiers)
-                } else {
-                    errors.append(errorDescriptor ?? "An unknown error occurred.")
-                }
-                
-                if index == fromHashes.count - 1 {
-                    completion(userIDs.isEmpty ? nil : userIDs,
-                               errors.isEmpty ? nil : errors.joined(separator: "\n"))
-                }
-            }
-        }
-    }
-    
-    public func getUserIDs(fromHash: String,
-                           completion: @escaping (_ returnedUserIDs: [String]?,
-                                                  _ errorDescriptor: String?) -> Void) {
-        GeneralSerializer.getValues(atPath: "/userHashes/\(fromHash)") { returnedValues, errorDescriptor in
-            
-            guard let values = returnedValues as? [String] else {
-                completion(nil, "No user IDs for this hash.")
-                return
-            }
-            
-            completion(values, nil)
-        }
-    }
-    
-    public func findUser(phoneNumber: String,
-                         possibleCallingCodes: [String],
-                         completion: @escaping(_ returnedUser: User?,
-                                               _ errorDescriptor: String?) -> Void) {
-        let userIdentifier = phoneNumber.digits.compressedHash
-        
-        getUser(withIdentifier: userIdentifier) { returnedUser, errorDescriptor in
-            guard let user = returnedUser else {
-                completion(nil, errorDescriptor ?? "No user exists with this identifier.")
-                return
-            }
-            
-            if possibleCallingCodes.contains(user.callingCode) {
-                completion(user, nil)
-            } else {
-                completion(nil, "User exists with this number, but not any of the possible calling codes.")
-            }
-        }
-    }
-    
-    public func sortContacts(_ contacts: [Contact]) -> [[Any]] {
-        var contactsToReturn = [ContactPair]()
-        var contactsToFetch = [Contact]()
-        
-        //        if contactArchive.hashes().containsAll(in: contacts.hashes()) {
-        //            print("Contact archive is up to date with device!")
-        //            return [contacts, [], []]
-        //        }
-        
-        for contact in contacts {
-            guard let retrievedContact = ContactArchiver.getFromArchive(contact.hash) else {
-                contactsToFetch.append(contact)
-                continue
-            }
-            
-            contactsToReturn.append(retrievedContact)
-        }
-        
-        return [contactsToReturn, contactsToFetch]
-    }
-    
-    public func validUsers(fromContacts: [Contact],
-                           completion: @escaping (_ returnedContactPairs: [ContactPair]?,
-                                                  _ errorDescriptor: String?) -> Void) {
-        guard !fromContacts.isEmpty else {
-            completion(nil, "No contacts passed!")
-            return
-        }
-        
-        var validContacts = [ContactPair]()
-        var errors = [String]()
-        
-        for (index, contact) in fromContacts.enumerated() {
-            if contact.phoneNumbers.count > 0 {
-                self.validUsers(forPhoneNumbers: contact.phoneNumbers.digits) { returnedUsers, errorDescriptor in
-                    if let users = returnedUsers {
-                        //#warning("FIX THIS")
-                        validContacts.append(ContactPair(contact: contact,
-                                                         users: users))
-                        completion(validContacts.isEmpty ? nil : validContacts,
-                                   errors.isEmpty ? nil : errors.joined(separator: "\n"))
-                    } else {
-                        errors.append(errorDescriptor ?? "An unknown error occurred.")
-                    }
-                    
-                    if index == fromContacts.count - 1 {
-                        completion(validContacts.isEmpty ? nil : validContacts,
-                                   errors.isEmpty ? nil : errors.joined(separator: "\n"))
-                    }
-                }
-            } else {
-                if index == fromContacts.count - 1 {
-                    completion(validContacts.isEmpty ? nil : validContacts,
-                               errors.isEmpty ? nil : errors.joined(separator: "\n"))
-                }
-            }
-        }
-    }
-    
     //==================================================//
     
-    /* MARK: - Retrieval Functions */
-    
-    public func allUsersSnapshotData(completion: @escaping(_ returnedData: [String: Any]?,
-                                                           _ errorDescriptor: String?) -> Void) {
-        Database.database().reference().child("allUsers").observeSingleEvent(of: .value) { returnedSnapshot in
-            guard let snapshot = returnedSnapshot.value as? NSDictionary,
-                  let data = snapshot as? [String: Any] else {
-                completion(nil, "Unable to retrieve the specified data.")
-                return
-            }
-            
-            completion(data, nil)
-        } withCancel: { error in
-            completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
-        }
-    }
+    /* MARK: - Retrieval by Identifier */
     
     public func getUser(withIdentifier: String,
                         completion: @escaping(_ returnedUser: User?,
-                                              _ errorDescriptor: String?) -> Void) {
+                                              _ exception: Exception?) -> Void) {
         Database.database().reference().child("allUsers").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   var data = snapshot as? [String: Any] else {
-                completion(nil, "No user exists with the identifier \"\(withIdentifier)\".")
+                completion(nil, Exception("No user exists with the provided identifier.",
+                                          extraParams: ["UserID": withIdentifier],
+                                          metadata: [#file, #function, #line]))
                 return
             }
             
             data["identifier"] = withIdentifier
             
             self.deSerializeUser(fromData: data) { (returnedUser,
-                                                    errorDescriptor) in
+                                                    exception) in
                 guard let user = returnedUser else {
-                    completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                    completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
                 
                 completion(user, nil)
             }
         }) { (error) in
-            completion(nil, "Unable to retrieve the specified data. (\(Logger.errorInfo(error)))")
+            completion(nil, Exception(error,
+                                      metadata: [#file, #function, #line]))
+        }
+    }
+    
+    private func getUsers(withIdentifiers: [String],
+                          completion: @escaping(_ returnedUsers: [User]?,
+                                                _ exception: Exception?) -> Void) {
+        var users = [User]()
+        var exceptions = [Exception]()
+        
+        for (index, identifier) in withIdentifiers.enumerated() {
+            getUser(withIdentifier: identifier) { returnedUser, exception in
+                if let user = returnedUser {
+                    users.append(user)
+                } else {
+                    exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
+                }
+                
+                if index == withIdentifiers.count - 1 {
+                    completion(users.isEmpty ? nil : users,
+                               exceptions.compiledException)
+                }
+            }
         }
     }
     
@@ -286,34 +274,40 @@ public struct UserSerializer {
     
     private func deSerializeUser(fromData: [String: Any],
                                  completion: @escaping(_ deSerializedUser: User?,
-                                                       _ errorDescriptor: String?) -> Void) {
+                                                       _ exception: Exception?) -> Void) {
         guard let identifier = fromData["identifier"] as? String else {
-            completion(nil, "Unable to deserialize «identifier».")
+            completion(nil, Exception("Unable to deserialize «identifier».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let callingCode = fromData["callingCode"] as? String else {
-            completion(nil, "Unable to deserialize «callingCode».")
+            completion(nil, Exception("Unable to deserialize «callingCode».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let languageCode = fromData["languageCode"] as? String else {
-            completion(nil, "Unable to deserialize «languageCode».")
+            completion(nil, Exception("Unable to deserialize «languageCode».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let conversationIdentifiers = fromData["openConversations"] as? [String] else {
-            completion(nil, "Unable to deserialize «openConversations».")
+            completion(nil, Exception("Unable to deserialize «openConversations».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let phoneNumber = fromData["phoneNumber"] as? String else {
-            completion(nil, "Unable to deserialize «phoneNumber».")
+            completion(nil, Exception("Unable to deserialize «phoneNumber».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
         guard let region = fromData["region"] as? String else {
-            completion(nil, "Unable to deserialize «region».")
+            completion(nil, Exception("Unable to deserialize «region».",
+                                      metadata: [#file, #function, #line]))
             return
         }
         
@@ -325,31 +319,5 @@ public struct UserSerializer {
                                     region: region)
         
         completion(deSerializedUser, nil)
-    }
-    
-    public func validUsers(forPhoneNumbers: [String],
-                           completion: @escaping(_ returnedUsers: [User]?,
-                                                 _ errorDescriptor: String?) -> Void) {
-        var users = [User]()
-        var errors = [String]()
-        
-        for (index, phoneNumber) in forPhoneNumbers.enumerated() {
-            let possibleHashes = PhoneNumberService.possibleHashes(forNumber: phoneNumber.digits)
-            let possibleCallingCodes = PhoneNumberService.possibleCallingCodes(forNumber: phoneNumber)
-            
-            getUsers(possibleHashes: possibleHashes,
-                     possibleCallingCodes: possibleCallingCodes) { returnedUsers, errorDescriptor in
-                if let unwrappedUsers = returnedUsers {
-                    users.append(contentsOf: unwrappedUsers)
-                } else {
-                    errors.append(errorDescriptor ?? "An unknown error occurred.")
-                }
-                
-                if index == forPhoneNumbers.count - 1 {
-                    completion(users.isEmpty ? nil : users,
-                               errors.isEmpty ? nil : errors.joined(separator: "\n"))
-                }
-            }
-        }
     }
 }

@@ -48,13 +48,13 @@ final class UserSerializerTests: XCTestCase {
                                          callingCode: "1",
                                          languageCode: ["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()!,
                                          phoneNumber: phoneNumberString.digits,
-                                         region: Array(RuntimeStorage.callingCodeDictionary!.keys).randomElement()!) { (errorDescriptor) in
-            guard let error = errorDescriptor else {
+                                         region: Array(RuntimeStorage.callingCodeDictionary!.keys).randomElement()!) { (exception) in
+            guard let error = exception else {
                 expectation.fulfill()
                 return
             }
             
-            XCTFail(error)
+            XCTFail(error.descriptor)
         }
         
         wait(for: [expectation], timeout: 10)
@@ -64,21 +64,19 @@ final class UserSerializerTests: XCTestCase {
         let expectation = XCTestExpectation(description: "No error returned")
         
         UserSerializer().getUser(withIdentifier: "") { (returnedUser,
-                                                        errorDescriptor) in
+                                                        exception) in
             guard let user = returnedUser else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                           metadata: [#file, #function, #line])
-                XCTFail(errorDescriptor ?? "Couldn't get user.")
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                XCTFail(exception?.descriptor ?? "Couldn't get user.")
                 
                 return
             }
             
             user.deSerializeConversations { (returnedConversations,
-                                             errorDescriptor) in
+                                             exception) in
                 guard returnedConversations != nil else {
-                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                               metadata: [#file, #function, #line])
-                    XCTFail(errorDescriptor ?? "An unknown error occurred.")
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                    XCTFail(exception?.descriptor ?? "An unknown error occurred.")
                     
                     return
                 }

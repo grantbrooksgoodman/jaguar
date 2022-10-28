@@ -10,6 +10,7 @@
 import SwiftUI
 
 /* Third-party Frameworks */
+import AlertKit
 import InputBarAccessoryView
 import MessageKit
 import Translator
@@ -29,6 +30,53 @@ public final class ChatPageViewCoordinator {
     public init(conversation: Binding<Conversation>) {
         self.conversation = conversation
     }
+    
+    //==================================================//
+    
+    /* MARK: - Private Functions */
+    
+    private func rollBackProgressForTimeout(_ inputBar: InputBarAccessoryView,
+                                            text: String) {
+        let wrappedConversation = conversation.wrappedValue
+        
+        inputBar.sendButton.stopAnimating()
+        
+        let localizedString = Localizer.preLocalizedString(for: .newMessage)
+        inputBar.inputTextView.text = text
+        inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
+        inputBar.inputTextView.tintColor = .systemBlue
+        inputBar.inputTextView.isUserInteractionEnabled = true
+        
+        wrappedConversation.messages.removeAll(where: { $0.identifier == "NEW" })
+        wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
+        
+        RuntimeStorage.store(wrappedConversation, as: .globalConversation)
+        
+        guard var currentMessageSlice = RuntimeStorage.currentMessageSlice else {
+            Logger.log("Couldn't retrieve current message slice from RuntimeStorage.",
+                       with: .errorAlert,
+                       metadata: [#file, #function, #line])
+            return
+        }
+        
+        currentMessageSlice.removeAll(where: { $0.identifier == "NEW" })
+        RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
+        
+        ConversationArchiver.addToArchive(wrappedConversation)
+        
+        guard var conversations = RuntimeStorage.conversations else {
+            Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
+                       with: .errorAlert,
+                       metadata: [#file, #function, #line])
+            return
+        }
+        
+        conversations.removeLast()
+        conversations.append(wrappedConversation)
+        
+        RuntimeStorage.store(conversations, as: .conversations)
+        RuntimeStorage.store(true, as: .shouldReloadData)
+    }
 }
 
 //==================================================//
@@ -46,6 +94,23 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          didPressSendButtonWith text: String) {
+        guard Build.isOnline else {
+            AKCore.shared.setLanguageCode("en")
+            
+            let exception = Exception("The internet connection is offline.",
+                                      isReportable: false,
+                                      extraParams: ["IsConnected": Build.isOnline],
+                                      metadata: [#file, #function, #line])
+            
+            AKErrorAlert(message: Localizer.preLocalizedString(for: .noInternetMessage,
+                                                               language: RuntimeStorage.languageCode!) ?? "The internet connection appears to be offline.\nPlease connect to the internet and try again.",
+                         error: exception.asAkError(),
+                         cancelButtonTitle: "OK").present { _ in
+                AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
+            }
+            return
+        }
+        
         let wrappedConversation = conversation.wrappedValue
         
         inputBar.sendButton.startAnimating()
@@ -58,17 +123,20 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         Logger.openStream(metadata: [#file, #function, #line])
         appendMockMessage(text: text)
         
+        let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line]) {
+            self.rollBackProgressForTimeout(inputBar, text: text)
+        }
+        
         debugTranslate(text) { (returnedDebugTranslation,
-                                errorDescriptor) in
+                                exception) in
             guard let debugTranslation = returnedDebugTranslation else {
-                Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
                 return
             }
             
             self.translateMessage(debugTranslation.output) { (returnedTranslation,
-                                                              errorDescriptor) in
+                                                              exception) in
                 inputBar.sendButton.stopAnimating()
                 
                 let localizedString = Localizer.preLocalizedString(for: .newMessage)
@@ -77,18 +145,16 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                 inputBar.inputTextView.isUserInteractionEnabled = true
                 
                 guard let translation = returnedTranslation else {
-                    Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                               with: .errorAlert,
-                               metadata: [#file, #function, #line])
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                               with: .errorAlert)
                     return
                 }
                 
                 self.createMessage(withTranslation: translation) { (returnedMessage,
-                                                                    errorDescriptor) in
+                                                                    exception) in
                     guard let message = returnedMessage else {
-                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                                   with: .errorAlert,
-                                   metadata: [#file, #function, #line])
+                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                                   with: .errorAlert)
                         return
                     }
                     
@@ -99,11 +165,12 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                     
                     wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
                     
-                    wrappedConversation.updateHash { (errorDescriptor) in
-                        if let error = errorDescriptor {
+                    wrappedConversation.updateHash { (exception) in
+                        timeout.cancel()
+                        
+                        if let error = exception {
                             Logger.log(error,
-                                       with: .errorAlert,
-                                       metadata: [#file, #function, #line])
+                                       with: .errorAlert)
                         }
                         
                         RuntimeStorage.store(wrappedConversation, as: .globalConversation)
@@ -146,7 +213,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                          textViewTextDidChangeTo text: String) {
         let isTyping = text.lowercasedTrimmingWhitespace != ""
         RuntimeStorage.currentUser!.update(isTyping: isTyping,
-                                    inConversationWithID: conversation.identifier.wrappedValue!.key)
+                                           inConversationWithID: conversation.identifier.wrappedValue!.key)
         
         let lines = Int(inputBar.inputTextView.contentSize.height / inputBar.inputTextView.font.lineHeight)
         let currentText = inputBar.inputTextView.text!
@@ -172,12 +239,12 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         let wrappedConversation = conversation.wrappedValue
         let otherUser = wrappedConversation.otherUser!
         
-        let mockLanguagePair = LanguagePair(from: RuntimeStorage.currentUser!.languageCode,
-                                            to: otherUser.languageCode)
+        let mockLanguagePair = Translator.LanguagePair(from: RuntimeStorage.currentUser!.languageCode,
+                                                       to: otherUser.languageCode)
         
-        let mockTranslation = Translation(input: TranslationInput(text),
-                                          output: "",
-                                          languagePair: mockLanguagePair)
+        let mockTranslation = Translator.Translation(input: TranslationInput(text),
+                                                     output: "",
+                                                     languagePair: mockLanguagePair)
         
         let mockMessage = Message(identifier: "NEW",
                                   fromAccountIdentifier: RuntimeStorage.currentUserID!,
@@ -216,17 +283,17 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         RuntimeStorage.store(true, as: .shouldReloadData)
     }
     
-    private func createMessage(withTranslation: Translation,
+    private func createMessage(withTranslation: Translator.Translation,
                                completion: @escaping (_ returnedMessage: Message?,
-                                                      _ errorDescriptor: String?) -> Void) {
+                                                      _ exception: Exception?) -> Void) {
         let wrappedConversation = conversation.wrappedValue
         
         MessageSerializer.shared.createMessage(fromAccountWithIdentifier: RuntimeStorage.currentUserID!,
                                                inConversationWithIdentifier: wrappedConversation.identifier!.key!,
                                                translation: withTranslation) { (returnedMessage,
-                                                                                errorDescriptor) in
+                                                                                exception) in
             guard let message = returnedMessage else {
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
@@ -235,15 +302,15 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     }
     
     private func debugTranslate(_ text: String,
-                                completion: @escaping (_ returnedTranslation: Translation?,
-                                                       _ errorDescriptor: String?) -> Void) {
-        let debugLanguagePair = LanguagePair(from: "en",
-                                             to: RuntimeStorage.currentUser!.languageCode)
+                                completion: @escaping (_ returnedTranslation: Translator.Translation?,
+                                                       _ exception: Exception?) -> Void) {
+        let debugLanguagePair = Translator.LanguagePair(from: "en",
+                                                        to: RuntimeStorage.currentUser!.languageCode)
         
         FirebaseTranslator.shared.translate(TranslationInput(text),
-                                            with: debugLanguagePair) { (returnedTranslation, errorDescriptor) in
+                                            with: debugLanguagePair) { (returnedTranslation, exception) in
             guard let translation = returnedTranslation else {
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
@@ -252,19 +319,19 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     }
     
     private func translateMessage(_ text: String,
-                                  completion: @escaping (_ returnedTranslation: Translation?,
-                                                         _ errorDescriptor: String?) -> Void) {
+                                  completion: @escaping (_ returnedTranslation: Translator.Translation?,
+                                                         _ exception: Exception?) -> Void) {
         let wrappedConversation = conversation.wrappedValue
         let otherUser = wrappedConversation.otherUser!
         
-        let languagePair = LanguagePair(from: RuntimeStorage.currentUser!.languageCode,
-                                        to: otherUser.languageCode)
+        let languagePair = Translator.LanguagePair(from: RuntimeStorage.currentUser!.languageCode,
+                                                   to: otherUser.languageCode)
         
         FirebaseTranslator.shared.translate(TranslationInput(text),
                                             with: languagePair,
-                                            using: .google) { (returnedTranslation, errorDescriptor) in
+                                            using: .google) { (returnedTranslation, exception) in
             guard let translation = returnedTranslation else {
-                completion(nil, errorDescriptor ?? "An unknown error occurred.")
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             

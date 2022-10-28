@@ -20,14 +20,7 @@ import Translator
 
 /* MARK: - Top-level Properties */
 
-// Other
 public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
-
-public var currentTimeLastCalled: Date! = Date() {
-    willSet {
-        print("\(newValue.amountOfSeconds(from: currentTimeLastCalled)) seconds from last call")
-    }
-}
 
 //==================================================//
 
@@ -88,7 +81,6 @@ public var currentTimeLastCalled: Date! = Date() {
         
         Logger.exposureLevel = .verbose
         
-        
         /* MARK: AlertKit Setup */
         
         let expiryAlertProvider = ExpiryAlertProvider()
@@ -146,24 +138,22 @@ public var currentTimeLastCalled: Date! = Date() {
     }
     
     private func setUpConversationArchive() {
-        ConversationArchiver.getArchive { _, errorDescriptor in
-            guard let error = errorDescriptor else {
+        ConversationArchiver.getArchive { _, exception in
+            guard let error = exception else {
                 return
             }
             
-            Logger.log(error,
-                       metadata: [#file, #function, #line])
+            Logger.log(error)
         }
     }
     
     private func setUpContactArchive() {
-        ContactArchiver.getArchive { _, errorDescriptor in
-            guard let error = errorDescriptor else {
+        ContactArchiver.getArchive { _, exception in
+            guard let error = exception else {
                 return
             }
             
-            Logger.log(error,
-                       metadata: [#file, #function, #line])
+            Logger.log(error)
         }
     }
     
@@ -232,14 +222,4 @@ public func messagesAttributedString(_ forString: String,
                                                                      length: attributedString.length - separationIndex))
     
     return attributedString
-}
-
-public func printCurrentTime() {
-    let timeFormatter = DateFormatter()
-    timeFormatter.dateFormat = "HH:mm:ss zzz"
-    
-    currentTimeLastCalled = Date()
-    
-    let timeString = timeFormatter.string(from: Date())
-    print(timeString)
 }

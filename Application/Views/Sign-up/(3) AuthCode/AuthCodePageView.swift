@@ -74,11 +74,10 @@ public struct AuthCodePageView: View {
                                                                  callingCode: callingCode ?? "1",
                                                                  languageCode: RuntimeStorage.languageCode!,
                                                                  phoneNumber: phoneNumber,
-                                                                 region: region) { (errorDescriptor) in
-                                    guard errorDescriptor == nil else {
-                                        Logger.log(errorDescriptor ?? "An unknown error occurred.",
-                                                   with: .errorAlert,
-                                                   metadata: [#file, #function, #line])
+                                                                 region: region) { (exception) in
+                                    guard exception == nil else {
+                                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                                                   with: .errorAlert)
                                         return
                                     }
                                     
@@ -113,8 +112,8 @@ public struct AuthCodePageView: View {
                 
                 Spacer()
             }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
-        case .failed(let errorDescriptor):
-            Text(errorDescriptor)
+        case .failed(let exception):
+            Text(exception.userFacingDescriptor)
         }
     }
 }

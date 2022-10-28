@@ -7,6 +7,7 @@
 //
 
 /* Third-party Frameworks */
+import AlertKit
 import Firebase
 import FirebaseAuth
 import Translator
@@ -20,19 +21,19 @@ public class AuthCodePageViewModel: ObservableObject {
     public enum State {
         case idle
         case loading
-        case failed(String)
-        case loaded(translations: [String: Translation])
+        case failed(Exception)
+        case loaded(translations: [String: Translator.Translation])
     }
     
     //==================================================//
     
     /* MARK: - Properties */
     
-    private let inputs = ["title": TranslationInput("Enter Verification Code"),
-                          "subtitle": TranslationInput("A verification code was sent to your device. It may take a minute or so to arrive.\n\nWhen ready, press continue to complete setup."),
-                          "instruction": TranslationInput("Enter the code sent to your device:"),
-                          "finish": TranslationInput("Finish"),
-                          "back": TranslationInput("Back", alternate: "Go back")]
+    private let inputs = ["title": Translator.TranslationInput("Enter Verification Code"),
+                          "subtitle": Translator.TranslationInput("A verification code was sent to your device. It may take a minute or so to arrive.\n\nWhen ready, press continue to complete setup."),
+                          "instruction": Translator.TranslationInput("Enter the code sent to your device:"),
+                          "finish": Translator.TranslationInput("Finish"),
+                          "back": Translator.TranslationInput("Back", alternate: "Go back")]
     
     @Published private(set) var state = State.idle
     
@@ -46,14 +47,12 @@ public class AuthCodePageViewModel: ObservableObject {
         let dataModel = PageViewDataModel(inputs: inputs)
         
         dataModel.translateStrings { (returnedTranslations,
-                                      errorDescriptor) in
+                                      returnedException) in
             guard let translations = returnedTranslations else {
-                let error = errorDescriptor ?? "An unknown error occurred."
+                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
+                Logger.log(exception)
                 
-                Logger.log(error,
-                           metadata: [#file, #function, #line])
-                
-                self.state = .failed(error)
+                self.state = .failed(exception)
                 return
             }
             
