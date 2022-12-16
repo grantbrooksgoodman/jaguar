@@ -1,5 +1,5 @@
 //
-//  ContactImageView.swift
+//  AvatarImageView.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 22/07/2022.
@@ -9,7 +9,7 @@
 /* First-party Frameworks */
 import SwiftUI
 
-public struct ContactImageView: View {
+public struct AvatarImageView: View {
     
     //==================================================//
     

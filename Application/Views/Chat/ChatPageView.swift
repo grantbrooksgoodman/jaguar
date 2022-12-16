@@ -21,7 +21,6 @@ public struct ChatPageView: UIViewControllerRepresentable {
     
     /* MARK: - Properties */
     
-    @State var initialized = false
     @Binding var conversation: Conversation
     
     //==================================================//
@@ -39,8 +38,9 @@ public struct ChatPageView: UIViewControllerRepresentable {
         messagesVC.messagesCollectionView.messagesLayoutDelegate = context.coordinator
         messagesVC.messagesCollectionView.messagesDataSource = context.coordinator
         messagesVC.messageInputBar.delegate = context.coordinator
+        
         messagesVC.scrollsToLastItemOnKeyboardBeginsEditing = true // default false
-        //messagesVC.maintainPositionOnInputBarHeightChanged = true // default false
+        //        messagesVC.maintainPositionOnKeyboardFrameChanged = true // default false
         messagesVC.showMessageTimestampOnSwipeLeft = true // default false
         
         conversation.messages = conversation.sortedFilteredMessages()
@@ -66,8 +66,9 @@ public struct ChatPageView: UIViewControllerRepresentable {
         
         inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
         
+        let randomNumber = Int().random(min: 1, max: 999)
         let randomSentence = SentenceGenerator.generateSentence(wordCount: Int().random(min: 3, max: 15))
-        inputBar.inputTextView.text = randomSentence
+        inputBar.inputTextView.text = randomNumber % 2 == 0 ? randomSentence : ""
         
         setUpNewMessageObserver()
         setUpReadDateObserver()
@@ -80,12 +81,14 @@ public struct ChatPageView: UIViewControllerRepresentable {
             window.isHidden = true
         }
         
+        RuntimeStorage.store(messagesVC, as: .messagesVC)
+        
         return messagesVC
     }
     
     public func updateUIViewController(_ uiViewController: MessagesViewController, context: Context) {
+        guard RuntimeStorage.isPresentingChat! else { return }
         uiViewController.messagesCollectionView.reloadData()
-        scrollToBottom(uiViewController)
     }
     
     //==================================================//
@@ -105,7 +108,9 @@ public struct ChatPageView: UIViewControllerRepresentable {
                 guard let message = returnedMessage else {
                     if let error = exception,
                        error.descriptor != "Null/first message processed." {
-                        Logger.log(error, with: .errorAlert)
+                        // #warning("Consistently getting no archive for language pair error on some accounts.")
+                        Logger.log(error/*,
+                                         with: .errorAlert*/)
                     }
                     
                     return
@@ -138,14 +143,14 @@ public struct ChatPageView: UIViewControllerRepresentable {
     }
     
     private func setUpReadDateObserver() {
-#warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.")
+#warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.") // correlate read date with last active date
         Database.database().reference().child("/allMessages").observe(.childChanged) { returnedSnapshot, _ in
             guard let lastMessage = conversation.sortedFilteredMessages().last else {
                 let exception = Exception("Couldn't get last message.",
                                           extraParams: ["UnsortedMessageCount": conversation.messages.count,
                                                         "SortedMessageCount": conversation.sortedFilteredMessages().count],
                                           metadata: [#file, #function, #line])
-                Logger.log(exception, with: .errorAlert)
+                Logger.log(exception)
                 return
             }
             
@@ -191,18 +196,6 @@ public struct ChatPageView: UIViewControllerRepresentable {
             Logger.log(returnedError,
                        with: .errorAlert,
                        metadata: [#file, #function, #line])
-        }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Other Functions */
-    
-    private func scrollToBottom(_ uiViewController: MessagesViewController) {
-        DispatchQueue.main.async {
-            // The initialized state variable allows us to start at the bottom with the initial messages without seeing the initial scroll flash by
-            uiViewController.messagesCollectionView.scrollToLastItem(animated: self.initialized)
-            self.initialized = true
         }
     }
 }

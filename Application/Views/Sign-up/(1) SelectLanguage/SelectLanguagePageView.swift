@@ -9,6 +9,9 @@
 /* First-party Frameworks */
 import SwiftUI
 
+/* Third-party Frameworks */
+import AlertKit
+
 /**
  Authenticates and signs the user in;
  generates Firebase UID.
@@ -36,6 +39,7 @@ public struct SelectLanguagePageView: View {
             Color.clear.onAppear {
                 RuntimeStorage.store(Locale.preferredLanguages[0].components(separatedBy: "-")[0],
                                      as: .languageCode)
+                AKCore.shared.setLanguageCode(Locale.preferredLanguages[0].components(separatedBy: "-")[0])
                 viewModel.load()
             }
         case .loading:
@@ -56,12 +60,16 @@ public struct SelectLanguagePageView: View {
                             Text($0)
                         }
                     }
-                    //                .pickerStyle(.wheel)
+                    .pickerStyle(.wheel)
                     .padding(.horizontal, 30)
                     
                     Button {
-                        RuntimeStorage.store(RuntimeStorage.languageCodeDictionary!.allKeys(forValue: selectedLanguage).first!,
+                        let selectedLanguageCode = RuntimeStorage.languageCodeDictionary!.allKeys(forValue: selectedLanguage).first!
+                        
+                        RuntimeStorage.store(selectedLanguageCode,
                                              as: .languageCode)
+                        AKCore.shared.setLanguageCode(selectedLanguageCode)
+                        
                         viewRouter.currentPage = .signUp_verifyNumber
                     } label: {
                         Text(translations["continue"]!.output)

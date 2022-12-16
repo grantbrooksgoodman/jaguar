@@ -33,16 +33,14 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     public func application(_: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         preInitialize()
         
+        setBools()
+        
         setUpCallingCodes()
         setUpFirebase()
         
         UserDefaults.standard.setValue(nil, forKey: "currentUserID")
         
-        RuntimeStorage.store(false, as: .shouldUseRandomUser)
         RuntimeStorage.store(#file, as: .currentFile)
-        
-        RuntimeStorage.store([], as: .conversations)
-        RuntimeStorage.store(false, as: .shouldReloadData)
         RuntimeStorage.store(0, as: .messageOffset)
         
         //        if !RuntimeStorage.shouldUseRandomUser! {
@@ -55,9 +53,10 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         //        }
         
         setUpConversationArchive()
-        
-        ContactArchiver.clearArchive()
         setUpContactArchive()
+        
+        setUpLocalUserHashes()
+        setUpServerUserHashes()
         
         return true
     }
@@ -76,7 +75,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
                    .codeName: "Jaguar",
                    .dmyFirstCompileDateString: "23042022",
                    .finalName: "Hello",
-                   .stage: Build.Stage.beta,
+                   .stage: Build.Stage.releaseCandidate,
                    .timebombActive: true])
         
         Logger.exposureLevel = .verbose
@@ -105,6 +104,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
             
             if languageCodeDictionary[RuntimeStorage.languageCode!] == nil {
                 RuntimeStorage.store("en", as: .languageCode)
+                AKCore.shared.setLanguageCode("en")
                 
                 Logger.log("Unsupported language code; reverting to English.",
                            metadata: [#file, #function, #line])
@@ -114,6 +114,18 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
                        with: .fatalAlert,
                        metadata: [#file, #function, #line])
         }
+    }
+    
+    private func setBools() {
+        RuntimeStorage.store(false, as: .shouldUseRandomUser)
+        
+        StateProvider.shared.hasDisappeared = false
+        RuntimeStorage.store(false, as: .isSendingMessage)
+        
+        RuntimeStorage.store(false, as: .shouldReloadData)
+        RuntimeStorage.store(false, as: .wantsToInvite)
+        
+        RuntimeStorage.store(false, as: .isPresentingChat)
     }
     
     private func setUpCallingCodes() {
@@ -154,6 +166,32 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
             }
             
             Logger.log(error)
+        }
+    }
+    
+    private func setUpLocalUserHashes() {
+        if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
+            RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
+        } else {
+            let updatedLocalUserHashes = ContactService.getLocalUserHashes()
+            UserDefaults.standard.set(updatedLocalUserHashes, forKey: "archivedLocalUserHashes")
+            RuntimeStorage.store(updatedLocalUserHashes, as: .archivedLocalUserHashes)
+        }
+    }
+    
+    private func setUpServerUserHashes() {
+        if let archivedHashes = UserDefaults.standard.value(forKey: "archivedServerUserHashes") as? [String] {
+            RuntimeStorage.store(archivedHashes, as: .archivedServerUserHashes)
+        } else {
+            ContactService.getServerUserHashes { returnedHashes, exception in
+                guard let updatedServerUserHashes = returnedHashes else {
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                UserDefaults.standard.set(updatedServerUserHashes, forKey: "archivedServerUserHashes")
+                RuntimeStorage.store(updatedServerUserHashes, as: .archivedServerUserHashes)
+            }
         }
     }
     

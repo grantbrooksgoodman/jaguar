@@ -1,5 +1,5 @@
 //
-//  RouterView.swift
+//  ViewRouter.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 23/04/2022.
@@ -91,7 +91,6 @@ public struct RouterView: View {
                                   viewRouter: viewRouter)
             .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
             .zIndex(1)
-            
         default:
             InitialPageView(viewModel: InitialPageViewModel(),
                             viewRouter: viewRouter)

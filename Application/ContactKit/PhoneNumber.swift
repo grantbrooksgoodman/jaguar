@@ -71,6 +71,18 @@ public extension Array where Element == PhoneNumber {
     }
 }
 
+public extension Array where Element == String {
+    var possibleRawNumbers: [String] {
+        var phoneNumbers = [String]()
+        
+        forEach { item in
+            phoneNumbers.append(contentsOf: item.possibleRawNumbers())
+        }
+        
+        return phoneNumbers
+    }
+}
+
 /* MARK: - PhoneNumber */
 public extension PhoneNumber {
     var hash: String {

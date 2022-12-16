@@ -31,8 +31,10 @@ public struct FirebaseTranslator: Translatorable {
             var translations = [Translator.Translation]()
             
             for input in inputs {
-                let translation = Translation(input: input,
-                                              output: input.original,
+                let processedInput = TranslationInput(input.original.removingOccurrences(of: ["*"]),
+                                                      alternate: input.alternate?.removingOccurrences(of: ["*"]))
+                let translation = Translation(input: processedInput,
+                                              output: processedInput.original,
                                               languagePair: languagePair)
                 translations.append(translation)
             }
@@ -127,9 +129,28 @@ public struct FirebaseTranslator: Translatorable {
                                from: languagePair.from,
                                to: languagePair.to,
                                using: using ?? .google) { (returnedString,
-                                                           exception) in
+                                                           errorDescriptor) in
                     guard let translatedString = returnedString else {
-                        Logger.log(Exception(exception, metadata: [#file, #function, #line]))
+                        // #warning("Clean this up.")
+                        if let descriptor = errorDescriptor,
+                           descriptor == "Couldn't translate the requested string." {
+                            let translation = Translation(input: input,
+                                                          output: input.value(),
+                                                          languagePair: languagePair)
+                            
+                            TranslationSerializer.uploadTranslation(translation)
+                            TranslationArchiver.addToArchive(translation)
+                            
+                            completion(translation, nil)
+                            
+                            if let required = requiresHUD,
+                               required {
+                                Core.hud.hide(delay: 0.2)
+                            }
+                        } else {
+                            Logger.log(Exception(errorDescriptor, metadata: [#file, #function, #line]))
+                        }
+                        
                         return
                     }
                     

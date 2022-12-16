@@ -14,8 +14,6 @@ import UIKit
 import Firebase
 import FirebaseDatabase
 
-import AlertKit
-
 public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecognizerDelegate {
     
     //==================================================//

@@ -93,7 +93,7 @@ public enum PhoneNumberService {
         return candidates
     }
     
-    private static func possibleHashes(forNumbers: [String]) -> [String] {
+    public static func possibleHashes(forNumbers: [String]) -> [String] {
         var candidates = [String]()
         
         for number in forNumbers {

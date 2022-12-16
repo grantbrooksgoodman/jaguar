@@ -51,6 +51,14 @@ public enum ContactArchiver {
         return contacts.first
     }
     
+    public static func getFromArchive(withUserHash: String) -> ContactPair? {
+        initializeArchive()
+        
+        let contacts = contactArchive.filter({ PhoneNumberService.possibleHashes(forNumbers: $0.contact.phoneNumbers.digits).contains(withUserHash) })
+        
+        return contacts.first
+    }
+    
     public static func getFromArchive(withPhoneNumbers: [String]) -> ContactPair? {
         initializeArchive()
         

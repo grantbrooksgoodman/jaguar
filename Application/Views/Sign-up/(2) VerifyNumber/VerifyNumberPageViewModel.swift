@@ -101,9 +101,6 @@ public class VerifyNumberPageViewModel: ObservableObject {
                                false)
                 }
             } else {
-                RuntimeStorage.store(RuntimeStorage.languageCode!, as: .previousLanguageCode)
-                RuntimeStorage.store(returnedUsers![0].languageCode!, as: .languageCode)
-                
                 completion(nil,
                            nil,
                            true)

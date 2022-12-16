@@ -186,12 +186,8 @@ public enum TranslationSerializer {
         
         GeneralSerializer.getValues(atPath: "\(path)/\(input.value().compressedHash)") { (returnedValues, exception) in
             guard let value = returnedValues as? String else {
-                let error = exception ?? Exception("No uploaded translation exists.",
-                                                   metadata: [#file, #function, #line])
-                
-                //                Logger.log(error,
-                //                           metadata: [#file, #function, #line])
-                completion(nil, error)
+                completion(nil, exception ?? Exception("No uploaded translation exists.",
+                                                       metadata: [#file, #function, #line]))
                 return
             }
             

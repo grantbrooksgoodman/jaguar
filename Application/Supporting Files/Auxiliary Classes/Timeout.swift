@@ -67,20 +67,13 @@ public class Timeout {
     }
     
     @objc private func presentTimeoutAlert() {
-        self.callback?()
-        
-        let previousLanguageCode = AKCore.shared.getLanguageCode()
-        
-        if !Build.isOnline {
-            AKCore.shared.setLanguageCode("en")
-        }
+        callback?()
         
         let message = Localizer.preLocalizedString(for: .timedOut) ?? "The operation timed out. Please try again later."
         let exception = Exception(message,
-                                  metadata: self.metadata!)
+                                  metadata: metadata!)
         
-        AKErrorAlert(error: exception.asAkError()).present { _ in
-            AKCore.shared.setLanguageCode(previousLanguageCode)
-        }
+        AKErrorAlert(error: exception.asAkError(),
+                     shouldTranslate: [Build.isOnline ? .actions(indices: nil) : .none]).present()
     }
 }

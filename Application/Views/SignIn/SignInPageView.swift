@@ -43,7 +43,12 @@ public struct SignInPageView: View {
     public var body: some View {
         switch viewModel.state {
         case .idle:
-            Color.clear.onAppear(perform: viewModel.load)
+            Color.clear.onAppear {
+                RuntimeStorage.store(Locale.preferredLanguages[0].components(separatedBy: "-")[0],
+                                     as: .languageCode)
+                AKCore.shared.setLanguageCode(Locale.preferredLanguages[0].components(separatedBy: "-")[0])
+                viewModel.load()
+            }
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
@@ -104,7 +109,6 @@ public struct SignInPageView: View {
                         if verified {
                             verified = false
                         } else if fromSignUp {
-                            RuntimeStorage.store(RuntimeStorage.previousLanguageCode!, as: .languageCode)
                             viewRouter.currentPage = .signUp_verifyNumber
                         } else {
                             viewRouter.currentPage = .initial

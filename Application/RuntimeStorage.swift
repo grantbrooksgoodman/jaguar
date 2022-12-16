@@ -8,7 +8,21 @@
 
 /* First-party Frameworks */
 import Foundation
+import SwiftUI
 import UIKit
+
+public class StateProvider: ObservableObject {
+    
+    /* MARK: - Properties */
+    
+    public static let shared = StateProvider()
+    
+    // Custom
+    @Published public var hasDisappeared = false
+    
+    @Published public var tappedSelectContactButton = false
+    @Published public var tappedDone = false
+}
 
 public enum RuntimeStorage {
     
@@ -29,11 +43,10 @@ public enum RuntimeStorage {
         case currentUserID
         
         case languageCode
-        case previousLanguageCode
-        
-        case selectedContactPair
         
         case shouldUseRandomUser
+        case archivedLocalUserHashes
+        case archivedServerUserHashes
         
         // MARK: SceneDelegate
         case topWindow
@@ -41,15 +54,26 @@ public enum RuntimeStorage {
         // MARK: BuildInfoOverlayView
         case currentFile
         
-        // MARK: ConversationsPageView
-        case conversations
+        // MARK: ConversationsPageViewModel
+        case previousConversations
         
         // MARK: ChatPageView
         case currentMessageSlice
         case globalConversation
+        
+        case isSendingMessage
         case messageOffset
+        case messagesVC
+        
         case shouldReloadData
         case typingIndicator
+        case wantsToInvite
+        
+        case isPresentingChat
+        
+        // MARK: UINavigationBarAppearance
+        case navigationBarStandardAppearance
+        case navgationBarScrollEdgeAppearance
         
         var description: String {
             return rawValue.snakeCase()
@@ -84,7 +108,7 @@ public enum RuntimeStorage {
 
 /**/
 
-/* MARK: StoreService */
+/* MARK: RuntimeStorage */
 public extension RuntimeStorage {
     // MARK: AppDelegate
     static var callingCode: String? { get { return retrieve(.callingCode) as? String } } // Doesn't seem to be used
@@ -96,12 +120,11 @@ public extension RuntimeStorage {
     static var currentUser: User? { get { return retrieve(.currentUser) as? User } }
     static var currentUserID: String? { get { return retrieve(.currentUserID) as? String } }
     
-    static var languageCode: String? { get { return retrieve(.languageCode) as? String }}
-    static var previousLanguageCode: String? { get { return retrieve(.previousLanguageCode) as? String }}
-    
-    static var selectedContactPair: ContactPair? { get { return retrieve(.selectedContactPair) as? ContactPair } }
+    static var languageCode: String? { get { return retrieve(.languageCode) as? String } }
     
     static var shouldUseRandomUser: Bool? { get { return retrieve(.shouldUseRandomUser) as? Bool } }
+    static var archivedLocalUserHashes: [String]? { get { return retrieve(.archivedLocalUserHashes) as? [String] } }
+    static var archivedServerUserHashes: [String]? { get { return retrieve(.archivedServerUserHashes) as? [String] } }
     
     // MARK: BuildInfoOverlayView
     static var currentFile: String? { get { return retrieve(.currentFile) as? String } }
@@ -109,14 +132,25 @@ public extension RuntimeStorage {
     // MARK: ChatPageView
     static var currentMessageSlice: [Message]? { get { return retrieve(.currentMessageSlice) as? [Message] } }
     static var globalConversation: Conversation? { get { return retrieve(.globalConversation) as? Conversation } }
+    
+    static var isSendingMessage: Bool? { get { return retrieve(.isSendingMessage) as? Bool } }
     static var messageOffset: Int? { get { return retrieve(.messageOffset) as? Int }  }
+    static var messagesVC: ChatPageViewController? { get { return retrieve(.messagesVC) as? ChatPageViewController } }
+    
     static var shouldReloadData: Bool? { get { return retrieve(.shouldReloadData) as? Bool } }
     static var typingIndicator: Bool? { get { return retrieve(.typingIndicator) as? Bool } }
+    static var wantsToInvite: Bool? { get { return retrieve(.wantsToInvite) as? Bool } }
     
-    // MARK: ConversationsPageView
-    static var conversations: [Conversation]? { get { return retrieve(.conversations) as? [Conversation] } }
+    static var isPresentingChat: Bool? { get { return retrieve(.isPresentingChat) as? Bool } }
+    
+    // MARK: ConversationsPageViewModel
+    static var previousConversations: [Conversation]? { get { return retrieve(.previousConversations) as? [Conversation] } }
     
     // MARK: SceneDelegate
     static var topWindow: UIWindow? { get { return retrieve(.topWindow) as? UIWindow } }
+    
+    // MARK: UINavigationBar
+    static var navigationBarStandardAppearance: UINavigationBarAppearance? { get { return retrieve(.navigationBarStandardAppearance) as? UINavigationBarAppearance } }
+    static var navgationBarScrollEdgeAppearance: UINavigationBarAppearance? { get { return retrieve(.navgationBarScrollEdgeAppearance) as? UINavigationBarAppearance } }
 }
 

@@ -80,7 +80,7 @@ public struct Logger {
             return
         }
         
-        print("\n--------------------------------------------------\n\(fileName): \(functionName)() [\(lineNumber)]\(elapsedTime)\n\(exception.descriptor!)\n--------------------------------------------------\n")
+        print("\n--------------------------------------------------\n\(fileName): \(functionName)() [\(lineNumber)]\(elapsedTime)\n\(exception.descriptor!) (\(exception.hashlet!))\n--------------------------------------------------\n")
         
         currentTimeLastCalled = Date()
         
@@ -90,8 +90,11 @@ public struct Logger {
         
         switch alertType {
         case .errorAlert:
+            let translateDescriptor = exception.userFacingDescriptor != exception.descriptor
             AKErrorAlert(message: exception.userFacingDescriptor,
-                         error: exception.asAkError()).present()
+                         error: exception.asAkError(),
+                         shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
+                                                                          .cancelButtonTitle]).present()
         case .fatalAlert:
             AKCore.shared.present(.fatalErrorAlert,
                                   with: [exception.descriptor!,
@@ -138,8 +141,11 @@ public struct Logger {
         case .errorAlert:
             let exception = Exception(text,
                                       metadata: [fileName, functionName, lineNumber])
+            let translateDescriptor = exception.userFacingDescriptor != exception.descriptor
             AKErrorAlert(message: exception.userFacingDescriptor,
-                         error: exception.asAkError()).present()
+                         error: exception.asAkError(),
+                         shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
+                                                                          .cancelButtonTitle]).present()
         case .fatalAlert:
             AKCore.shared.present(.fatalErrorAlert,
                                   with: [text,
@@ -224,7 +230,9 @@ public struct Logger {
         case .errorAlert:
             let exception = Exception(text,
                                       metadata: [#file, #function, #line])
-            AKErrorAlert(error: exception.asAkError()).present()
+            AKErrorAlert(error: exception.asAkError(),
+                         shouldTranslate: [.actions(indices: nil),
+                                           .cancelButtonTitle]).present()
         case .fatalAlert:
             AKCore.shared.present(.fatalErrorAlert,
                                   with: [text,

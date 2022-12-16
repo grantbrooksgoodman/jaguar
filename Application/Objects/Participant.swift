@@ -9,7 +9,7 @@
 /* First-party Frameworks */
 import Foundation
 
-public struct Participant: Codable {
+public struct Participant: Codable, Equatable {
     
     //==================================================//
     
@@ -26,6 +26,17 @@ public struct Participant: Codable {
         self.userID = userID
         self.isTyping = isTyping
     }
+    
+    //==================================================//
+    
+    /* MARK: - Equatable Compliance Function */
+    
+    public static func == (left: Participant, right: Participant) -> Bool {
+        let userIdsMatch = left.userID == right.userID
+        let isTypingsMatch = left.isTyping == right.isTyping
+        
+        return userIdsMatch && isTypingsMatch
+    }
 }
 
 //==================================================//
@@ -35,6 +46,18 @@ public struct Participant: Codable {
 /**/
 
 /* MARK: Array */
+public extension Array where Element == Participant {
+    var userIDs: [String] {
+        var identifiers = [String]()
+        
+        for participant in self {
+            identifiers.append(participant.userID)
+        }
+        
+        return identifiers
+    }
+}
+
 public extension Array where Element == String {
     var asParticipants: [Participant]? {
         var participants = [Participant]()

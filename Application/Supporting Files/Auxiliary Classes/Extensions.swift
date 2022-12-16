@@ -343,10 +343,12 @@ public extension String {
     }
     
     func dropPrefix(_ dropping: Int = 1) -> String {
+        guard count > dropping else { return "" }
         return String(suffix(from: index(startIndex, offsetBy: dropping)))
     }
     
     func dropSuffix(_ dropping: Int = 1) -> String {
+        guard count > dropping else { return "" }
         return String(prefix(count - dropping))
     }
     
@@ -788,6 +790,28 @@ public extension UIView {
         UIGraphicsEndImageContext()
         
         backgroundColor = UIColor(patternImage: imageToSet)
+    }
+    
+    func subview(for string: String) -> UIView? {
+        for view in subviews {
+            if view.tag == Core.ui.nameTag(for: string) {
+                return view
+            }
+        }
+        
+        return nil
+    }
+    
+    func subviews(for string: String) -> [UIView] {
+        var matches = [UIView]()
+        
+        for view in subviews {
+            if view.tag == Core.ui.nameTag(for: string) {
+                matches.append(view)
+            }
+        }
+        
+        return matches
     }
     
     /**

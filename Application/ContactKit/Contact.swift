@@ -9,7 +9,7 @@
 /* First-party Frameworks */
 import ContactsUI
 
-public struct Contact: Codable, Identifiable {
+public struct Contact: Codable, Equatable, Identifiable {
     
     //==================================================//
     
@@ -17,7 +17,6 @@ public struct Contact: Codable, Identifiable {
     
     // Arrays
     public var phoneNumbers: [PhoneNumber]
-    public var validNumbers: [String]
     
     // Strings
     public var firstName: String
@@ -32,12 +31,10 @@ public struct Contact: Codable, Identifiable {
     
     public init(firstName: String,
                 lastName: String,
-                phoneNumbers: [PhoneNumber],
-                validNumbers: [String]? = nil) {
+                phoneNumbers: [PhoneNumber]) {
         self.firstName = firstName
         self.lastName = lastName
         self.phoneNumbers = phoneNumbers
-        self.validNumbers = validNumbers ?? []
     }
     
     //==================================================//
@@ -51,6 +48,18 @@ public struct Contact: Codable, Identifiable {
         hashFactors.append(contentsOf: phoneNumbers.labels)
         
         return hashFactors
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Equatable Compliance Function */
+    
+    public static func == (left: Contact, right: Contact) -> Bool {
+        let namesMatch = "\(left.firstName) \(left.lastName)" == "\(right.firstName) \(right.lastName)"
+        let phoneNumbersMatch = left.phoneNumbers.digits == right.phoneNumbers.digits
+        let hashesMatch = left.hash == right.hash
+        
+        return namesMatch && phoneNumbersMatch && hashesMatch
     }
 }
 

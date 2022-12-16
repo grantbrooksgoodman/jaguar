@@ -130,6 +130,8 @@ public enum ConversationTestingSerializer {
             let languagePair = LanguagePair(from: languagesToUse[0],
                                             to: languagesToUse[1])
             
+            print("using «\(languagePair.asString())» for index [\(index)]")
+            
             FirebaseTranslator.shared.translate(input,
                                                 with: languagePair) { returnedTranslation, exception in
                 guard let translation = returnedTranslation else {

@@ -50,7 +50,7 @@ public extension Array where Element == ContactPair {
         var uniquePairs = [ContactPair]()
         
         for pair in self {
-            if !uniquePairs.contains(where: { $0.contact.hash == pair.contact.hash }) {
+            if !uniquePairs.contains(where: { $0 == pair }) {
                 uniquePairs.append(pair)
             }
         }
@@ -61,13 +61,18 @@ public extension Array where Element == ContactPair {
 
 /* MARK: ContactPair */
 public extension ContactPair {
+    /* MARK: - Functions */
+    
     static func == (left: ContactPair, right: ContactPair) -> Bool {
-#warning("This is incomplete.")
-        if left.contact.hash == right.contact.hash {
-            return true
+        let contactsMatch = left.contact == right.contact
+        var usersMatch = left.users == nil && right.users == nil
+        
+        if let leftUsers = left.users,
+           let rightUsers = right.users {
+            usersMatch = leftUsers.identifiers() == rightUsers.identifiers()
         }
         
-        return false
+        return contactsMatch && usersMatch
     }
     
     func exactMatches(withUsers: [User]) -> [User] {
@@ -84,5 +89,14 @@ public extension ContactPair {
         }
         
         return users
+    }
+    
+    //--------------------------------------------------//
+    
+    /* MARK: - Variables */
+    
+    var isEmpty: Bool {
+        let contactIsEmpty = contact.firstName.isEmpty && contact.lastName.isEmpty && contact.phoneNumbers.isEmpty
+        return contactIsEmpty && users == nil
     }
 }

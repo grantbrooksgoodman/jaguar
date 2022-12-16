@@ -20,7 +20,12 @@ public class User: Codable {
     
     // Arrays
     public var conversationIDs: [ConversationID]?
-    public var openConversations: [Conversation]?
+    public var openConversations: [Conversation]? {
+        didSet {
+            openConversations = openConversations?.uniquedByIdentifiers().sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
+            conversationIDs = openConversations?.identifiers()
+        }
+    }
     
     // Strings
     public var callingCode: String!
@@ -28,7 +33,6 @@ public class User: Codable {
     public var languageCode: String!
     public var phoneNumber: String!
     public var region: String!
-    public var uid: String!
     
     // Other
     private(set) var isUpdatingConversations = false
@@ -54,6 +58,33 @@ public class User: Codable {
     //==================================================//
     
     /* MARK: - Getter Functions */
+    
+    public func canStartConversation(with user: User,
+                                     completion: @escaping(_ canStart: Bool,
+                                                           _ exception: Exception?) -> Void) {
+        guard user.identifier != identifier else {
+            completion(false, Exception("Cannot start a conversation with yourself.",
+                                        metadata: [#file, #function, #line]))
+            return
+        }
+        
+        deSerializeConversations(completion: { (returnedConversations,
+                                                exception) in
+            guard let conversations = returnedConversations else {
+                completion(false, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            guard !conversations.contains(where: { $0.participants.contains(where: { $0.userID == user.identifier }) }) else {
+                completion(false, Exception("Conversation with this user already exists.",
+                                            extraParams: ["UserID": user.identifier!],
+                                            metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(true, nil)
+        })
+    }
     
     public func deSerializeConversations(completion: @escaping (_ conversations: [Conversation]?,
                                                                 _ exception: Exception?) -> Void) {
@@ -117,6 +148,7 @@ public class User: Codable {
                             return
                         }
                         
+                        self.openConversations = conversationsToReturn
                         ConversationArchiver.addToArchive(conversationsToReturn)
                         completion(conversationsToReturn, nil)
                     }
@@ -312,6 +344,16 @@ public class User: Codable {
 
 /* MARK: Array */
 public extension Array where Element == User {
+    func callingCodes() -> [String] {
+        var callingCodes = [String]()
+        
+        for user in self {
+            callingCodes.append(user.callingCode)
+        }
+        
+        return callingCodes
+    }
+    
     func identifiers() -> [String] {
         var identifiers = [String]()
         
@@ -330,6 +372,18 @@ public extension Array where Element == User {
         }
         
         return phoneNumbers
+    }
+    
+    func uniquedByIdentifiers() -> [User] {
+        var unique = [User]()
+        
+        for user in self {
+            if !unique.contains(where: { $0.identifier == user.identifier }) {
+                unique.append(user)
+            }
+        }
+        
+        return unique
     }
 }
 
@@ -413,11 +467,20 @@ public extension String {
     }
     
     func formattedPhoneNumber(region: String) -> String {
+        guard let callingCode = RuntimeStorage.callingCodeDictionary![region] else { return self }
+        
         let phoneNumberKit = PhoneNumberKit()
-        let callingCode = RuntimeStorage.callingCodeDictionary![region]!
         
         let mutableSelf = self
         let digits = mutableSelf.digits
+        
+        guard digits.count != 10 && callingCode != "1" else {
+            let formatted = PartialFormatter(phoneNumberKit: PhoneNumberKit(),
+                                             defaultRegion: "US",
+                                             withPrefix: true,
+                                             maxDigits: nil).formatPartial(digits)
+            return formatted.replacingOccurrences(of: "1(", with: "(")
+        }
         
         var formattedNumber = "\(callingCode)\(digits)"
         
@@ -440,6 +503,27 @@ public extension String {
             formattedNumber = "\(PartialFormatter().formatPartial(self))"
         }
         
-        return formattedNumber.hasPrefix("\(callingCode) ") ? formattedNumber.dropPrefix(callingCode.count + 1) : formattedNumber
+        return (formattedNumber.hasPrefix("\(callingCode) ") ? formattedNumber.dropPrefix(callingCode.count + 1) : formattedNumber).replacingOccurrences(of: "1(", with: "(")
+    }
+}
+
+/* MARK: User */
+public extension User {
+    var cellTitle: String {
+        var regionCode = RegionDetailServer.getRegionCode(forCallingCode: callingCode)
+        regionCode = (regionCode == "multiple" && callingCode == "1") ? "US" : regionCode
+        
+        let formattedNumber = phoneNumber.formattedPhoneNumber(region: regionCode)
+        var contactName = "+\(callingCode!) \(formattedNumber)"
+        
+        if let name = ContactService.fetchContactName(forNumber: phoneNumber),
+           !(name.givenName.lowercasedTrimmingWhitespace == "" && name.familyName.lowercasedTrimmingWhitespace == "") {
+            contactName = "\(name.givenName) \(name.familyName)"
+        } else if let name = ContactService.fetchContactName(forNumber: "\(callingCode!)\(phoneNumber!)".digits),
+                  !(name.givenName.lowercasedTrimmingWhitespace == "" && name.familyName.lowercasedTrimmingWhitespace == "") {
+            contactName = "\(name.givenName) \(name.familyName)"
+        }
+        
+        return contactName
     }
 }

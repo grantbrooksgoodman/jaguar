@@ -146,6 +146,28 @@ public enum Core {
         /* MARK: - Properties */
         
         public static let shared = UICore()
+        private var topmostVC: UIViewController? {
+            get {
+                // Use connectedScenes to find the .foregroundActive rootViewController
+                var rootViewController: UIViewController?
+                
+                for scene in UIApplication.shared.connectedScenes {
+                    if scene.activationState == .foregroundActive {
+                        rootViewController = (scene.delegate as? UIWindowSceneDelegate)?.window!!.rootViewController
+                        break
+                    }
+                }
+                
+                // Then, find the topmost presentedVC from it.
+                var presentedViewController = rootViewController
+                while presentedViewController?.presentedViewController != nil {
+                    presentedViewController = presentedViewController?.presentedViewController
+                }
+                
+                guard let presented = presentedViewController else { return nil }
+                return presented
+            }
+        }
         
         //==================================================//
         
@@ -183,6 +205,17 @@ public enum Core {
             return Int(String(finalValue).replacingOccurrences(of: ".", with: "")) ?? Int().random(min: 5, max: 10)
         }
         
+        public func present(viewController: UIViewController) {
+            Core.hud.hide()
+            
+            guard let presented = topmostVC else {
+                politelyPresent(viewController: viewController)
+                return
+            }
+            
+            presented.present(viewController, animated: true)
+        }
+        
         public func politelyPresent(viewController: UIViewController) {
             Core.hud.hide()
             
@@ -209,6 +242,29 @@ public enum Core {
                     }
                 }
             }
+        }
+        
+        public func resetNavigationBarAppearance() {
+            if let standardAppearance = RuntimeStorage.navigationBarStandardAppearance {
+                UINavigationBar.appearance().standardAppearance = standardAppearance
+            }
+            
+            if let scrollEdgeAppearance = RuntimeStorage.navgationBarScrollEdgeAppearance {
+                UINavigationBar.appearance().scrollEdgeAppearance = scrollEdgeAppearance
+            }
+        }
+        
+        public func setNavigationBarAppearance(backgroundColor: UIColor,
+                                               titleColor: UIColor) {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundColor = backgroundColor
+            
+            appearance.largeTitleTextAttributes = [.foregroundColor: titleColor]
+            appearance.titleTextAttributes = [.foregroundColor: titleColor]
+            
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
         }
     }
 }

@@ -12,7 +12,7 @@ import UIKit
 /* Third-party Frameworks */
 import Translator
 
-public class Message: Codable {
+public class Message: Codable, Equatable {
     
     //==================================================//
     
@@ -47,6 +47,22 @@ public class Message: Codable {
         self.translation = translation
         self.readDate = readDate
         self.sentDate = sentDate
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Equatable Compliance Function */
+    
+    public static func == (left: Message, right: Message) -> Bool {
+        let identifiersMatch = left.identifier == right.identifier
+        let fromAccountIdsMatch = left.fromAccountIdentifier == right.fromAccountIdentifier
+        let languagePairsMatch = left.languagePair.asString() == right.languagePair.asString()
+        let translationsMatch = left.translation == right.translation
+        let readDatesMatch = left.readDate == right.readDate
+        let sentDatesMatch = left.sentDate == right.sentDate
+        let displayingAlternatesMatch = left.isDisplayingAlternate == right.isDisplayingAlternate
+        
+        return identifiersMatch && fromAccountIdsMatch && languagePairsMatch && translationsMatch && readDatesMatch && sentDatesMatch && displayingAlternatesMatch
     }
     
     //==================================================//

@@ -84,6 +84,21 @@ public enum RegionDetailServer {
     
     /* MARK: - Region Titles */
     
+    public static func getLocalizedRegionString(forRegionCode: String) -> String {
+        guard RuntimeStorage.callingCodeDictionary![forRegionCode] != nil else {
+            return ""
+        }
+        
+        let currentLocale = Locale(identifier: RuntimeStorage.languageCode!)
+        let regionName = currentLocale.localizedString(forRegionCode: forRegionCode)
+        
+        guard let name = regionName else {
+            return "Multiple"
+        }
+        
+        return name
+    }
+    
     public static func getRegionTitle(forCallingCode: String) -> String {
         guard Array(RuntimeStorage.callingCodeDictionary!.values).contains(forCallingCode) else {
             return ""

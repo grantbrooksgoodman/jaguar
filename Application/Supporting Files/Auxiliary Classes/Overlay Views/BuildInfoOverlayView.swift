@@ -36,7 +36,6 @@ public struct BuildInfoOverlayView: View {
                 .foregroundColor(.white)
                 .underline()
             })
-            //            .disabled(!sendFeedbackButtonEnabled)
             .padding(.horizontal, 1)
             .frame(height: 20)
             .background(Color.black)
@@ -175,7 +174,7 @@ public struct BuildInfoOverlayView: View {
         let sendFeedbackAction = AKAction(title: "Send Feedback", style: .default)
         let reportBugAction = AKAction(title: "Report a Bug", style: .default)
         
-        let fileReportAlert = AKAlert(title: "File Report",
+        let fileReportAlert = AKAlert(title: "File a Report",
                                       message: "Choose the option which best describes your intention.",
                                       actions: [sendFeedbackAction, reportBugAction],
                                       networkDependent: true)

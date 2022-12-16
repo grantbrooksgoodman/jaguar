@@ -13,17 +13,34 @@ import MessageKit
 import SwiftUI
 import Translator
 
+import InputBarAccessoryView
+
 public final class ChatPageViewController: MessagesViewController {
     
     //==================================================//
     
     /* MARK: - Properties */
     
+    // Booleans
+    public var viewHasLaidOutSubviewsAtLeastOnce = false
+    
+    private var delegatesHaveBeenSet: Bool {
+        get {
+            return messagesCollectionView.messagesDataSource != nil &&
+            messagesCollectionView.messagesDisplayDelegate != nil &&
+            messagesCollectionView.messagesLayoutDelegate != nil &&
+            messageInputBar.delegate != nil
+        }
+    }
+    
     // Timers
     private var reloadTimer: Timer?
     private var typingIndicatorTimer: Timer?
     
     // Other
+    public var progressView: UIProgressView?
+    public var recipientBar: RecipientBar?
+    
     private var loadedMore: Date! = Date().addingTimeInterval(-10)
     private var selectedCell: TextMessageCell?
     
@@ -47,29 +64,112 @@ public final class ChatPageViewController: MessagesViewController {
         messageInputBar.setStackViewItems([.fixedSpace(15), messageInputBar.sendButton], forStack: .right, animated: false)
         messageInputBar.rightStackView.alignment = .center
         
+        if traitCollection.userInterfaceStyle == .dark {
+            messageInputBar.backgroundView.backgroundColor = UIColor(hex: 0x1A1A1C)
+        } else {
+            Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF3F3F3),
+                                               titleColor: .black)
+            
+            navigationController?.isNavigationBarHidden = true
+            navigationController?.isNavigationBarHidden = false
+        }
+        
         let longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(displayCustomMenu(gestureRecognizer:)))
         
         longPressGestureRecognizer.minimumPressDuration = 0.3
         longPressGestureRecognizer.delaysTouchesBegan = true
         
         messagesCollectionView.addGestureRecognizer(longPressGestureRecognizer)
+        
+        if RuntimeStorage.globalConversation?.identifier.key == "EMPTY" {
+            recipientBar = RecipientBar(delegate: self)
+            view.addSubview(recipientBar!)
+            
+            messagesCollectionView.contentInset.top = 54
+            
+            messageInputBar.inputTextView.placeholder = ""
+            messageInputBar.sendButton.isEnabled = false
+        }
+        
+        messageInputBar.inputTextView.delegate = self
+        
+        progressView = UIProgressView(frame: CGRect(x: 0,
+                                                    y: 0,
+                                                    width: UIScreen.main.bounds.width,
+                                                    height: 2))
+        progressView!.progressViewStyle = .bar
+        progressView!.progress = 0
+        view.addSubview(progressView!)
     }
     
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
         becomeFirstResponder()
-        messagesCollectionView.scrollToLastItem(animated: true)
         
-        reloadTimer = Timer.scheduledTimer(timeInterval: 1,
-                                           target: self,
-                                           selector: #selector(reloadData),
-                                           userInfo: nil, repeats: true)
-        
-        typingIndicatorTimer = Timer.scheduledTimer(timeInterval: 1,
+        Core.gcd.after(seconds: 3) {
+            self.reloadTimer = Timer.scheduledTimer(timeInterval: 1,
                                                     target: self,
-                                                    selector: #selector(updateTypingIndicator),
-                                                    userInfo: nil, repeats: true)
+                                                    selector: #selector(self.reloadData),
+                                                    userInfo: nil,
+                                                    repeats: true)
+            
+            self.typingIndicatorTimer = Timer.scheduledTimer(timeInterval: 1,
+                                                             target: self,
+                                                             selector: #selector(self.updateTypingIndicator),
+                                                             userInfo: nil,
+                                                             repeats: true)
+        }
+        
+        Core.gcd.after(milliseconds: 500) {
+            self.messagesCollectionView.scrollToLastItem(animated: true)
+        }
+        
+        RuntimeStorage.store(true, as: .isPresentingChat)
+        
+        //        guard let conversation = RuntimeStorage.globalConversation,
+        //              let otherUser = conversation.otherUser else { return }
+        //
+        //        if let image = ContactService.fetchContactThumbnail(forNumber: otherUser.phoneNumber) {
+        //            let avatarImageView = UIImageView(image: image)
+        //            avatarImageView.frame = CGRect(x: view.center.x,
+        //                                           y: 0,
+        //                                           width: 45,
+        //                                           height: 45)
+        //            avatarImageView.layer.cornerRadius = avatarImageView.frame.width / 2
+        //            avatarImageView.clipsToBounds = true
+        //
+        //            guard let parent,
+        //                  let navigationController = parent.navigationController else { return }
+        //
+        //            navigationController.navigationBar.addSubview(avatarImageView)
+        //            navigationController.navigationBar.bringSubviewToFront(avatarImageView)
+        //
+        //            let navBarFrame = navigationController.navigationBar.frame
+        //
+        //            navigationController.navigationBar.frame = CGRect(x: navBarFrame.origin.x,
+        //                                                              y: navBarFrame.origin.y - 3,
+        //                                                              width: navBarFrame.width,
+        //                                                              height: navBarFrame.height + 50)
+        //            navigationController.navigationItem.leftBarButtonItem = UIBarButtonItem(image: image.withRenderingMode(.alwaysOriginal),
+        //                                                                                    style: .plain,
+        //                                                                                    target: self,
+        //                                                                                    action: nil)
+        //            navigationController.navigationBar.isHidden = false
+        //        }
+        
+        print(messagesCollectionView.contentInset)
+    }
+    
+    public override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+        
+        if !viewHasLaidOutSubviewsAtLeastOnce,
+           RuntimeStorage.isPresentingChat!,
+           delegatesHaveBeenSet {
+            viewHasLaidOutSubviewsAtLeastOnce = true
+            UIView.performWithoutAnimation { messageInputBar.becomeFirstResponder() }
+        }
     }
     
     public override func viewWillDisappear(_ animated: Bool) {
@@ -83,7 +183,7 @@ public final class ChatPageViewController: MessagesViewController {
         
         Database.database().reference().removeAllObservers()
         
-        RuntimeStorage.store(0, as: .messageOffset)
+        RuntimeStorage.store(false, as: .isPresentingChat)
     }
     
     public override func viewDidDisappear(_ animated: Bool) {
@@ -93,6 +193,39 @@ public final class ChatPageViewController: MessagesViewController {
             //            window.rootViewController = UIHostingController(rootView: BuildInfoOverlayView(yOffset: 0))
             window.isHidden = false
         }
+        
+        RuntimeStorage.store("ConversationsPageView.swift", as: .currentFile)
+        
+        Core.gcd.after(milliseconds: 250) {
+            StateProvider.shared.hasDisappeared = true
+        }
+        
+        RuntimeStorage.remove(.messagesVC)
+        RuntimeStorage.store(0, as: .messageOffset)
+        RuntimeStorage.remove(.globalConversation)
+        RuntimeStorage.remove(.currentMessageSlice)
+        RuntimeStorage.remove(.typingIndicator)
+        
+        messageInputBar.alpha = 0
+    }
+    
+    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        
+        if traitCollection.userInterfaceStyle == .dark {
+            messageInputBar.backgroundView.backgroundColor = UIColor(hex: 0x1A1A1C)
+            Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0x2A2A2C),
+                                               titleColor: .white)
+            RuntimeStorage.messagesVC?.recipientBar?.updateAppearance()
+        } else {
+            messageInputBar.backgroundView.backgroundColor = .white
+            Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF8F8F8),
+                                               titleColor: .black)
+            RuntimeStorage.messagesVC?.recipientBar?.updateAppearance()
+        }
+        
+        navigationController?.isNavigationBarHidden = true
+        navigationController?.isNavigationBarHidden = false
     }
     
     //==================================================//
@@ -129,6 +262,9 @@ public final class ChatPageViewController: MessagesViewController {
     /* MARK: - UIScrollView Functions */
     
     private func loadMoreMessages() {
+        guard RuntimeStorage.isPresentingChat!,
+              delegatesHaveBeenSet else { return }
+        
         if abs(loadedMore.amountOfSeconds(from: Date())) > 2 {
             //Need to account for where conversation is short enough to be displayed fully on one page.
             guard RuntimeStorage.messageOffset! + 10 < RuntimeStorage.globalConversation!.messages.count else {
@@ -147,7 +283,7 @@ public final class ChatPageViewController: MessagesViewController {
             newMessageSlice.append(contentsOf: oldMessageSlice)
             newMessageSlice = newMessageSlice.unique()
             
-            RuntimeStorage.store(newMessages, as: .currentMessageSlice)
+            RuntimeStorage.store(newMessageSlice, as: .currentMessageSlice)
             
             messagesCollectionView.reloadDataAndKeepOffset()
             loadedMore = Date()
@@ -155,7 +291,7 @@ public final class ChatPageViewController: MessagesViewController {
     }
     
     public func scrollViewDidScroll(_ scrollView: UIScrollView) {
-        if scrollView.contentOffset.y < 0 {
+        if scrollView.contentOffset.y < 0 && RuntimeStorage.isPresentingChat! {
             loadMoreMessages()
         }
     }
@@ -193,9 +329,9 @@ public final class ChatPageViewController: MessagesViewController {
         var menuTitle: String!
         
         if currentMessage.isDisplayingAlternate {
-            menuTitle = currentMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! ? "View Original" : "View Translation"
+            menuTitle = currentMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! ? LocalizedString.viewOriginal : LocalizedString.viewTranslation
         } else {
-            menuTitle = currentMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! ? "View Translation" : "View Original"
+            menuTitle = currentMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! ? LocalizedString.viewTranslation : LocalizedString.viewOriginal
         }
         
         let viewAlternateItem = UIMenuItem(title: menuTitle, action: #selector(viewAlternate))
@@ -227,6 +363,13 @@ public final class ChatPageViewController: MessagesViewController {
     }
     
     @objc private func reloadData() {
+        guard RuntimeStorage.isPresentingChat!,
+              delegatesHaveBeenSet else {
+            reloadTimer?.invalidate()
+            reloadTimer = nil
+            return
+        }
+        
         if RuntimeStorage.shouldReloadData! {
             self.messagesCollectionView.reloadData()
             self.messagesCollectionView.scrollToLastItem(animated: true)
@@ -235,7 +378,8 @@ public final class ChatPageViewController: MessagesViewController {
     }
     
     @objc private func updateTypingIndicator() {
-        guard isFirstResponder else {
+        guard RuntimeStorage.isPresentingChat!,
+              delegatesHaveBeenSet else {
             typingIndicatorTimer?.invalidate()
             typingIndicatorTimer = nil
             return
@@ -281,6 +425,19 @@ public final class ChatPageViewController: MessagesViewController {
 
 /**/
 
+extension ChatPageViewController: UITextViewDelegate {
+    public func textViewDidBeginEditing(_ textView: UITextView) {
+        Core.gcd.after(milliseconds: 250) {
+            self.messagesCollectionView.scrollToLastItem(animated: true)
+        }
+        
+        print(messagesCollectionView.contentInset)
+        
+        guard let recipientBar = recipientBar else { return }
+        recipientBar.deselectContact(animated: true)
+    }
+}
+
 /* MARK: Array */
 public extension Array where Element == Message {
     func unique() -> [Message] {
@@ -293,5 +450,12 @@ public extension Array where Element == Message {
         }
         
         return uniqueValues
+    }
+}
+
+/* MARK: InputBarAccessoryView */
+extension InputBarAccessoryView {
+    override open var canBecomeFirstResponder: Bool {
+        return RuntimeStorage.messagesVC?.viewHasLaidOutSubviewsAtLeastOnce ?? false
     }
 }

@@ -22,6 +22,31 @@ public final class ChatPageViewCoordinator {
     /* MARK: - Properties */
     
     public var conversation: Binding<Conversation>
+    private var deliveryProgress: Float = 0.0 {
+        didSet {
+            guard deliveryProgress < 1 else {
+                RuntimeStorage.messagesVC?.progressView?.setProgress(1, animated: true)
+                
+                UIView.animate(withDuration: 0.2,
+                               delay: 0.5,
+                               options: []) {
+                    RuntimeStorage.messagesVC?.progressView?.alpha = 0
+                } completion: { _ in
+                    Core.gcd.after(seconds: 1) {
+                        RuntimeStorage.messagesVC?.progressView?.progress = 0
+                        self.deliveryProgress = 0
+                    }
+                }
+                
+                return
+            }
+            
+            RuntimeStorage.messagesVC?.progressView?.alpha = 1
+            RuntimeStorage.messagesVC?.progressView?.setProgress(self.deliveryProgress, animated: true)
+        }
+    }
+    
+    private var deliveryTimer: Timer?
     
     //==================================================//
     
@@ -35,17 +60,27 @@ public final class ChatPageViewCoordinator {
     
     /* MARK: - Private Functions */
     
+    private func presentOfflineAlert() {
+        AKCore.shared.setLanguageCode("en")
+        
+        let exception = Exception("The internet connection is offline.",
+                                  isReportable: false,
+                                  extraParams: ["IsConnected": Build.isOnline],
+                                  metadata: [#file, #function, #line])
+        
+        AKErrorAlert(message: Localizer.preLocalizedString(for: .noInternetMessage,
+                                                           language: RuntimeStorage.languageCode!) ?? "The internet connection appears to be offline.\nPlease connect to the internet and try again.",
+                     error: exception.asAkError(),
+                     cancelButtonTitle: "OK").present { _ in
+            AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
+        }
+    }
+    
     private func rollBackProgressForTimeout(_ inputBar: InputBarAccessoryView,
                                             text: String) {
         let wrappedConversation = conversation.wrappedValue
         
-        inputBar.sendButton.stopAnimating()
-        
-        let localizedString = Localizer.preLocalizedString(for: .newMessage)
-        inputBar.inputTextView.text = text
-        inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
-        inputBar.inputTextView.tintColor = .systemBlue
-        inputBar.inputTextView.isUserInteractionEnabled = true
+        toggleInputBar(inputBar, sending: false)
         
         wrappedConversation.messages.removeAll(where: { $0.identifier == "NEW" })
         wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
@@ -64,7 +99,7 @@ public final class ChatPageViewCoordinator {
         
         ConversationArchiver.addToArchive(wrappedConversation)
         
-        guard var conversations = RuntimeStorage.conversations else {
+        guard var conversations = RuntimeStorage.currentUser?.openConversations else {
             Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
                        with: .errorAlert,
                        metadata: [#file, #function, #line])
@@ -74,8 +109,40 @@ public final class ChatPageViewCoordinator {
         conversations.removeLast()
         conversations.append(wrappedConversation)
         
-        RuntimeStorage.store(conversations, as: .conversations)
+        RuntimeStorage.currentUser!.openConversations = conversations
         RuntimeStorage.store(true, as: .shouldReloadData)
+        RuntimeStorage.store(false, as: .isSendingMessage)
+    }
+    
+    private func toggleInputBarForProgress(_ inputBar: InputBarAccessoryView,
+                                           sending: Bool) {
+        guard sending else {
+            return
+        }
+        
+        inputBar.inputTextView.text = ""
+        inputBar.sendButton.isEnabled = false
+    }
+    
+    private func toggleInputBar(_ inputBar: InputBarAccessoryView,
+                                sending: Bool) {
+        guard sending else {
+            inputBar.sendButton.stopAnimating()
+            
+            let localizedString = Localizer.preLocalizedString(for: .newMessage)
+            inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
+            inputBar.inputTextView.tintColor = .systemBlue
+            inputBar.inputTextView.isUserInteractionEnabled = true
+            
+            return
+        }
+        
+        inputBar.sendButton.startAnimating()
+        
+        inputBar.inputTextView.text = ""
+        inputBar.inputTextView.placeholder = Localizer.preLocalizedString(for: .sending) ?? "Sending..."
+        inputBar.inputTextView.tintColor = .clear
+        inputBar.inputTextView.isUserInteractionEnabled = false
     }
 }
 
@@ -92,128 +159,54 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     
     /* MARK: - Public Functions */
     
+    public func inputBar(_ inputBar: InputBarAccessoryView, didSwipeTextViewWith gesture: UISwipeGestureRecognizer) {
+        print("detected swipe")
+    }
+    
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          didPressSendButtonWith text: String) {
         guard Build.isOnline else {
-            AKCore.shared.setLanguageCode("en")
-            
-            let exception = Exception("The internet connection is offline.",
-                                      isReportable: false,
-                                      extraParams: ["IsConnected": Build.isOnline],
-                                      metadata: [#file, #function, #line])
-            
-            AKErrorAlert(message: Localizer.preLocalizedString(for: .noInternetMessage,
-                                                               language: RuntimeStorage.languageCode!) ?? "The internet connection appears to be offline.\nPlease connect to the internet and try again.",
-                         error: exception.asAkError(),
-                         cancelButtonTitle: "OK").present { _ in
-                AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
-            }
+            self.presentOfflineAlert()
             return
         }
         
+        RuntimeStorage.store(true, as: .isSendingMessage)
+        
         let wrappedConversation = conversation.wrappedValue
         
-        inputBar.sendButton.startAnimating()
-        
         inputBar.inputTextView.text = ""
-        inputBar.inputTextView.placeholder = Localizer.preLocalizedString(for: .sending) ?? "Sending..."
-        inputBar.inputTextView.tintColor = .clear
-        inputBar.inputTextView.isUserInteractionEnabled = false
+        inputBar.sendButton.isEnabled = false
+        deliveryProgress += 0.1
+        deliveryTimer = Timer.scheduledTimer(timeInterval: 0.01,
+                                             target: self,
+                                             selector: #selector(incrementProgress),
+                                             userInfo: nil,
+                                             repeats: true)
         
         Logger.openStream(metadata: [#file, #function, #line])
-        appendMockMessage(text: text)
         
-        let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line]) {
-            self.rollBackProgressForTimeout(inputBar, text: text)
+        guard wrappedConversation.identifier.key != "EMPTY" else {
+            self.createConversationForNewMessage(inputBar: inputBar, text: text)
+            return
         }
         
-        debugTranslate(text) { (returnedDebugTranslation,
-                                exception) in
-            guard let debugTranslation = returnedDebugTranslation else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
-                return
-            }
-            
-            self.translateMessage(debugTranslation.output) { (returnedTranslation,
-                                                              exception) in
-                inputBar.sendButton.stopAnimating()
-                
-                let localizedString = Localizer.preLocalizedString(for: .newMessage)
-                inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
-                inputBar.inputTextView.tintColor = .systemBlue
-                inputBar.inputTextView.isUserInteractionEnabled = true
-                
-                guard let translation = returnedTranslation else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                               with: .errorAlert)
-                    return
-                }
-                
-                self.createMessage(withTranslation: translation) { (returnedMessage,
-                                                                    exception) in
-                    guard let message = returnedMessage else {
-                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                                   with: .errorAlert)
-                        return
-                    }
-                    
-                    wrappedConversation.updateLastModified()
-                    
-                    wrappedConversation.messages.removeAll(where: { $0.identifier == "NEW" })
-                    wrappedConversation.messages.append(message)
-                    
-                    wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
-                    
-                    wrappedConversation.updateHash { (exception) in
-                        timeout.cancel()
-                        
-                        if let error = exception {
-                            Logger.log(error,
-                                       with: .errorAlert)
-                        }
-                        
-                        RuntimeStorage.store(wrappedConversation, as: .globalConversation)
-                        
-                        guard var currentMessageSlice = RuntimeStorage.currentMessageSlice else {
-                            Logger.log("Couldn't retrieve current message slice from RuntimeStorage.",
-                                       with: .errorAlert,
-                                       metadata: [#file, #function, #line])
-                            return
-                        }
-                        
-                        currentMessageSlice.removeAll(where: { $0.identifier == "NEW" })
-                        currentMessageSlice.append(message)
-                        RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
-                        
-                        print("Adding to archive \(wrappedConversation.identifier.key!) | \(wrappedConversation.identifier.hash!)")
-                        ConversationArchiver.addToArchive(wrappedConversation)
-                        
-                        guard var conversations = RuntimeStorage.conversations else {
-                            Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
-                                       with: .errorAlert,
-                                       metadata: [#file, #function, #line])
-                            return
-                        }
-                        
-                        conversations.removeLast()
-                        conversations.append(wrappedConversation)
-                        RuntimeStorage.store(conversations, as: .conversations)
-                        
-                        RuntimeStorage.store(true, as: .shouldReloadData)
-                        
-                        Logger.closeStream()
-                    }
-                }
-            }
-        }
+        finishSendingMessage(conversation: wrappedConversation,
+                             inputBar: inputBar,
+                             text: text)
+    }
+    
+    @objc public func incrementProgress() {
+        guard deliveryProgress + 0.001 < 1 else { return }
+        deliveryProgress += 0.001
     }
     
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          textViewTextDidChangeTo text: String) {
         let isTyping = text.lowercasedTrimmingWhitespace != ""
-        RuntimeStorage.currentUser!.update(isTyping: isTyping,
-                                           inConversationWithID: conversation.identifier.wrappedValue!.key)
+        if conversation.wrappedValue.identifier.key != "EMPTY" {
+            RuntimeStorage.currentUser!.update(isTyping: isTyping,
+                                               inConversationWithID: conversation.identifier.wrappedValue!.key)
+        }
         
         let lines = Int(inputBar.inputTextView.contentSize.height / inputBar.inputTextView.font.lineHeight)
         let currentText = inputBar.inputTextView.text!
@@ -229,6 +222,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             
             inputBar.rightStackView.alignment = .center
         }
+        
+        inputBar.sendButton.isEnabled = (conversation.wrappedValue.identifier.key != "EMPTY" || RuntimeStorage.messagesVC?.recipientBar?.selectedContactPair != nil) && isTyping && !(RuntimeStorage.messagesVC?.recipientBar?.selectedContactPair?.isEmpty ?? false)
     }
     
     //==================================================//
@@ -270,7 +265,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         currentMessageSlice.append(mockMessage)
         RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
         
-        guard var conversations = RuntimeStorage.conversations else {
+        guard var conversations = RuntimeStorage.currentUser?.openConversations else {
             Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
                        with: .errorAlert,
                        metadata: [#file, #function, #line])
@@ -278,9 +273,38 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         }
         
         conversations.append(wrappedConversation)
-        RuntimeStorage.store(conversations, as: .conversations)
+        RuntimeStorage.currentUser!.openConversations = conversations
+        //        RuntimeStorage.store(conversations, as: .conversations)
         
         RuntimeStorage.store(true, as: .shouldReloadData)
+    }
+    
+    private func createConversationForNewMessage(inputBar: InputBarAccessoryView,
+                                                 text: String) {
+        guard let user = ContactNavigationRouter.currentlySelectedUser else {
+            Logger.log(Exception("No selected user!",
+                                 metadata: [#file, #function, #line]))
+            return
+        }
+        
+        ConversationSerializer.shared.createConversation(between: [RuntimeStorage.currentUser!,
+                                                                   user]) { conversation, exception in
+            guard var createdConversation = conversation else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            self.deliveryProgress += 0.2
+            
+            self.conversation = Binding(get: { createdConversation },
+                                        set: { createdConversation = $0 })
+            
+            self.finishSendingMessage(conversation: self.conversation.wrappedValue,
+                                      inputBar: inputBar,
+                                      text: text)
+            
+            ContactNavigationRouter.currentlySelectedUser = nil
+        }
     }
     
     private func createMessage(withTranslation: Translator.Translation,
@@ -318,12 +342,69 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         }
     }
     
+    private func finishSendingMessage(conversation: Conversation,
+                                      inputBar: InputBarAccessoryView,
+                                      text: String) {
+        appendMockMessage(text: text)
+        
+        let timeout = Timeout(alertingAfter: 20, metadata: [#file, #function, #line]) {
+            self.rollBackProgressForTimeout(inputBar, text: text)
+        }
+        
+        debugTranslate(text) { (returnedDebugTranslation,
+                                exception) in
+            guard let debugTranslation = returnedDebugTranslation else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
+                RuntimeStorage.store(false, as: .isSendingMessage)
+                return
+            }
+            
+            self.deliveryProgress += 0.2
+            
+            self.translateMessage(debugTranslation.output,
+                                  otherUser: conversation.otherUser!) { (returnedTranslation,
+                                                                         exception) in
+                self.deliveryProgress += 0.2
+                
+                guard let translation = returnedTranslation else {
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                               with: .errorAlert)
+                    RuntimeStorage.store(false, as: .isSendingMessage)
+                    return
+                }
+                
+                self.createMessage(withTranslation: translation) { (returnedMessage,
+                                                                    exception) in
+                    guard let message = returnedMessage else {
+                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                                   with: .errorAlert)
+                        RuntimeStorage.store(false, as: .isSendingMessage)
+                        return
+                    }
+                    
+                    self.deliveryProgress += 0.2
+                    
+                    self.updateConversationData(conversation,
+                                                for: message,
+                                                timeout: timeout)
+                }
+            }
+        }
+    }
+    
+    @objc private func toggleDoneButton() {
+        if let messagesVC = RuntimeStorage.messagesVC {
+            messagesVC.messageInputBar.inputTextView.resignFirstResponder()
+        }
+        
+        StateProvider.shared.tappedDone = true
+    }
+    
     private func translateMessage(_ text: String,
+                                  otherUser: User,
                                   completion: @escaping (_ returnedTranslation: Translator.Translation?,
                                                          _ exception: Exception?) -> Void) {
-        let wrappedConversation = conversation.wrappedValue
-        let otherUser = wrappedConversation.otherUser!
-        
         let languagePair = Translator.LanguagePair(from: RuntimeStorage.currentUser!.languageCode,
                                                    to: otherUser.languageCode)
         
@@ -336,6 +417,84 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             }
             
             completion(translation, nil)
+        }
+    }
+    
+    private func updateConversationData(_ conversation: Conversation,
+                                        for newMessage: Message,
+                                        timeout: Timeout) {
+        conversation.updateLastModified()
+        
+        conversation.messages.removeAll(where: { $0.identifier == "NEW" })
+        conversation.messages.append(newMessage)
+        
+        conversation.messages = conversation.sortedFilteredMessages()
+        
+        deliveryProgress += 0.2
+        deliveryTimer?.invalidate()
+        deliveryTimer = nil
+        
+        conversation.updateHash { (exception) in
+            timeout.cancel()
+            
+            if let error = exception {
+                Logger.log(error,
+                           with: .errorAlert)
+            }
+            
+            RuntimeStorage.store(conversation, as: .globalConversation)
+            
+            guard var currentMessageSlice = RuntimeStorage.currentMessageSlice else {
+                Logger.log("Couldn't retrieve current message slice from RuntimeStorage.",
+                           with: .errorAlert,
+                           metadata: [#file, #function, #line])
+                RuntimeStorage.store(false, as: .isSendingMessage)
+                return
+            }
+            
+            currentMessageSlice.removeAll(where: { $0.identifier == "NEW" })
+            currentMessageSlice.append(newMessage)
+            RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
+            
+            print("Adding to archive \(conversation.identifier.key!) | \(conversation.identifier.hash!)")
+            ConversationArchiver.addToArchive(conversation)
+            
+            guard var conversations = RuntimeStorage.currentUser?.openConversations else {
+                Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
+                           with: .errorAlert,
+                           metadata: [#file, #function, #line])
+                RuntimeStorage.store(false, as: .isSendingMessage)
+                return
+            }
+            
+            conversations.removeLast()
+            conversations.append(conversation)
+            RuntimeStorage.currentUser!.openConversations = conversations
+            
+            RuntimeStorage.store(true, as: .shouldReloadData)
+            RuntimeStorage.store(false, as: .isSendingMessage)
+            
+            Logger.closeStream()
+            
+            if self.deliveryProgress < 1 {
+                self.deliveryProgress += 1 - self.deliveryProgress
+            }
+            
+            // #warning("Do we want to couple these guard conditions?")
+            guard let messagesVC = RuntimeStorage.messagesVC,
+                  let pair = messagesVC.recipientBar?.selectedContactPair else { return }
+            
+            messagesVC.recipientBar?.removeFromSuperview()
+            messagesVC.messagesCollectionView.contentInset.top = 0
+            messagesVC.messagesCollectionView.isUserInteractionEnabled = true
+            
+            messagesVC.parent!.navigationItem.title = "\(pair.contact.firstName) \(pair.contact.lastName)"
+            
+            let doneButton = UIBarButtonItem(title: LocalizedString.done,
+                                             style: .done,
+                                             target: self,
+                                             action: #selector(self.toggleDoneButton))
+            messagesVC.parent!.navigationItem.rightBarButtonItems = [doneButton]
         }
     }
 }
@@ -416,13 +575,15 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     }
     
     public func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageType {
-        if indexPath.section == RuntimeStorage.currentMessageSlice!.count - 1 &&
-            RuntimeStorage.currentMessageSlice![indexPath.section].fromAccountIdentifier != RuntimeStorage.currentUserID! &&
-            RuntimeStorage.currentMessageSlice![indexPath.section].readDate == nil {
-            RuntimeStorage.currentMessageSlice![indexPath.section].updateReadDate()
+        let messages = RuntimeStorage.currentMessageSlice!
+        
+        if indexPath.section == messages.count - 1 &&
+            messages[indexPath.section].fromAccountIdentifier != RuntimeStorage.currentUserID! &&
+            messages[indexPath.section].readDate == nil {
+            messages[indexPath.section].updateReadDate()
         }
         
-        return RuntimeStorage.currentMessageSlice![indexPath.section]
+        return messages[indexPath.section]
     }
 }
 

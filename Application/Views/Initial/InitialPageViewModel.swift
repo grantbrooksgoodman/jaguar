@@ -27,7 +27,7 @@ public class InitialPageViewModel: ObservableObject {
     
     /* MARK: - Properties */
     
-    private let inputs = ["instruction": Translator.TranslationInput("Welcome to Hello. Follow the short instructions to get started."),
+    private let inputs = ["instruction": Translator.TranslationInput("Welcome to *Hello*. Follow the short instructions to get started."),
                           "continue": Translator.TranslationInput("Continue"),
                           "alreadyUse": Translator.TranslationInput("I already use this app")]
     

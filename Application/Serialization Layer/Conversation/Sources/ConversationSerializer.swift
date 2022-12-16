@@ -116,6 +116,59 @@ public struct ConversationSerializer {
         }
     }
     
+    /// - Requires: `withUsers[0] == RuntimeStorage.currentUser`
+    public func createConversation(between users: [User],
+                                   completion: @escaping(_ conversation: Conversation?,
+                                                         _ exception: Exception?) -> Void) {
+        guard users.count == 2 else {
+            completion(nil, Exception("Invalid number of users.",
+                                      extraParams: ["WithUsers.Count": users.count],
+                                      metadata: [#file, #function, #line]))
+            return
+        }
+        
+        createConversation(initialMessageIdentifier: "!",
+                           participants: [users[0].identifier,
+                                          users[1].identifier]) { (returnedConversation, exception) in
+            
+            guard let conversation = returnedConversation else {
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            conversation.setOtherUser { (exception) in
+                guard exception == nil else {
+                    completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                guard users[0].openConversations == nil else {
+                    users[0].openConversations!.append(conversation)
+                    
+                    // #warning("This should be here, right?")
+                    ConversationArchiver.addToArchive(conversation)
+                    completion(conversation, nil)
+                    
+                    return
+                }
+                
+                users[0].deSerializeConversations { (returnedConversations,
+                                                     exception) in
+                    guard let updatedConversations = returnedConversations else {
+                        completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                        return
+                    }
+                    
+                    users[0].openConversations = updatedConversations
+                    
+                    ConversationArchiver.addToArchive(conversation)
+                    
+                    completion(conversation, nil)
+                }
+            }
+        }
+    }
+    
     //==================================================//
     
     /* MARK: - Deletion Functions */

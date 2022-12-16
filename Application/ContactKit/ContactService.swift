@@ -21,12 +21,24 @@ public enum ContactService {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Authorization */
     
-    public static func clearCache() {
-        thumbnails = [:]
-        names = [:]
+    public static func requestAccess(completion: @escaping(_ exception: Exception?) -> Void) {
+        let contactStore = CNContactStore()
+        
+        switch CNContactStore.authorizationStatus(for: .contacts) {
+        case .authorized:
+            completion(nil)
+        default:
+            contactStore.requestAccess(for: .contacts) { granted, error in
+                completion(error == nil ? nil : Exception(error!, metadata: [#file, #function, #line]))
+            }
+        }
     }
+    
+    //==================================================//
+    
+    /* MARK: - CNContactStore Fetching */
     
     public static func fetchAllContacts() -> [Contact] {
         var contacts = [Contact]()
@@ -129,6 +141,154 @@ public enum ContactService {
         thumbnails[forNumber] = thumbnailImage ?? UIImage()
         
         return thumbnailImage
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Database Comparison */
+    
+    public static func getLocalUserHashes() -> [String] {
+        var hashes = [String]()
+        
+        for contact in fetchAllContacts() {
+            let possibleHashes = PhoneNumberService.possibleHashes(forNumbers: contact.phoneNumbers.digits)
+            hashes.append(contentsOf: possibleHashes)
+        }
+        
+        return hashes
+    }
+    
+    public static func getServerUserHashes(completion: @escaping(_ returnedHashes: [String]?,
+                                                                 _ exception: Exception?) -> Void) {
+        GeneralSerializer.getValues(atPath: "/userHashes") { returnedValues, exception in
+            guard let values = returnedValues as? [String: Any] else {
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(Array(values.keys), nil)
+        }
+    }
+    
+    // #warning("Can likely make this more granular by determining which contacts have changed locally.")
+    private static func determineSynchronizationStatus(completion: @escaping(_ shouldUpdate: Bool,
+                                                                             _ exception: Exception?) -> Void) {
+        guard let localArchive = RuntimeStorage.archivedLocalUserHashes,
+              localArchive.sorted() == getLocalUserHashes().sorted(),
+              let serverArchive = RuntimeStorage.archivedServerUserHashes else {
+            completion(true, nil)
+            return
+        }
+        
+        getServerUserHashes { returnedHashes, exception in
+            guard let updatedServerUserHashes = returnedHashes else {
+                completion(true, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            guard serverArchive.sorted() == updatedServerUserHashes.sorted() else {
+                completion(true, nil)
+                return
+            }
+            
+            var archivedContactCount = 0
+            let filtered = updatedServerUserHashes.filter({ RuntimeStorage.archivedLocalUserHashes!.contains($0) })
+            filtered.forEach { hash in
+                archivedContactCount += ContactArchiver.getFromArchive(withUserHash: hash) != nil ? 1 : 0
+            }
+            
+            let shouldUpdate = archivedContactCount != filtered.count
+            if shouldUpdate {
+                UserDefaults.standard.set(updatedServerUserHashes, forKey: "archivedServerUserHashes")
+                RuntimeStorage.store(updatedServerUserHashes, as: .archivedServerUserHashes)
+            }
+            
+            completion(shouldUpdate, nil)
+        }
+    }
+    
+    public static func loadContacts(completion: @escaping(_ contactPairs: [ContactPair]?,
+                                                          _ exception: Exception?) -> Void) {
+        determineSynchronizationStatus { shouldUpdate, exception in
+            guard exception == nil else {
+                completion(nil, exception)
+                return
+            }
+            
+            if shouldUpdate {
+                let updatedLocalUserHashes = getLocalUserHashes()
+                UserDefaults.standard.set(updatedLocalUserHashes, forKey: "archivedLocalUserHashes")
+                RuntimeStorage.store(updatedLocalUserHashes, as: .archivedLocalUserHashes)
+                
+                updateContacts { contactPairs, exception in
+                    guard let pairs = contactPairs else {
+                        completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                        return
+                    }
+                    
+                    completion(pairs, nil)
+                }
+            } else {
+                ContactArchiver.getArchive { contactPairs, exception in
+                    guard let pairs = contactPairs else {
+                        completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                        return
+                    }
+                    
+                    completion(pairs, nil)
+                }
+            }
+        }
+    }
+    
+    private static func updateContacts(completion: @escaping(_ contactPairs: [ContactPair]?,
+                                                             _ exception: Exception?) -> Void) {
+        let sorted = fetchAllContacts().sorted
+        guard var contactsToReturn = sorted[0] as? [ContactPair],
+              let contactsToFetch = sorted[1] as? [Contact] else {
+            let exception = Exception("Unable to sort contacts.",
+                                      metadata: [#file, #function, #line])
+            
+            Logger.log(exception)
+            completion(nil, exception)
+            
+            return
+        }
+        
+        guard !contactsToFetch.isEmpty else {
+            guard !contactsToReturn.isEmpty else {
+                completion(nil, Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(contactsToReturn, nil)
+            return
+        }
+        
+        UserSerializer.shared.findUsers(forContacts: contactsToFetch) { returnedContactPairs, exception in
+            guard let contactPairs = returnedContactPairs else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                
+                let isEmpty = contactsToReturn.uniquePairs.isEmpty
+                completion(isEmpty ? nil : contactsToReturn.uniquePairs,
+                           isEmpty ? exception ?? Exception(metadata: [#file, #function, #line]) : nil)
+                return
+            }
+            
+            ContactArchiver.addToArchive(contactPairs)
+            contactsToReturn.append(contentsOf: contactPairs)
+            
+            completion(contactsToReturn.uniquePairs, nil)
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Other Functions */
+    
+    public static func clearCache() {
+        thumbnails = [:]
+        names = [:]
     }
 }
 

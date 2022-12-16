@@ -62,7 +62,24 @@ public struct InitialPageView: View {
                 }
                 .padding(.vertical, 5)
                 .foregroundColor(.blue)
-            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
+            }
+            .onShake {
+                let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line])
+                
+                UserTestingSerializer.shared.getRandomUserID { (returnedIdentifier,
+                                                                exception) in
+                    timeout.cancel()
+                    
+                    guard let identifier = returnedIdentifier else {
+                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                        return
+                    }
+                    
+                    RuntimeStorage.store(identifier, as: .currentUserID)
+                    viewRouter.currentPage = .conversations
+                }
+            }
+            .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let exception):
             Text(exception.userFacingDescriptor)
         }

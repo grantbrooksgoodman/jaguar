@@ -66,10 +66,8 @@ public struct VerifyNumberPageView: View {
                     }
                     
                     Button {
-                        let compiledNumber = "\(RuntimeStorage.callingCodeDictionary![selectedRegion]!)\(phoneNumberString.digits)".digits
-                        
                         RuntimeStorage.store(selectedRegion, as: .selectedRegionCode)
-                        verifyUser(phoneNumber: compiledNumber)
+                        verifyUser(phoneNumber: phoneNumberString.digits)
                     } label: {
                         Text(translations["continue"]!.output)
                             .bold()
@@ -113,8 +111,6 @@ public struct VerifyNumberPageView: View {
                                                          fromSignUp: true)
                         return
                     }
-                    
-                    RuntimeStorage.store(RuntimeStorage.previousLanguageCode!, as: .languageCode)
                 }
                 
                 return

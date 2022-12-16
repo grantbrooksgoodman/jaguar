@@ -15,4 +15,12 @@ public extension Translation {
         
         return ("\(value.compressedHash)", "\(value.alphaEncoded)–\(output.matchingCapitalization(of: value).alphaEncoded)")
     }
+    
+    static func == (left: Translation, right: Translation) -> Bool {
+        let inputsMatch = left.input.value() == right.input.value()
+        let outputsMatch = left.output == right.output
+        let languagePairsMatch = left.languagePair.asString() == right.languagePair.asString()
+        
+        return inputsMatch && outputsMatch && languagePairsMatch
+    }
 }

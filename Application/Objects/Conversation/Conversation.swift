@@ -9,7 +9,7 @@
 /* First-party Frameworks */
 import UIKit
 
-public class Conversation: Codable {
+public class Conversation: Codable, Equatable {
     
     //==================================================//
     
@@ -93,11 +93,11 @@ public class Conversation: Codable {
                     offset: Int? = 0) -> [Message] {
         let offset = offset ?? 0
         
-        print("wants to get last \(count) messages from conversation with \(messages.count) messages")
-        print("wants to start at index \(offset)")
-        print("messages[0...\(offset)] we have")
-        print("messages[\(offset)...\(offset + count)] we want")
-        print("messages[0...\(messages.count - 1)] are available")
+        //        print("wants to get last \(count) messages from conversation with \(messages.count) messages")
+        //        print("wants to start at index \(offset)")
+        //        print("messages[0...\(offset)] we have")
+        //        print("messages[\(offset)...\(offset + count)] we want")
+        //        print("messages[0...\(messages.count - 1)] are available")
         
         guard messages.count > offset else {
             Logger.log("Count of messages is less than offset + amount to get.",
@@ -114,11 +114,11 @@ public class Conversation: Codable {
                 amountToGet -= 1
             }
             
-            print("Getting \(slice == .first ? "first" : "last") \(amountToGet + 1) messages.")
+            //            print("Getting \(slice == .first ? "first" : "last") \(amountToGet + 1) messages.")
             return slice == .first ? Array(offsetMessages[0 ... amountToGet]) : Array(offsetMessages.reversed()[0 ... amountToGet].reversed())
         }
         
-        print("Getting \(slice == .first ? "first" : "last") \(amountToGet + 1) messages!!")
+        //        print("Getting \(slice == .first ? "first" : "last") \(amountToGet + 1) messages!!")
         
         return slice == .first ? Array(offsetMessages[0 ... amountToGet]) : Array(offsetMessages.reversed()[0 ... amountToGet].reversed())
     }
@@ -263,6 +263,21 @@ public class Conversation: Codable {
             completion(nil)
         }
     }
+    
+    //==================================================//
+    
+    /* MARK: - Equatable Compliance Function */
+    
+    public static func == (left: Conversation, right: Conversation) -> Bool {
+        let identifiersMatch = left.identifier == right.identifier
+        let messageIdsMatch = left.messageIdentifiers == right.messageIdentifiers
+        let messagesMatch = left.messages == right.messages
+        let lastModifiedDatesMatch = left.lastModifiedDate == right.lastModifiedDate
+        let participantsMatch = left.participants == right.participants
+        let otherUsersMatch = left.otherUser?.identifier == right.otherUser?.identifier
+        
+        return identifiersMatch && messageIdsMatch && messagesMatch && lastModifiedDatesMatch && participantsMatch && otherUsersMatch
+    }
 }
 
 //==================================================//
@@ -273,6 +288,31 @@ public class Conversation: Codable {
 
 /* MARK: Array */
 public extension Array where Element == Conversation {
+    func matchesHashesOf(_ others: [Conversation]) -> Bool {
+        guard count == others.count else { return false }
+        
+        var matches = [Conversation]()
+        for conversation in self {
+            for comparisonConversation in others {
+                if conversation.identifier == comparisonConversation.identifier {
+                    matches.append(conversation)
+                }
+            }
+        }
+        
+        return matches.count == count
+    }
+    
+    func identifiers() -> [ConversationID] {
+        var identifiers = [ConversationID]()
+        
+        forEach { conversation in
+            identifiers.append(conversation.identifier)
+        }
+        
+        return identifiers
+    }
+    
     func identifierKeys() -> [String] {
         var keys = [String]()
         
@@ -284,6 +324,18 @@ public extension Array where Element == Conversation {
     }
     
     func unique() -> [Conversation] {
+        var unique = [Conversation]()
+        
+        for conversation in self {
+            if !unique.contains(where: { $0 == conversation }) {
+                unique.append(conversation)
+            }
+        }
+        
+        return unique
+    }
+    
+    func uniquedByIdentifiers() -> [Conversation] {
         var unique = [Conversation]()
         
         for conversation in self {

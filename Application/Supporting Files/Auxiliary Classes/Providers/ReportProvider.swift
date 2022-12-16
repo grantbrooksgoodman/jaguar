@@ -97,7 +97,7 @@ public class ReportProvider: UIViewController, AKReportProvider, MFMailComposeVi
                 composeController.addAttachmentData(metadata.data, mimeType: "application/json", fileName: metadata.fileName)
             }
             
-            Core.ui.politelyPresent(viewController: composeController)
+            Core.ui.present(viewController: composeController)
         } else {
             let exception = Exception("It appears that your device is not able to send e-mail.\n\nPlease verify that your e-mail client is set up and try again.",
                                       isReportable: false,

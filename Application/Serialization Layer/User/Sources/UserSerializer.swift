@@ -78,31 +78,27 @@ public struct UserSerializer {
         var validContacts = [ContactPair]()
         var exceptions = [Exception]()
         
-        for (index, contact) in forContacts.enumerated() {
-            if contact.phoneNumbers.count > 0 {
-                self.findUsers(forPhoneNumbers: contact.phoneNumbers.digits) { returnedUsers, exception in
-                    if let users = returnedUsers {
-                        //#warning("FIX THIS")
-                        validContacts.append(ContactPair(contact: contact,
-                                                         users: users))
-                        
-                        completion(validContacts.isEmpty ? nil : validContacts,
-                                   exceptions.compiledException)
-                    } else {
-                        exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
-                    }
-                    
-                    if index == forContacts.count - 1 {
-                        completion(validContacts.isEmpty ? nil : validContacts,
-                                   exceptions.compiledException)
-                    }
+        let dispatchGroup = DispatchGroup()
+        for contact in forContacts {
+            dispatchGroup.enter()
+            
+            guard contact.phoneNumbers.count > 0 else { continue }
+            
+            self.findUsers(forPhoneNumbers: contact.phoneNumbers.digits) { returnedUsers, exception in
+                if let users = returnedUsers {
+                    validContacts.append(ContactPair(contact: contact,
+                                                     users: users))
+                } else {
+                    exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
                 }
-            } else {
-                if index == forContacts.count - 1 {
-                    completion(validContacts.isEmpty ? nil : validContacts,
-                               exceptions.compiledException)
-                }
+                
+                dispatchGroup.leave()
             }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            completion(validContacts.isEmpty ? nil : validContacts,
+                       exceptions.compiledException)
         }
     }
     
@@ -112,10 +108,12 @@ public struct UserSerializer {
         var users = [User]()
         var exceptions = [Exception]()
         
-        for (index, phoneNumber) in forPhoneNumbers.enumerated() {
+        let dispatchGroup = DispatchGroup()
+        for phoneNumber in forPhoneNumbers {
             let possibleHashes = PhoneNumberService.possibleHashes(forNumber: phoneNumber.digits)
             let possibleCallingCodes = PhoneNumberService.possibleCallingCodes(forNumber: phoneNumber)
             
+            dispatchGroup.enter()
             getUsers(possibleHashes: possibleHashes,
                      possibleCallingCodes: possibleCallingCodes) { returnedUsers, exception in
                 if let unwrappedUsers = returnedUsers {
@@ -124,11 +122,13 @@ public struct UserSerializer {
                     exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
                 }
                 
-                if index == forPhoneNumbers.count - 1 {
-                    completion(users.isEmpty ? nil : users,
-                               exceptions.compiledException)
-                }
+                dispatchGroup.leave()
             }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            completion(users.isEmpty ? nil : users,
+                       exceptions.compiledException)
         }
     }
     

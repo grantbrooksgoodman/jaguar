@@ -24,16 +24,15 @@ public class ConversationsPageViewModel: ObservableObject {
         case idle
         case loading
         case failed(Exception)
-        case loaded(translations: [String: Translator.Translation],
-                    conversations: [Conversation])
+        case loaded(translations: [String: Translator.Translation])
     }
     
     //==================================================//
     
     /* MARK: - Properties */
     
-    public let dataModel = ConversationsPageViewDataModel()
-    public let inputs = ["messages": Translator.TranslationInput("Messages")]
+    public let inputs = ["done": Translator.TranslationInput("Done", alternate: "Finish"),
+                         "messages": Translator.TranslationInput("Messages")]
     
     @Published private(set) var state = State.idle
     private var translations: [String: Translator.Translation]!
@@ -42,34 +41,43 @@ public class ConversationsPageViewModel: ObservableObject {
     
     /* MARK: - Initializer Function */
     
-    public func load() {
-        state = .loading
+    public func load(silent: Bool? = nil,
+                     completion: @escaping() -> Void = { }) {
+        let silent = silent ?? false
+        if !silent {
+            state = .loading
+        }
+        
+        guard let currentUserID = RuntimeStorage.currentUserID else {
+            state = .failed(Exception("No current user ID!",
+                                      metadata: [#file, #function, #line]))
+            completion()
+            return
+        }
         
         ContactService.clearCache()
         
-        UserSerializer.shared.getUser(withIdentifier: RuntimeStorage.currentUserID!) { (returnedUser,
-                                                                                        exception) in
+        UserSerializer.shared.getUser(withIdentifier: currentUserID) { (returnedUser,
+                                                                        exception) in
             guard let user = returnedUser else {
                 Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
                            with: .errorAlert)
+                completion()
                 return
             }
             
-            UserDefaults.standard.setValue(RuntimeStorage.currentUserID!, forKey: "currentUserID")
+            UserDefaults.standard.setValue(currentUserID, forKey: "currentUserID")
             
             RuntimeStorage.store(user, as: .currentUser)
             
             RuntimeStorage.store(user.languageCode!, as: .languageCode)
             AKCore.shared.setLanguageCode(user.languageCode)
             
-            //            RuntimeStorage.store("en", as: .languageCode)
-            //            AKCore.shared.setLanguageCode("en")
-            
             user.deSerializeConversations { (returnedConversations,
                                              exception) in
                 guard let conversations = returnedConversations else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                               with: .errorAlert)
+                    self.state = .failed(exception ?? Exception(metadata: [#file, #function, #line]))
+                    completion()
                     return
                 }
                 
@@ -77,306 +85,153 @@ public class ConversationsPageViewModel: ObservableObject {
                 //                    self.setUpObserver(for: conversation)
                 //                }
                 
-                self.translateAndLoad(conversations: conversations)
+                self.translateAndLoad(conversations: conversations) {
+                    completion()
+                }
             }
         }
     }
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Conversation Deletion */
     
-    public func conversationsToUse(for: [Conversation]) -> [Conversation] {
-        guard let conversations = RuntimeStorage.conversations,
-              conversations.isEmpty else {
-            return `for`.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
-        }
-        
-        guard conversations.isEmpty else {
-            return conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
-        }
-        
-        return `for`.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
-    }
-    
-    public func deleteConversation(at offsets: IndexSet) {
-        let confirmationAlert = AKConfirmationAlert(message: "Are you sure you'd like to delete this conversation?",
-                                                    confirmationStyle: .destructive)
-        
-        confirmationAlert.present { (actionID) in
+    public func deleteConversation(withIdentifier: String) {
+        ConversationSerializer.shared.deleteConversation(withIdentifier: withIdentifier) { (exception) in
+            if let error = exception {
+                Logger.log(error, with: .errorAlert)
+            }
             
-            guard actionID == 1 else {
+            guard let currentUser = RuntimeStorage.currentUser else {
+                Logger.log(Exception("No current user!",
+                                     metadata: [#file, #function, #line]),
+                           with: .errorAlert)
                 return
             }
             
-            guard let offset = offsets.first,
-                  offset < RuntimeStorage.conversations!.count else {
-                return
-            }
-            
-            let identifier = RuntimeStorage.conversations!.reversed()[offset].identifier.key!
-            ConversationSerializer.shared.deleteConversation(withIdentifier: identifier) { (exception) in
-                if let error = exception {
-                    Logger.log(error,
-                               with: .errorAlert)
-                }
-                
-                RuntimeStorage.currentUser!.deSerializeConversations { (returnedConversations,
-                                                                        exception) in
-                    guard let updatedConversations = returnedConversations else {
-                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                                   with: .errorAlert)
-                        return
-                    }
-                    
-                    RuntimeStorage.store(updatedConversations, as: .conversations)
+            currentUser.deSerializeConversations { (returnedConversations,
+                                                    exception) in
+                guard let exception = exception else {
                     self.load()
-                }
-            }
-        }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - User Prompting */
-    
-    private func presentNoUserAlert(exception: Exception? = nil) {
-        let noUserString = "No user exists with the provided phone number."
-        
-        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                   with: exception?.descriptor == noUserString ? .none : .errorAlert)
-        
-        if exception?.descriptor == noUserString {
-            let alert = AKAlert(message: "\(noUserString)\n\nWould you like to send them an invite to sign up?",
-                                actions: [AKAction(title: "Send Invite",
-                                                   style: .preferred)])
-            alert.present { (actionID) in
-                if actionID != -1 {
-                    print("wants to invite")
-                }
-            }
-        }
-    }
-    
-    public func presentPromptMethodAlert(completion: @escaping(_ showContactPopover: Bool?) -> Void) {
-        let actions = [AKAction(title: "Enter Number",
-                                style: .default),
-                       AKAction(title: "Select Contact",
-                                style: .preferred)]
-        
-        let alert = AKAlert(message: "Would you like to enter a number or select a contact?",
-                            actions: actions)
-        
-        alert.present { actionID in
-            switch actionID {
-            case actions[0].identifier:
-                self.presentPromptPhoneNumberAlert()
-                completion(false)
-            case actions[1].identifier:
-                RuntimeStorage.remove(.selectedContactPair)
-                completion(true)
-            default:
-                completion(nil)
-            }
-        }
-    }
-    
-    private func presentPromptPhoneNumberAlert() {
-        let alert = UIAlertController(title: "Enter the number below:",
-                                      message: "",
-                                      preferredStyle: .alert)
-        alert.addTextField { textField in
-            textField.clearButtonMode = .unlessEditing
-            textField.keyboardType = .phonePad
-            textField.placeholder = "+1 (555) 555-5555"
-            textField.textAlignment = .center
-        }
-        
-        let okAction = UIAlertAction(title: "OK",
-                                     style: .default) { _ in
-            self.routeNavigation(withNumber: alert.textFields![0].text!.digits)
-        }
-        
-        let cancelAction = UIAlertAction(title: "Cancel",
-                                         style: .cancel)
-        
-        alert.addAction(okAction)
-        alert.addAction(cancelAction)
-        
-        NotificationCenter.default.addObserver(forName: UITextField.textDidChangeNotification, object: alert.textFields![0], queue: .main) { _ in
-            let textField = alert.textFields![0]
-            
-            textField.text = textField.text?.formattedPhoneNumber(region: "US")
-        }
-        
-        Core.ui.politelyPresent(viewController: alert)
-    }
-    
-    private func presentSelectNumberActionSheet(contactPair: ContactPair,
-                                                users: [User]) {
-        let originalPrompt = "Which of \(contactPair.contact.firstName)'s numbers would you like to use to start this conversation?"
-        
-        let messageInput = Translator.TranslationInput(originalPrompt, alternate: "Select which number you would like to use to start this conversation.")
-        
-        FirebaseTranslator.shared.getTranslations(for: [TranslationInput("Select Number"),
-                                                        messageInput,
-                                                        TranslationInput("Cancel")],
-                                                  languagePair: LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, exception in
-            guard let translations = returnedTranslations else {
-                if let error = exception {
-                    Logger.log(error)
-                }
-                
-                return
-            }
-            
-            guard let title = translations.first(where: { $0.input.value() == "Select Number" }),
-                  let message = translations.first(where: { $0.input.value() == messageInput.value() }),
-                  let cancel = translations.first(where: { $0.input.value() == "Cancel" }) else { return }
-            
-            let alertController = UIAlertController(title: title.output,
-                                                    message: message.output,
-                                                    preferredStyle: .actionSheet)
-            
-            for user in users {
-                let userAction = UIAlertAction(title: "+\(user.callingCode!) \(user.phoneNumber.formattedPhoneNumber(region: RegionDetailServer.getRegionCode(forCallingCode: user.callingCode)))",
-                                               style: .default) { _ in
-                    RuntimeStorage.store(ContactPair(contact: contactPair.contact,
-                                                     users: [user]),
-                                         as: .selectedContactPair)
-                    self.routeNavigationWithSelectedContactPair()
-                }
-                
-                alertController.addAction(userAction)
-            }
-            
-            let cancelAction = UIAlertAction(title: cancel.output, style: .cancel)
-            alertController.addAction(cancelAction)
-            
-            Core.ui.politelyPresent(viewController: alertController)
-        }
-    }
-    
-    private func presentSelectCallingCodeActionSheet(contactPair: ContactPair,
-                                                     users: [User]) {
-        let originalPrompt = "It appears there may be multiple users with \(contactPair.contact.firstName) \(contactPair.contact.lastName)'s phone number. To continue, please select the calling code of \(contactPair.contact.firstName)'s number."
-        
-        let messageInput = Translator.TranslationInput(originalPrompt, alternate: "It appears there may be multiple users with this phone number. To continue, please select the appropriate calling code.")
-        
-        FirebaseTranslator.shared.getTranslations(for: [TranslationInput("Select Region"),
-                                                        messageInput,
-                                                        TranslationInput("Cancel")],
-                                                  languagePair: LanguagePair(from: "en", to: RuntimeStorage.languageCode!)) { returnedTranslations, exception in
-            guard let translations = returnedTranslations else {
-                if let error = exception {
-                    Logger.log(error)
-                }
-                return
-            }
-            
-            guard let title = translations.first(where: { $0.input.value() == "Select Region" }),
-                  let message = translations.first(where: { $0.input.value() == messageInput.value() }),
-                  let cancel = translations.first(where: { $0.input.value() == "Cancel" }) else { return }
-            
-            let alertController = UIAlertController(title: title.output,
-                                                    message: message.output,
-                                                    preferredStyle: .actionSheet)
-            
-            for user in users {
-                let userAction = UIAlertAction(title: RegionDetailServer.getRegionTitle(forCallingCode: user.callingCode),
-                                               style: .default) { _ in
-                    RuntimeStorage.store(ContactPair(contact: contactPair.contact,
-                                                     users: [user]),
-                                         as: .selectedContactPair)
-                    self.routeNavigationWithSelectedContactPair()
-                }
-                
-                alertController.addAction(userAction)
-            }
-            
-            let cancelAction = UIAlertAction(title: cancel.output, style: .cancel)
-            alertController.addAction(cancelAction)
-            
-            Core.ui.politelyPresent(viewController: alertController)
-        }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Navigation Routing */
-    
-    private func handleDuplicates(contactPair: ContactPair,
-                                  users: [User]) {
-        dataModel.handleDuplicates(contactPair: contactPair,
-                                   users: users) { result in
-            switch result {
-            case .displayError(let exception):
-                Logger.log(exception,
-                           with: .errorAlert)
-            case .handleDuplicates(let contactPair, let users):
-                self.handleDuplicates(contactPair: contactPair, users: users)
-            case .chooseCallingCode(let contactPair, let users):
-                self.presentSelectCallingCodeActionSheet(contactPair: contactPair, users: users)
-            case .selectNumber(let contactPair, let users):
-                self.presentSelectNumberActionSheet(contactPair: contactPair, users: users)
-            case .startConversation(_):
-                self.routeNavigationWithSelectedContactPair()
-            }
-        }
-    }
-    
-    private func routeNavigation(withNumber: String) {
-        UserSerializer.shared.findUsers(forPhoneNumbers: [withNumber]) { returnedUsers, exception in
-            guard let users = returnedUsers else {
-                self.presentNoUserAlert(exception: exception)
-                return
-            }
-            
-            let contactPair = ContactPair(contact: Contact(firstName: "",
-                                                           lastName: "",
-                                                           phoneNumbers: []),
-                                          users: users)
-            
-            RuntimeStorage.store(contactPair, as: .selectedContactPair)
-            self.routeNavigationWithSelectedContactPair()
-        }
-    }
-    
-    public func routeNavigationWithSelectedContactPair() {
-        guard let contactPair = RuntimeStorage.selectedContactPair else {
-            Logger.log("Contact selection was not processed.",
-                       metadata: [#file, #function, #line])
-            return
-        }
-        
-        dataModel.routeNavigation(withContactPair: contactPair) { result in
-            switch result {
-            case .displayError(let exception):
-                Logger.log(exception,
-                           with: .errorAlert)
-            case .handleDuplicates(let contactPair, let users):
-                self.handleDuplicates(contactPair: contactPair, users: users)
-            case .startConversation(let contactPair):
-                guard let users = contactPair.users else {
-                    Logger.log("No users for this contact pair.",
-                               with: .errorAlert,
-                               metadata: [#file, #function, #line])
                     return
                 }
                 
-                self.dataModel.createConversation(withUser: users[0]) { exception in
-                    guard exception == nil else {
-                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                                   with: .errorAlert)
+                Logger.log(exception, with: .errorAlert)
+            }
+        }
+    }
+    
+    public func deleteConversation(at offsets: IndexSet) {
+        guard let currentUser = RuntimeStorage.currentUser,
+              let sortedConversations = currentUser.openConversations?.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }).unique(),
+              let offset = offsets.first,
+              offset < sortedConversations.count else { return }
+        
+        let selectedConversation = sortedConversations[offset]
+        
+        guard let otherUser = selectedConversation.otherUser else {
+            selectedConversation.setOtherUser { exception in
+                guard exception == nil else {
+                    Logger.log(exception!,
+                               with: .errorAlert)
+                    return
+                }
+                
+                self.deleteConversation(at: offsets)
+            }
+            
+            return
+        }
+        
+        let actionSheet = AKActionSheet(title: otherUser.cellTitle,
+                                        message: "Are you sure you'd like to delete this conversation?\nThis operation cannot be undone.",
+                                        actions: [AKAction(title: "Delete", style: .destructive)],
+                                        shouldTranslate: [.message, .actions(indices: nil), .cancelButtonTitle],
+                                        networkDependent: true)
+        
+        actionSheet.present { (actionID) in
+            guard actionID == actionSheet.actions[0].identifier else {
+                return
+            }
+            
+            ConversationSerializer.shared.deleteConversation(withIdentifier: selectedConversation.identifier.key!) { (exception) in
+                if let error = exception {
+                    Logger.log(error, with: .errorAlert)
+                }
+                
+                currentUser.deSerializeConversations { (returnedConversations,
+                                                        exception) in
+                    guard let exception = exception else {
+                        self.load()
                         return
                     }
                     
-                    self.load()
+                    Logger.log(exception, with: .errorAlert)
                 }
-            default:
-                Logger.log("Invalid navigation destination!",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
+            }
+        }
+    }
+    
+    private func removeConversationsForAllUsers(completion: @escaping(_ exception: Exception?) -> Void) {
+        Database.database().reference().child("/allUsers").observeSingleEvent(of: .value) { (returnedSnapshot) in
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  let data = snapshot as? [String: Any] else {
+                let exception = Exception("Couldn't get user list.",
+                                          metadata: [#file, #function, #line])
+                
+                Logger.log(exception,
+                           with: .errorAlert)
+                completion(exception)
+                
+                return
+            }
+            
+            var exceptions = [Exception]()
+            for (index, identifier) in Array(data.keys).enumerated() {
+                GeneralSerializer.setValue(onKey: "/allUsers/\(identifier)/openConversations",
+                                           withData: ["!"]) { returnedError in
+                    if let error = returnedError {
+                        let exception = Exception(error, metadata: [#file, #function, #line])
+                        
+                        Logger.log(exception)
+                        exceptions.append(exception)
+                    }
+                }
+                
+                if index == Array(data.keys).count - 1 {
+                    completion(exceptions.compiledException)
+                }
+            }
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Operation Confirmation */
+    
+    public func confirmSignOut(_ viewRouter: ViewRouter) {
+        AKConfirmationAlert(title: "Log Out",
+                            message: "Are you sure you would like to log out?",
+                            confirmationStyle: .preferred).present { didConfirm in
+            if didConfirm == 1 {
+                self.signOut(viewRouter)
+            }
+        }
+    }
+    
+    public func confirmTrashDatabase() {
+        AKConfirmationAlert(title: "Destroy Database",
+                            message: "Are you sure you'd like to trash the database? This operation cannot be undone.",
+                            confirmationStyle: .destructivePreferred).present { didConfirm in
+            if didConfirm == 1 {
+                AKConfirmationAlert(title: "Are you sure?",
+                                    message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
+                                    cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
+                                    confirmationStyle: .destructivePreferred).present { confirmed in
+                    if confirmed == 1 {
+                        self.trashDatabase()
+                    }
+                }
             }
         }
     }
@@ -384,6 +239,21 @@ public class ConversationsPageViewModel: ObservableObject {
     //==================================================//
     
     /* MARK: - Miscellaneous Functions */
+    
+    public func reloadIfNeeded() {
+        StateProvider.shared.hasDisappeared = false
+        
+        guard !RuntimeStorage.isPresentingChat! else { return }
+        
+        guard let previousConversations = RuntimeStorage.previousConversations,
+              let openConversations = RuntimeStorage.currentUser?.openConversations,
+              !previousConversations.matchesHashesOf(openConversations) else { return }
+        
+        RuntimeStorage.store(openConversations, as: .previousConversations)
+        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else { return }
+        
+        load(silent: true)
+    }
     
     private func setUpObserver(for conversation: Conversation) {
         Database.database().reference().child("/allConversations/\(conversation.identifier!.key!)").observe(.childChanged) { (returnedSnapshot) in
@@ -404,10 +274,9 @@ public class ConversationsPageViewModel: ObservableObject {
                 
                 conversation.messages.append(message)
                 conversation.messages = conversation.sortedFilteredMessages()
-                RuntimeStorage.store(RuntimeStorage.conversations!.unique(), as: .conversations)
+                RuntimeStorage.currentUser?.openConversations = RuntimeStorage.currentUser?.openConversations?.unique()
                 
-                self.state = .loaded(translations: self.translations,
-                                     conversations: RuntimeStorage.conversations!)
+                self.state = .loaded(translations: self.translations)
             }
         } withCancel: { (error) in
             Logger.log(error,
@@ -415,7 +284,26 @@ public class ConversationsPageViewModel: ObservableObject {
         }
     }
     
-    private func translateAndLoad(conversations: [Conversation]) {
+    private func signOut(_ viewRouter: ViewRouter) {
+        ConversationArchiver.clearArchive()
+        ContactArchiver.clearArchive()
+        
+        RuntimeStorage.store(false, as: .shouldReloadData)
+        RuntimeStorage.store(0, as: .messageOffset)
+        
+        UserDefaults.standard.setValue(nil, forKey: "currentUserID")
+        
+        RuntimeStorage.remove(.currentUser)
+        RuntimeStorage.remove(.currentUserID)
+        
+        RuntimeStorage.store(Locale.preferredLanguages[0].components(separatedBy: "-")[0], as: .languageCode)
+        AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
+        
+        viewRouter.currentPage = .initial
+    }
+    
+    private func translateAndLoad(conversations: [Conversation],
+                                  completion: @escaping() -> Void = { }) {
         let dataModel = PageViewDataModel(inputs: self.inputs)
         
         dataModel.translateStrings { (returnedTranslations,
@@ -425,12 +313,58 @@ public class ConversationsPageViewModel: ObservableObject {
                 Logger.log(exception)
                 
                 self.state = .failed(exception)
+                completion()
                 return
             }
             
             self.translations = translations
-            self.state = .loaded(translations: translations,
-                                 conversations: conversations)
+            
+            RuntimeStorage.currentUser?.openConversations = conversations
+            
+            self.state = .loaded(translations: translations/*,
+                                                            conversations: conversations*/)
+            completion()
+        }
+    }
+    
+    private func trashDatabase() {
+        removeConversationsForAllUsers { exception in
+            guard exception == nil else {
+                let translateDescriptor = exception!.userFacingDescriptor == exception!.descriptor
+                AKErrorAlert(error: exception!.asAkError(),
+                             shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
+                                                                              .cancelButtonTitle]).present()
+                return
+            }
+            
+            let keys = ["Conversations", "Messages"]
+            
+            var exceptions = [Exception]()
+            for (index, key) in keys.enumerated() {
+                GeneralSerializer.setValue(onKey: "/all\(key)",
+                                           withData: NSNull()) { returnedError in
+                    if let error = returnedError {
+                        exceptions.append(Exception(error, metadata: [#file, #function, #line]))
+                    }
+                }
+                
+                if index == keys.count - 1 {
+                    guard exceptions.count == 0 else {
+                        let translateDescriptor = exceptions.compiledException!.userFacingDescriptor != exceptions.compiledException!.descriptor
+                        AKErrorAlert(error: exceptions.compiledException!.asAkError(),
+                                     shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
+                                                                                      .cancelButtonTitle]).present()
+                        return
+                    }
+                    
+                    AKAlert(message: "Successfully trashed database.",
+                            cancelButtonTitle: "OK").present { _ in
+                        RuntimeStorage.currentUser?.openConversations = nil
+                        ConversationArchiver.clearArchive()
+                        self.load()
+                    }
+                }
+            }
         }
     }
 }
