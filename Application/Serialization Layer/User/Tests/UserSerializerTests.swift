@@ -16,7 +16,7 @@ final class UserSerializerTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Overridden Functions */
+    /* MARK: Overridden Methods */
     
     override func setUp() {
         super.setUp()
@@ -28,12 +28,12 @@ final class UserSerializerTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Testing Functions */
+    /* MARK: Testing Methods */
     
     func testCreateUser() {
         let expectation = XCTestExpectation(description: "No error returned")
         
-        guard let generatedKey = Database.database().reference().child("/allUsers/").childByAutoId().key else {
+        guard let generatedKey = Database.database().reference().child("/test/users/").childByAutoId().key else {
             
             XCTFail("Unable to generate key for new user.")
             return
@@ -48,6 +48,7 @@ final class UserSerializerTests: XCTestCase {
                                          callingCode: "1",
                                          languageCode: ["af", "ga", "sq", "it", "ar", "ja", "az", "kn", "eu", "ko", "bn", "la", "be", "lv", "bg", "lt", "ca", "mk", "zh-CN", "ms", "zh-TW", "mt", "hr", "no", "cs", "fa", "da", "pl", "nl", "pt", "ro", "eo", "ru", "et", "sr", "tl", "sk", "fi", "sl", "fr", "es", "gl", "sw", "ka", "sv", "de", "ta", "el", "te", "gu", "th", "ht", "tr", "iw", "uk", "hi", "ur", "hu", "vi", "is", "cy", "id", "yi"].randomElement()!,
                                          phoneNumber: phoneNumberString.digits,
+                                         pushTokens: nil,
                                          region: Array(RuntimeStorage.callingCodeDictionary!.keys).randomElement()!) { (exception) in
             guard let error = exception else {
                 expectation.fulfill()

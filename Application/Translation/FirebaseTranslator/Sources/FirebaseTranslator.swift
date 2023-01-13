@@ -19,7 +19,7 @@ public struct FirebaseTranslator: Translatorable {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Public Methods */
     
     public func getTranslations(for inputs: [TranslationInput],
                                 languagePair: LanguagePair,
@@ -31,8 +31,8 @@ public struct FirebaseTranslator: Translatorable {
             var translations = [Translator.Translation]()
             
             for input in inputs {
-                let processedInput = TranslationInput(input.original.removingOccurrences(of: ["*"]),
-                                                      alternate: input.alternate?.removingOccurrences(of: ["*"]))
+                let processedInput = TranslationInput(input.original/*.removingOccurrences(of: ["*"])*/,
+                                                      alternate: input.alternate/*?.removingOccurrences(of: ["*"])*/)
                 let translation = Translation(input: processedInput,
                                               output: processedInput.original,
                                               languagePair: languagePair)
@@ -99,15 +99,24 @@ public struct FirebaseTranslator: Translatorable {
                           using: TranslationPlatform? = nil,
                           completion: @escaping (_ returnedTranslation: Translation?,
                                                  _ exception: Exception?) -> Void) {
+        if input.value().rangeOfCharacter(from: CharacterSet.letters) == nil {
+            let processedInput = TranslationInput(input.original/*.removingOccurrences(of: ["*"])*/,
+                                                  alternate: input.alternate/*?.removingOccurrences(of: ["*"])*/)
+            let translation = Translation(input: processedInput,
+                                          output: processedInput.original,
+                                          languagePair: languagePair)
+            
+            TranslationSerializer.uploadTranslation(translation)
+            TranslationArchiver.addToArchive(translation)
+            
+            completion(translation, nil)
+            return
+        }
+        
         if let archivedTranslation = TranslationArchiver.getFromArchive(input,
                                                                         languagePair: languagePair) {
             completion(archivedTranslation, nil)
             return
-        }
-        
-        if let required = requiresHUD,
-           required {
-            //            showProgressHUD()
         }
         
         TranslationSerializer.findTranslation(for: input,
@@ -115,6 +124,7 @@ public struct FirebaseTranslator: Translatorable {
                                                                              exception) in
             if let translatedString = returnedString {
                 Logger.log("No need to use translator; found uploaded string.",
+                           verbose: true,
                            metadata: [#file, #function, #line])
                 
                 let translation = Translation(input: input,
@@ -125,6 +135,16 @@ public struct FirebaseTranslator: Translatorable {
                 
                 completion(translation, nil)
             } else {
+                var hasCompleted = false
+                
+                Core.gcd.after(milliseconds: 750) {
+                    if !hasCompleted,
+                       let required = requiresHUD,
+                       required {
+                        Core.hud.showProgress()
+                    }
+                }
+                
                 self.translate(input.value(),
                                from: languagePair.from,
                                to: languagePair.to,
@@ -141,14 +161,18 @@ public struct FirebaseTranslator: Translatorable {
                             TranslationSerializer.uploadTranslation(translation)
                             TranslationArchiver.addToArchive(translation)
                             
-                            completion(translation, nil)
-                            
                             if let required = requiresHUD,
                                required {
-                                Core.hud.hide(delay: 0.2)
+                                Core.hud.hide()
                             }
+                            
+                            hasCompleted = true
+                            completion(translation, nil)
                         } else {
-                            Logger.log(Exception(errorDescriptor, metadata: [#file, #function, #line]))
+                            let exception = Exception(errorDescriptor, metadata: [#file, #function, #line])
+                            
+                            Logger.log(exception)
+                            //                            completion(nil, exception)
                         }
                         
                         return
@@ -161,12 +185,13 @@ public struct FirebaseTranslator: Translatorable {
                     TranslationSerializer.uploadTranslation(translation)
                     TranslationArchiver.addToArchive(translation)
                     
-                    completion(translation, nil)
-                    
                     if let required = requiresHUD,
                        required {
-                        Core.hud.hide(delay: 0.2)
+                        Core.hud.hide()
                     }
+                    
+                    hasCompleted = true
+                    completion(translation, nil)
                 }
             }
         }

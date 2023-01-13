@@ -21,6 +21,9 @@ public enum Page {
     case signUp_authCode(identifier: String,
                          phoneNumber: String,
                          region: String)
+    case signUp_permissions(phoneNumber: String,
+                            region: String,
+                            userID: String)
     
     case signIn(phoneNumber: String?,
                 fromSignUp: Bool) // Add region for sign in from sign up flow
@@ -32,7 +35,7 @@ public enum Page {
 /* MARK: - View Router Declaration */
 
 public class ViewRouter: ObservableObject {
-    @Published var currentPage: Page? = RuntimeStorage.currentUserID! == "" ? .initial : .conversations
+    @Published var currentPage: Page? = RuntimeStorage.currentUserID == nil ? .initial : RuntimeStorage.currentUserID! == "" ? .initial : .conversations
 }
 
 //==================================================//
@@ -58,6 +61,11 @@ public struct RouterView: View {
                             viewRouter: viewRouter)
             .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
             .zIndex(1)
+        case .signUp_selectLanguage:
+            SelectLanguagePageView(viewModel: SelectLanguagePageViewModel(),
+                                   viewRouter: viewRouter)
+            .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
+            .zIndex(1)
         case .signUp_verifyNumber:
             VerifyNumberPageView(viewModel: VerifyNumberPageViewModel(),
                                  viewRouter: viewRouter)
@@ -73,9 +81,14 @@ public struct RouterView: View {
                              verificationIdentifier: identifier)
             .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
             .zIndex(1)
-        case .signUp_selectLanguage:
-            SelectLanguagePageView(viewModel: SelectLanguagePageViewModel(),
-                                   viewRouter: viewRouter)
+        case .signUp_permissions(let phoneNumber,
+                                 let region,
+                                 let userID):
+            PermissionsPageView(viewModel: PermissionsPageViewModel(),
+                                viewRouter: viewRouter,
+                                phoneNumber: phoneNumber,
+                                region: region,
+                                userID: userID)
             .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
             .zIndex(1)
         case .signIn(let phoneNumber,

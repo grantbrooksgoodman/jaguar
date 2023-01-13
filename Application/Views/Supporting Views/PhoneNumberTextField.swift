@@ -35,16 +35,21 @@ public struct PhoneNumberTextField: View {
                 .offset(x: 0, y: 15)
         })
         .keyboardType(.phonePad)
+        .onChange(of: region, perform: { newValue in
+            DispatchQueue.main.async {
+                phoneNumberString = phoneNumberString.partiallyFormatted(for: newValue)
+            }
+        })
         .onChange(of: phoneNumberString, perform: { _ in
             DispatchQueue.main.async {
-                phoneNumberString = phoneNumberString.formattedPhoneNumber(region: region)
+                phoneNumberString = phoneNumberString.partiallyFormatted(for: region)
             }
         })
     }
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func placeholderText() -> String {
         guard region != "US" else {
@@ -56,7 +61,7 @@ public struct PhoneNumberTextField: View {
         if let regionMetadata = phoneNumberKit.metadata(for: region),
            let description = regionMetadata.mobile,
            let exampleNumber = description.exampleNumber {
-            return exampleNumber.formattedPhoneNumber(region: region)
+            return exampleNumber.partiallyFormatted(for: region)
         }
         
         return "(555) 555-5555"

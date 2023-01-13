@@ -43,11 +43,10 @@ public struct SearchBar: View {
                 }
             }
             .padding(.horizontal, 8)
-            .background(Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x242528) : UIColor(hex: 0xEAEAEB)))
+            .background(Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x3B3A3F) : UIColor(hex: 0xE7E7E9)))
             .cornerRadius(10)
         }
         .padding([.leading, .trailing])
-        //        .padding(.top, 15)
-        //        .padding(.bottom, -10)
+        .background(Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x2A2A2C) : UIColor(hex: 0xF8F8F8)))
     }
 }

@@ -35,7 +35,7 @@ public class InitialPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Initializer Method */
     
     public func load() {
         state = .loading

@@ -14,6 +14,8 @@ import AlertKit
 import Firebase
 import Translator
 
+import FirebaseAnalytics
+
 public class ConversationsPageViewModel: ObservableObject {
     
     //==================================================//
@@ -24,7 +26,8 @@ public class ConversationsPageViewModel: ObservableObject {
         case idle
         case loading
         case failed(Exception)
-        case loaded(translations: [String: Translator.Translation])
+        case loaded(translations: [String: Translator.Translation],
+                    conversations: [Conversation])
     }
     
     //==================================================//
@@ -39,14 +42,18 @@ public class ConversationsPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Initializer Method */
     
     public func load(silent: Bool? = nil,
                      completion: @escaping() -> Void = { }) {
+        RuntimeStorage.store(self, as: .conversationsPageViewModel)
+        
         let silent = silent ?? false
         if !silent {
             state = .loading
         }
+        
+        Core.ui.resetNavigationBarAppearance()
         
         guard let currentUserID = RuntimeStorage.currentUserID else {
             state = .failed(Exception("No current user ID!",
@@ -55,7 +62,27 @@ public class ConversationsPageViewModel: ObservableObject {
             return
         }
         
-        ContactService.clearCache()
+        //        ContactService.clearCache()
+        
+        if RuntimeStorage.shouldUpdateReadState! ||
+        /*RuntimeStorage.receivedNotification! ||*/
+        (RuntimeStorage.becameActive ?? false) {
+            if (RuntimeStorage.becameActive ?? false) {
+                print("reloading because became active")
+            }
+            
+            if silent {
+                ConversationArchiver.clearArchive()
+            }
+            
+            RuntimeStorage.store(false, as: .shouldUpdateReadState)
+            RuntimeStorage.store(false, as: .receivedNotification)
+            if RuntimeStorage.becameActive != nil {
+                RuntimeStorage.store(false, as: .becameActive)
+            }
+        }
+        
+        setPushApiKey()
         
         UserSerializer.shared.getUser(withIdentifier: currentUserID) { (returnedUser,
                                                                         exception) in
@@ -85,9 +112,48 @@ public class ConversationsPageViewModel: ObservableObject {
                 //                    self.setUpObserver(for: conversation)
                 //                }
                 
-                self.translateAndLoad(conversations: conversations) {
-                    completion()
+                if !RuntimeStorage.updatedPushToken! {
+                    user.updatePushTokens { exception in
+                        guard let exception else {
+                            Logger.log("Successfully updated push tokens!",
+                                       verbose: true,
+                                       metadata: [#file, #function, #line])
+                            RuntimeStorage.store(true, as: .updatedPushToken)
+                            
+                            return
+                        }
+                        
+                        Logger.log(exception,
+                                   verbose: true)
+                    }
                 }
+                
+                guard !ContactArchiver.contactArchive.isEmpty else {
+                    guard !silent else {
+                        self.translateAndLoad(conversations: conversations) { completion() }
+                        return
+                    }
+                    
+                    ContactService.loadContacts { contactPairs, exception in
+                        guard contactPairs != nil else {
+                            self.translateAndLoad(conversations: conversations) {
+                                Core.gcd.after(seconds: 2) {
+                                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                                }
+                                
+                                completion()
+                            }
+                            
+                            return
+                        }
+                        
+                        self.translateAndLoad(conversations: conversations) { completion() }
+                    }
+                    
+                    return
+                }
+                
+                self.translateAndLoad(conversations: conversations) { completion() }
             }
         }
     }
@@ -121,23 +187,18 @@ public class ConversationsPageViewModel: ObservableObject {
         }
     }
     
-    public func deleteConversation(at offsets: IndexSet) {
-        guard let currentUser = RuntimeStorage.currentUser,
-              let sortedConversations = currentUser.openConversations?.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }).unique(),
-              let offset = offsets.first,
-              offset < sortedConversations.count else { return }
+    public func deleteConversation(_ conversation: Conversation) {
+        guard let currentUser = RuntimeStorage.currentUser else { return }
         
-        let selectedConversation = sortedConversations[offset]
-        
-        guard let otherUser = selectedConversation.otherUser else {
-            selectedConversation.setOtherUser { exception in
+        guard let otherUser = conversation.otherUser else {
+            conversation.setOtherUser { exception in
                 guard exception == nil else {
                     Logger.log(exception!,
                                with: .errorAlert)
                     return
                 }
                 
-                self.deleteConversation(at: offsets)
+                self.deleteConversation(conversation)
             }
             
             return
@@ -150,11 +211,12 @@ public class ConversationsPageViewModel: ObservableObject {
                                         networkDependent: true)
         
         actionSheet.present { (actionID) in
-            guard actionID == actionSheet.actions[0].identifier else {
-                return
-            }
+            guard actionID == actionSheet.actions[0].identifier else { return }
             
-            ConversationSerializer.shared.deleteConversation(withIdentifier: selectedConversation.identifier.key!) { (exception) in
+            AnalyticsService.logEvent(.deleteConversation,
+                                      with: ["conversationIdKey": conversation.identifier.key!])
+            
+            ConversationSerializer.shared.deleteConversation(withIdentifier: conversation.identifier.key!) { (exception) in
                 if let error = exception {
                     Logger.log(error, with: .errorAlert)
                 }
@@ -172,42 +234,20 @@ public class ConversationsPageViewModel: ObservableObject {
         }
     }
     
-    private func removeConversationsForAllUsers(completion: @escaping(_ exception: Exception?) -> Void) {
-        Database.database().reference().child("/allUsers").observeSingleEvent(of: .value) { (returnedSnapshot) in
-            guard let snapshot = returnedSnapshot.value as? NSDictionary,
-                  let data = snapshot as? [String: Any] else {
-                let exception = Exception("Couldn't get user list.",
-                                          metadata: [#file, #function, #line])
-                
-                Logger.log(exception,
-                           with: .errorAlert)
-                completion(exception)
-                
-                return
-            }
-            
-            var exceptions = [Exception]()
-            for (index, identifier) in Array(data.keys).enumerated() {
-                GeneralSerializer.setValue(onKey: "/allUsers/\(identifier)/openConversations",
-                                           withData: ["!"]) { returnedError in
-                    if let error = returnedError {
-                        let exception = Exception(error, metadata: [#file, #function, #line])
-                        
-                        Logger.log(exception)
-                        exceptions.append(exception)
-                    }
-                }
-                
-                if index == Array(data.keys).count - 1 {
-                    completion(exceptions.compiledException)
-                }
-            }
-        }
-    }
-    
     //==================================================//
     
     /* MARK: - Operation Confirmation */
+    
+    public func confirmClearCaches() {
+        let alert = AKConfirmationAlert(title: "Clear Caches",
+                                        message: "Are you sure you'd like to clear all caches?\n\nThis may fix some issues, but can also temporarily slow down the app while indexes rebuild.\n\nYou will need to restart the app for this to take effect.",
+                                        confirmationStyle: .destructivePreferred)
+        alert.present { didConfirm in
+            if didConfirm == 1 {
+                self.clearCaches()
+            }
+        }
+    }
     
     public func confirmSignOut(_ viewRouter: ViewRouter) {
         AKConfirmationAlert(title: "Log Out",
@@ -219,72 +259,49 @@ public class ConversationsPageViewModel: ObservableObject {
         }
     }
     
-    public func confirmTrashDatabase() {
-        AKConfirmationAlert(title: "Destroy Database",
-                            message: "Are you sure you'd like to trash the database? This operation cannot be undone.",
-                            confirmationStyle: .destructivePreferred).present { didConfirm in
-            if didConfirm == 1 {
-                AKConfirmationAlert(title: "Are you sure?",
-                                    message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
-                                    cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
-                                    confirmationStyle: .destructivePreferred).present { confirmed in
-                    if confirmed == 1 {
-                        self.trashDatabase()
-                    }
-                }
-            }
-        }
-    }
-    
     //==================================================//
     
-    /* MARK: - Miscellaneous Functions */
+    /* MARK: - Preference Actions */
     
-    public func reloadIfNeeded() {
-        StateProvider.shared.hasDisappeared = false
+    private func clearCaches() {
+        ContactArchiver.clearArchive()
+        ConversationArchiver.clearArchive()
+        TranslationArchiver.clearArchive()
         
-        guard !RuntimeStorage.isPresentingChat! else { return }
+        AnalyticsService.logEvent(.clearCaches)
         
-        guard let previousConversations = RuntimeStorage.previousConversations,
-              let openConversations = RuntimeStorage.currentUser?.openConversations,
-              !previousConversations.matchesHashesOf(openConversations) else { return }
+        UserDefaults.standard.set(nil, forKey: "archivedLocalUserHashes")
+        UserDefaults.standard.set(nil, forKey: "archivedServerUserHashes")
         
-        RuntimeStorage.store(openConversations, as: .previousConversations)
-        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else { return }
-        
-        load(silent: true)
+        AKAlert(message: "Caches have been cleared. You must now restart the app.",
+                actions: [AKAction(title: "Exit", style: .destructivePreferred)],
+                showsCancelButton: false).present { _ in
+            fatalError()
+        }
     }
     
-    private func setUpObserver(for conversation: Conversation) {
-        Database.database().reference().child("/allConversations/\(conversation.identifier!.key!)").observe(.childChanged) { (returnedSnapshot) in
-            guard returnedSnapshot.key == "messages",
-                  let messageIdentifiers = returnedSnapshot.value as? [String],
-                  let newMessageID = messageIdentifiers.last else {
-                return
-            }
+    public func overrideLanguageCode() {
+        guard !AKCore.shared.languageCodeIsLocked else {
+            RuntimeStorage.remove(.overriddenLanguageCode)
+            AKCore.shared.unlockLanguageCode(andSetTo: RuntimeStorage.languageCode)
             
-            self.state = .loading
+            guard let currentUser = RuntimeStorage.currentUser else { return }
+            let languageCode = currentUser.languageCode!
+            let languageName = languageCode.languageName ?? languageCode.uppercased()
+            Core.hud.showSuccess(text: "Set to \(languageName)")
             
-            MessageSerializer.shared.getMessage(withIdentifier: newMessageID) { (returnedMessage,
-                                                                                 exception) in
-                guard let message = returnedMessage else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                    return
-                }
-                
-                conversation.messages.append(message)
-                conversation.messages = conversation.sortedFilteredMessages()
-                RuntimeStorage.currentUser?.openConversations = RuntimeStorage.currentUser?.openConversations?.unique()
-                
-                self.state = .loaded(translations: self.translations)
-            }
-        } withCancel: { (error) in
-            Logger.log(error,
-                       metadata: [#file, #function, #line])
+            return
         }
+        
+        RuntimeStorage.store("en", as: .overriddenLanguageCode)
+        AKCore.shared.lockLanguageCode(to: "en")
+        
+        Core.hud.showSuccess(text: "Set to English")
     }
     
     private func signOut(_ viewRouter: ViewRouter) {
+        AnalyticsService.logEvent(.logOut)
+        
         ConversationArchiver.clearArchive()
         ContactArchiver.clearArchive()
         
@@ -300,6 +317,78 @@ public class ConversationsPageViewModel: ObservableObject {
         AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
         
         viewRouter.currentPage = .initial
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Miscellaneous Methods */
+    
+    public func reloadIfNeeded() {
+        StateProvider.shared.hasDisappeared = false
+        
+        guard !RuntimeStorage.isPresentingChat! else { return }
+        
+        guard let previousHashes = UserDefaults.standard.object(forKey: "previousHashes") as? [String],
+              let currentHashes = RuntimeStorage.currentUser?.openConversations?.hashes(),
+              (previousHashes != currentHashes) || RuntimeStorage.shouldUpdateReadState! || RuntimeStorage.receivedNotification! || (RuntimeStorage.becameActive ?? false) else { return }
+        
+        UserDefaults.standard.set(currentHashes, forKey: "previousHashes")
+        
+        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else { return }
+        
+        load(silent: true)
+    }
+    
+    private func setPushApiKey(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        guard RuntimeStorage.pushApiKey == nil else {
+            completion(nil)
+            return
+        }
+        
+        if let pushApiKey = UserDefaults.standard.value(forKey: "pushApiKey") as? String {
+            RuntimeStorage.store(pushApiKey, as: .pushApiKey)
+            completion(nil)
+        } else {
+            GeneralSerializer.getPushApiKey { key, exception in
+                guard let key else {
+                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                RuntimeStorage.store(key, as: .pushApiKey)
+                UserDefaults.standard.set(RuntimeStorage.pushApiKey!, forKey: "pushApiKey")
+                completion(nil)
+            }
+        }
+    }
+    
+    private func setUpObserver(for conversation: Conversation) {
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        Database.database().reference().child("\(pathPrefix)\(conversation.identifier!.key!)").observe(.childChanged) { (returnedSnapshot) in
+            guard returnedSnapshot.key == "messages",
+                  let messageIdentifiers = returnedSnapshot.value as? [String],
+                  let newMessageID = messageIdentifiers.last else { return }
+            
+            self.state = .loading
+            
+            MessageSerializer.shared.getMessage(withIdentifier: newMessageID) { (returnedMessage,
+                                                                                 exception) in
+                guard let message = returnedMessage else {
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                conversation.messages.append(message)
+                conversation.messages = conversation.sortedFilteredMessages()
+                RuntimeStorage.currentUser?.openConversations = RuntimeStorage.currentUser?.openConversations?.unique()
+                
+                self.state = .loaded(translations: self.translations,
+                                     conversations: RuntimeStorage.currentUser?.openConversations ?? [])
+            }
+        } withCancel: { (error) in
+            Logger.log(error,
+                       metadata: [#file, #function, #line])
+        }
     }
     
     private func translateAndLoad(conversations: [Conversation],
@@ -321,64 +410,14 @@ public class ConversationsPageViewModel: ObservableObject {
             
             RuntimeStorage.currentUser?.openConversations = conversations
             
-            self.state = .loaded(translations: translations/*,
-                                                            conversations: conversations*/)
+#if !EXTENSION
+            UIApplication.shared.applicationIconBadgeNumber = RuntimeStorage.currentUser!.badgeNumber
+#endif
+            
+            self.state = .loaded(translations: translations,
+                                 conversations: conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }))
+            
             completion()
         }
-    }
-    
-    private func trashDatabase() {
-        removeConversationsForAllUsers { exception in
-            guard exception == nil else {
-                let translateDescriptor = exception!.userFacingDescriptor == exception!.descriptor
-                AKErrorAlert(error: exception!.asAkError(),
-                             shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
-                                                                              .cancelButtonTitle]).present()
-                return
-            }
-            
-            let keys = ["Conversations", "Messages"]
-            
-            var exceptions = [Exception]()
-            for (index, key) in keys.enumerated() {
-                GeneralSerializer.setValue(onKey: "/all\(key)",
-                                           withData: NSNull()) { returnedError in
-                    if let error = returnedError {
-                        exceptions.append(Exception(error, metadata: [#file, #function, #line]))
-                    }
-                }
-                
-                if index == keys.count - 1 {
-                    guard exceptions.count == 0 else {
-                        let translateDescriptor = exceptions.compiledException!.userFacingDescriptor != exceptions.compiledException!.descriptor
-                        AKErrorAlert(error: exceptions.compiledException!.asAkError(),
-                                     shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
-                                                                                      .cancelButtonTitle]).present()
-                        return
-                    }
-                    
-                    AKAlert(message: "Successfully trashed database.",
-                            cancelButtonTitle: "OK").present { _ in
-                        RuntimeStorage.currentUser?.openConversations = nil
-                        ConversationArchiver.clearArchive()
-                        self.load()
-                    }
-                }
-            }
-        }
-    }
-}
-
-//==================================================//
-
-/* MARK: - Extensions */
-
-/**/
-
-/* MARK: - Array */
-public extension Array where Element == String {
-    var duplicates: [String]? {
-        let duplicates = Array(Set(filter({ (s: String) in filter({ $0 == s }).count > 1})))
-        return duplicates.isEmpty ? nil : duplicates
     }
 }

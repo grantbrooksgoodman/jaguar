@@ -24,22 +24,25 @@ public struct Contact: Codable, Equatable, Identifiable {
     
     // Other
     public var id = UUID()
+    public var imageData: Data?
     
     //==================================================//
     
-    /* MARK: - Constructor Function */
+    /* MARK: - Constructor Method */
     
     public init(firstName: String,
                 lastName: String,
-                phoneNumbers: [PhoneNumber]) {
+                phoneNumbers: [PhoneNumber],
+                imageData: Data? = nil) {
         self.firstName = firstName
         self.lastName = lastName
         self.phoneNumbers = phoneNumbers
+        self.imageData = imageData
     }
     
     //==================================================//
     
-    /* MARK: - Hashing Functions */
+    /* MARK: - Hashing Methods */
     
     public func hashSerialized() -> [String] {
         var hashFactors = [String]()
@@ -47,19 +50,22 @@ public struct Contact: Codable, Equatable, Identifiable {
         hashFactors.append(contentsOf: phoneNumbers.digits)
         hashFactors.append(contentsOf: phoneNumbers.labels)
         
+        // Add image data
+        
         return hashFactors
     }
     
     //==================================================//
     
-    /* MARK: - Equatable Compliance Function */
+    /* MARK: - Equatable Compliance Method */
     
     public static func == (left: Contact, right: Contact) -> Bool {
         let namesMatch = "\(left.firstName) \(left.lastName)" == "\(right.firstName) \(right.lastName)"
         let phoneNumbersMatch = left.phoneNumbers.digits == right.phoneNumbers.digits
         let hashesMatch = left.hash == right.hash
+        let imageDataMatch = left.imageData == right.imageData
         
-        return namesMatch && phoneNumbersMatch && hashesMatch
+        return namesMatch && phoneNumbersMatch && hashesMatch && imageDataMatch
     }
 }
 
@@ -76,13 +82,20 @@ public extension Array where Element == CNLabeledValue<CNPhoneNumber> {
         
         for number in self {
             var localizedLabel: String?
-            
             if let label = number.label {
                 localizedLabel = CNLabeledValue<NSString>.localizedString(forLabel: label)
             }
             
+            var callingCode: String?
+            if let countryCode = number.value.value(forKey: "countryCode") as? String {
+                callingCode = RegionDetailServer.getCallingCode(forRegion: countryCode)
+            }
+            
             let phoneNumber = PhoneNumber(digits: number.value.stringValue.digits,
-                                          label: localizedLabel)
+                                          rawStringHasPlusPrefix: number.value.stringValue.hasPrefix("+"),
+                                          label: localizedLabel,
+                                          formattedString: number.value.value(forKey: "formattedInternationalStringValue") as? String,
+                                          callingCode: callingCode)
             
             phoneNumbers.append(phoneNumber)
         }
@@ -92,18 +105,7 @@ public extension Array where Element == CNLabeledValue<CNPhoneNumber> {
 }
 
 public extension Array where Element == Contact {
-    /* MARK: - Functions */
-    
-    func asBlankContactPairs() -> [ContactPair] {
-        var contactPairs = [ContactPair]()
-        
-        for contact in self {
-            contactPairs.append(ContactPair(contact: contact,
-                                            users: nil))
-        }
-        
-        return contactPairs
-    }
+    /* MARK: - Methods */
     
     func hashes() -> [String] {
         var hashes = [String]()
@@ -150,6 +152,19 @@ public extension Array where Element == String {
 
 /* MARK: Contact */
 public extension Contact {
+    
+    /* MARK: - Methods */
+    
+    static func empty() -> Contact {
+        return Contact(firstName: "",
+                       lastName: "",
+                       phoneNumbers: [])
+    }
+    
+    //--------------------------------------------------//
+    
+    /* MARK: - Variables */
+    
     var hash: String {
         do {
             let encoder = JSONEncoder()

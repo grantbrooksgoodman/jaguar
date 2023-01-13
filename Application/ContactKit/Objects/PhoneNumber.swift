@@ -7,6 +7,7 @@
 //
 
 /* First-party Frameworks */
+import CryptoKit
 import Foundation
 
 public struct PhoneNumber: Codable {
@@ -16,27 +17,42 @@ public struct PhoneNumber: Codable {
     /* MARK: - Properties */
     
     // Strings
+    public var callingCode: String?
     public var digits: String!
+    public var formattedString: String?
     public var label: String?
+    
+    // Other
+    public var rawStringHasPlusPrefix: Bool
     
     //==================================================//
     
-    /* MARK: - Constructor Function */
+    /* MARK: - Constructor Method */
     
-    public init(digits: String!, label: String? = nil) {
+    public init(digits: String!,
+                rawStringHasPlusPrefix: Bool,
+                label: String? = nil,
+                formattedString: String? = nil,
+                callingCode: String? = nil) {
         self.digits = digits
+        self.rawStringHasPlusPrefix = rawStringHasPlusPrefix
         self.label = label
+        self.formattedString = formattedString
+        self.callingCode = callingCode
     }
     
     //==================================================//
     
-    /* MARK: - Hashing Functions */
+    /* MARK: - Hashing Methods */
     
     public func hashSerialized() -> [String] {
         var hashFactors = [String]()
         
         hashFactors.append(digits)
+        hashFactors.append(rawStringHasPlusPrefix.description)
         hashFactors.append(label ?? "")
+        hashFactors.append(formattedString ?? "")
+        hashFactors.append(callingCode ?? "")
         
         return hashFactors
     }
@@ -72,14 +88,27 @@ public extension Array where Element == PhoneNumber {
 }
 
 public extension Array where Element == String {
-    var possibleRawNumbers: [String] {
-        var phoneNumbers = [String]()
+    var digits: [String] {
+        var digits = [String]()
         
-        forEach { item in
-            phoneNumbers.append(contentsOf: item.possibleRawNumbers())
+        for element in self {
+            digits.append(element.digits)
         }
         
-        return phoneNumbers
+        return digits
+    }
+}
+
+/* MARK: - Data */
+public extension Data {
+    var compressedHash: String {
+        let compressedData = try? (self as NSData).compressed(using: .lzfse)
+        
+        guard let data = compressedData else {
+            return SHA256.hash(data: self).compactMap { String(format: "%02x", $0) }.joined()
+        }
+        
+        return SHA256.hash(data: data).compactMap { String(format: "%02x", $0) }.joined()
     }
 }
 

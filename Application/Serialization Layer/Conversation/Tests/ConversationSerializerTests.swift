@@ -13,7 +13,7 @@ final class ConversationSerializerTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Overridden Functions */
+    /* MARK: Overridden Methods */
     
     override func setUp() {
         super.setUp()

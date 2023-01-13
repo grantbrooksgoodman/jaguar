@@ -37,7 +37,7 @@ public class NewChatPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Initializer Method */
     
     public func load() {
         state = .loading
@@ -54,68 +54,81 @@ public class NewChatPageViewModel: ObservableObject {
                 return
             }
             
-            ContactService.requestAccess { exception in
-                guard exception == nil else {
-                    Logger.log(exception!)
-                    self.state = .failed(exception!)
+            ContactService.loadContacts { contactPairs, exception in
+                guard let pairs = contactPairs else {
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
                     
-                    return
-                }
-                
-                ContactService.loadContacts { contactPairs, exception in
-                    guard let pairs = contactPairs else {
-                        let error = exception ?? Exception(metadata: [#file, #function, #line])
-                        
+                    guard error.isEqual(to: .contactAccessDenied) ||
+                            error.isEqual(to: .emptyContactList) ||
+                            error.isEqual(to: .noUserWithCallingCode) ||
+                            error.isEqual(to: .noUserWithHashes) ||
+                            error.isEqual(to: .noUserWithPhoneNumber) else {
                         Logger.log(error)
                         self.state = .failed(error)
                         
                         return
                     }
                     
+                    RuntimeStorage.store([], as: .contactPairs)
                     self.state = .loaded(translations: translations,
-                                         contactPairs: pairs)
+                                         contactPairs: [])
+                    
+                    return
                 }
+                
+                RuntimeStorage.store(pairs, as: .contactPairs)
+                self.state = .loaded(translations: translations,
+                                     contactPairs: pairs)
             }
         }
     }
     
     //==================================================//
     
-    /* MARK: - User Prompting */
+    /* MARK: - User Invitation */
     
-    public func presentExceptionAlert(_ exception: Exception) {
-        guard exception.descriptor == "No user exists with the possible hashes." else {
-            let translateDescriptor = exception.userFacingDescriptor != exception.descriptor
-            AKErrorAlert(error: exception.asAkError(),
-                         shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
-                                                                          .cancelButtonTitle]).present()
-            return
-        }
-        
-        let alert = AKAlert(message: "It doesn't appear that any of your contacts have an account with us.\n\nWould you like to send them an invite to sign up?",
-                            actions: [AKAction(title: "Send Invite",
-                                               style: .preferred)])
-        alert.present { (actionID) in
-            if actionID != -1 {
-                self.presentShareSheet()
-            }
-        }
-    }
-    
-    public func presentShareSheet() {
-        let invitationPrompt = "Hey, let's chat on \"Hello\"! It's a simple messaging app that allows us to easily talk to each other in our native languages!"
-        guard let invitationURL = URL(string: "http://grantbrooks.io") else { return }
-        
-        FirebaseTranslator.shared.translate(Translator.TranslationInput(invitationPrompt),
-                                            with: Translator.LanguagePair(from: "en",
-                                                                          to: RuntimeStorage.languageCode!)) { returnedTranslation, exception in
-            guard let translation = returnedTranslation else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+    public func inviteUsers() {
+        setAppShareLink { exception in
+            guard exception == nil,
+                  let appShareLink = RuntimeStorage.appShareLink else {
+                Logger.log(exception!,
                            with: .errorAlert)
                 return
             }
             
-            MessageComposer.shared.compose(withContent: "\(translation.output)\n\n\(invitationURL.absoluteString)")
+            let invitationPrompt = "Hey, let's chat on *\"Hello\"*! It's a simple messaging app that allows us to easily talk to each other in our native languages!"
+            
+            FirebaseTranslator.shared.translate(Translator.TranslationInput(invitationPrompt),
+                                                with: Translator.LanguagePair(from: "en",
+                                                                              to: RuntimeStorage.languageCode!),
+                                                requiresHUD: true) { returnedTranslation, exception in
+                guard let translation = returnedTranslation else {
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                               with: .errorAlert)
+                    return
+                }
+                
+                AnalyticsService.logEvent(.invite)
+                MessageComposer.shared.compose(withContent: "\(translation.output)\n\n\(appShareLink.absoluteString)")
+            }
+        }
+    }
+    
+    private func setAppShareLink(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        if let appShareLink = UserDefaults.standard.value(forKey: "appShareLink") as? URL {
+            RuntimeStorage.store(appShareLink, as: .appShareLink)
+            completion(nil)
+        } else {
+            GeneralSerializer.getAppShareLink { link, exception in
+                guard let link else {
+                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                RuntimeStorage.store(link, as: .appShareLink)
+                UserDefaults.standard.set(RuntimeStorage.appShareLink!, forKey: "appShareLink")
+                completion(nil)
+            }
         }
     }
 }

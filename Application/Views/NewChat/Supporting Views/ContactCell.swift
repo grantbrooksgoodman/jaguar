@@ -28,13 +28,13 @@ public class ContactCell: UITableViewCell {
     
     //==================================================//
     
-    /* MARK: - Constructor Functions */
+    /* MARK: - Constructor Methods */
     
     public override init(style: UITableViewCell.CellStyle,
                          reuseIdentifier: String?) {
         super.init(style: style, reuseIdentifier: reuseIdentifier)
-        addSubview(nameLabel)
         
+        addSubview(nameLabel)
         NSLayoutConstraint.activate([
             nameLabel.topAnchor.constraint(equalTo: topAnchor),
             nameLabel.bottomAnchor.constraint(equalTo: bottomAnchor),

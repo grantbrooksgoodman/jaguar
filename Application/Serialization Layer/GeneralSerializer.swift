@@ -16,7 +16,31 @@ public enum GeneralSerializer {
     
     //==================================================//
     
-    /* MARK: - Getter Functions */
+    /* MARK: - Properties */
+    
+    public enum Environment: String {
+        case developer
+        case staging
+        case production
+        
+        var description: String { rawValue.firstUppercase }
+        var shortString: String {
+            switch self {
+            case .developer:
+                return "dev"
+            case .staging:
+                return "stage"
+            case .production:
+                return "prod"
+            }
+        }
+    }
+    
+    public static var environment: Environment = .developer
+    
+    //==================================================//
+    
+    /* MARK: - Getter Methods */
     
     /**
      Gets values on the server for a given path.
@@ -36,7 +60,7 @@ public enum GeneralSerializer {
     
     //==================================================//
     
-    /* MARK: - Query Functions */
+    /* MARK: - Query Methods */
     
     public static func queryValues(atPath: String,
                                    limit: Int,
@@ -47,13 +71,13 @@ public enum GeneralSerializer {
                 completion(nil, Exception(error, metadata: [#file, #function, #line]))
             }
             
-            completion(returnedSnapshot.value, nil)
+            completion(returnedSnapshot?.value, nil)
         }
     }
     
     //==================================================//
     
-    /* MARK: - Setter Functions */
+    /* MARK: - Setter Methods */
     
     public static func setValue(onKey: String, withData: Any, completion: @escaping (Error?) -> Void) {
         Database.database().reference().child(onKey).setValue(withData) { returnedError, _ in
@@ -83,5 +107,34 @@ public enum GeneralSerializer {
             
             completion(error)
         })
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Stored Variable Retrieval */
+    
+    public static func getAppShareLink(completion: @escaping(_ link: URL?,
+                                                             _ exception: Exception?) -> Void) {
+        getValues(atPath: "/appShareLink") { returnedValues, returnedException in
+            guard let linkString = returnedValues as? String,
+                  let url = URL(string: linkString) else {
+                completion(nil, returnedException ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(url, nil)
+        }
+    }
+    
+    public static func getPushApiKey(completion: @escaping(_ key: String?,
+                                                           _ exception: Exception?) -> Void) {
+        getValues(atPath: "/pushApiKey") { returnedValues, returnedException in
+            guard let key = returnedValues as? String else {
+                completion(nil, returnedException ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(key, nil)
+        }
     }
 }

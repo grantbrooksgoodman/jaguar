@@ -13,7 +13,7 @@ import CryptoKit
 import Translator
 
 public extension String {
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     func decoded(getInput: Bool) -> String? {
         let halves = components(separatedBy: "–")
@@ -51,17 +51,5 @@ public extension String {
         }
         
         return mutableSelf
-    }
-}
-
-public extension Data {
-    var compressedHash: String {
-        let compressedData = try? (self as NSData).compressed(using: .lzfse)
-        
-        guard let data = compressedData else {
-            return SHA256.hash(data: self).compactMap { String(format: "%02x", $0) }.joined()
-        }
-        
-        return SHA256.hash(data: data).compactMap { String(format: "%02x", $0) }.joined()
     }
 }

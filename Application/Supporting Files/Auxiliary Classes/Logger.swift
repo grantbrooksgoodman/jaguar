@@ -43,7 +43,7 @@ public struct Logger {
     
     //==================================================//
     
-    /* MARK: - Logging Functions */
+    /* MARK: - Logging Methods */
     
     public static func log(_ error: Error,
                            with: AlertType? = nil,
@@ -66,6 +66,8 @@ public struct Logger {
     public static func log(_ exception: Exception,
                            with: AlertType? = nil,
                            verbose: Bool? = nil) {
+        guard Build.loggingEnabled else { return }
+        
         if let verbose = verbose,
            verbose, exposureLevel != .verbose {
             return
@@ -80,7 +82,13 @@ public struct Logger {
             return
         }
         
-        print("\n--------------------------------------------------\n\(fileName): \(functionName)() [\(lineNumber)]\(elapsedTime)\n\(exception.descriptor!) (\(exception.hashlet!))\n--------------------------------------------------\n")
+        print("\n--------------------------------------------------\n\(fileName): \(functionName)() [\(lineNumber)]\(elapsedTime)\n\(exception.descriptor!) (\(exception.hashlet!))")
+        
+        if let params = exception.extraParams {
+            printExtraParams(params)
+        }
+        
+        print("--------------------------------------------------\n")
         
         currentTimeLastCalled = Date()
         
@@ -88,9 +96,13 @@ public struct Logger {
             return
         }
         
+        Core.hud.hide()
+        
         switch alertType {
         case .errorAlert:
-            let translateDescriptor = exception.userFacingDescriptor != exception.descriptor
+            let sugarCoatedDescriptor = Exception("", metadata: [#file, #function, #line]).userFacingDescriptor
+            let translateDescriptor = (exception.userFacingDescriptor != exception.descriptor) || (exception.userFacingDescriptor == sugarCoatedDescriptor)
+            
             AKErrorAlert(message: exception.userFacingDescriptor,
                          error: exception.asAkError(),
                          shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
@@ -102,7 +114,8 @@ public struct Logger {
                                          exception.metadata!])
         case .normalAlert:
             AKAlert(message: exception.userFacingDescriptor,
-                    cancelButtonTitle: "OK").present()
+                    cancelButtonTitle: "OK",
+                    shouldTranslate: [.title, .message]).present()
         }
     }
     
@@ -110,6 +123,8 @@ public struct Logger {
                            with: AlertType? = nil,
                            verbose: Bool? = nil,
                            metadata: [Any]) {
+        guard Build.loggingEnabled else { return }
+        
         if let verbose = verbose,
            verbose, exposureLevel != .verbose {
             return
@@ -137,11 +152,16 @@ public struct Logger {
             return
         }
         
+        Core.hud.hide()
+        
         switch alertType {
         case .errorAlert:
             let exception = Exception(text,
                                       metadata: [fileName, functionName, lineNumber])
-            let translateDescriptor = exception.userFacingDescriptor != exception.descriptor
+            
+            let sugarCoatedDescriptor = Exception("", metadata: [#file, #function, #line]).userFacingDescriptor
+            let translateDescriptor = (exception.userFacingDescriptor != exception.descriptor) || (exception.userFacingDescriptor == sugarCoatedDescriptor)
+            
             AKErrorAlert(message: exception.userFacingDescriptor,
                          error: exception.asAkError(),
                          shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
@@ -154,16 +174,19 @@ public struct Logger {
         case .normalAlert:
             AKAlert(message: Exception(text,
                                        metadata: [fileName, functionName, lineNumber]).userFacingDescriptor,
-                    cancelButtonTitle: "OK").present()
+                    cancelButtonTitle: "OK",
+                    shouldTranslate: [.title, .message]).present()
         }
     }
     
     //==================================================//
     
-    /* MARK: - Stream Functions */
+    /* MARK: - Stream Methods */
     
     public static func openStream(message: String? = nil,
                                   metadata: [Any]) {
+        guard Build.loggingEnabled else { return }
+        
         if exposureLevel == .verbose {
             guard validateMetadata(metadata) else {
                 Logger.log("Improperly formatted metadata.",
@@ -190,6 +213,8 @@ public struct Logger {
     
     public static func logToStream(_ message: String,
                                    line: Int) {
+        guard Build.loggingEnabled else { return }
+        
         if exposureLevel == .verbose {
             print("[\(line)]: \(message)\(elapsedTime)")
         }
@@ -197,6 +222,8 @@ public struct Logger {
     
     public static func closeStream(message: String? = nil,
                                    onLine: Int? = nil) {
+        guard Build.loggingEnabled else { return }
+        
         if exposureLevel == .verbose {
             streamOpen = false
             
@@ -214,10 +241,12 @@ public struct Logger {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private static func fallbackLog(_ text: String,
                                     with: AlertType? = nil) {
+        guard Build.loggingEnabled else { return }
+        
         print("\n--------------------------------------------------\n[IMPROPERLY FORMATTED METADATA]\n\(text)\n--------------------------------------------------\n")
         
         currentTimeLastCalled = Date()
@@ -225,6 +254,8 @@ public struct Logger {
         guard let alertType = with else {
             return
         }
+        
+        Core.hud.hide()
         
         switch alertType {
         case .errorAlert:
@@ -240,7 +271,28 @@ public struct Logger {
                                          [#file, #function, #line]])
         case .normalAlert:
             AKAlert(message: text,
-                    cancelButtonTitle: "OK").present()
+                    cancelButtonTitle: "OK",
+                    shouldTranslate: [.title, .message]).present()
+        }
+    }
+    
+    private static func printExtraParams(_ parameters: [String: Any]) {
+        guard !parameters.isEmpty else { return }
+        
+        guard parameters.count > 1 else {
+            print("[\(parameters.first!.key): \(parameters.first!.value)]")
+            return
+        }
+        
+        for (index, param) in parameters.enumerated() {
+            switch index {
+            case 0:
+                print("[\(param.key): \(param.value),")
+            case parameters.count - 1:
+                print("\(param.key): \(param.value)]")
+            default:
+                print("\(param.key): \(param.value),")
+            }
         }
     }
     

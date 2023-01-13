@@ -20,7 +20,7 @@ public class Timeout {
     
     //==================================================//
     
-    /* MARK: - Constructor Functions */
+    /* MARK: - Constructor Methods */
     
     public init(after: Double,
                 _ callback: @escaping () -> Void = {}) {
@@ -47,7 +47,7 @@ public class Timeout {
     
     //==================================================//
     
-    /* MARK: - Other Functions */
+    /* MARK: - Other Methods */
     
     public func cancel() {
         self.timer?.invalidate()
@@ -56,7 +56,7 @@ public class Timeout {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     @objc private func invoke() {
         self.callback?()
@@ -69,7 +69,7 @@ public class Timeout {
     @objc private func presentTimeoutAlert() {
         callback?()
         
-        let message = Localizer.preLocalizedString(for: .timedOut) ?? "The operation timed out. Please try again later."
+        let message = LocalizedString.timedOut ?? "The operation timed out. Please try again later."
         let exception = Exception(message,
                                   metadata: metadata!)
         

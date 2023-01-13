@@ -5287,97 +5287,1449 @@
 		<key>ja</key>
 		<string>翻訳を見る</string>
 		<key>jv</key>
-        <string>View Translation</string>
-        <key>ka</key>
-        <string>Თარგმანის Ნახვა</string>
-        <key>kk</key>
-        <string>Аударманы Көру</string>
-        <key>kn</key>
-        <string>ಅನುವಾದವನ್ನು ವೀಕ್ಷಿಸಿ</string>
-        <key>ko</key>
-        <string>번역 보기</string>
-        <key>ky</key>
-        <string>Translation View</string>
-        <key>la</key>
-        <string>Visum Translation</string>
-        <key>lt</key>
-        <string>Žiūrėti Vertimą</string>
-        <key>mg</key>
-        <string>Jereo ny Dikanteny</string>
-        <key>mi</key>
-        <string>Tiro Whakamaori</string>
-        <key>mk</key>
-        <string>Погледнете го преводот</string>
-        <key>ml</key>
-        <string>വിവർത്തനം കാണുക</string>
-        <key>mn</key>
-        <string>Орчуулга Үзэх</string>
-        <key>mr</key>
-        <string>भाषांतर पहा</string>
-        <key>ms</key>
-        <string>Lihat Terjemahan</string>
-        <key>mt</key>
-        <string>Ara Traduzzjoni</string>
-        <key>ne</key>
-        <string>अनुवाद हेर्नुहोस्</string>
-        <key>nl</key>
-        <string>Vertaling Bekijken</string>
-        <key>no</key>
-        <string>Se Oversettelse</string>
-        <key>pa</key>
-        <string>ਅਨੁਵਾਦ ਦੇਖੋ</string>
-        <key>pl</key>
-        <string>Wyświetl Tłumaczenie</string>
-        <key>pt</key>
-        <string>Ver Tradução</string>
-        <key>ro</key>
-        <string>Vedeți Traducerea</string>
-        <key>ru</key>
-        <string>Посмотреть Перевод</string>
-        <key>si</key>
-        <string>පරිවර්තනය බලන්න</string>
-        <key>sk</key>
-        <string>Zobraziť Preklad</string>
-        <key>sl</key>
-        <string>Ogled Prevoda</string>
-        <key>sq</key>
-        <string>Shiko Përkthimin</string>
-        <key>sr</key>
-        <string>Погледај Превод</string>
-        <key>su</key>
-        <string>Témbongkeun Tarjamahan</string>
-        <key>sv</key>
-        <string>Visa Översättning</string>
-        <key>sw</key>
-        <string>Tazama Tafsiri</string>
-        <key>ta</key>
-        <string>மொழிபெயர்ப்பைக் காண்க</string>
-        <key>te</key>
-        <string>అనువాదాన్ని వీక్షించండి</string>
-        <key>tg</key>
-        <string>Намоиши Тарҷума</string>
-        <key>th</key>
-        <string>ดูคำแปล</string>
-        <key>tl</key>
-        <string>Tingnan ang Pagsasalin</string>
-        <key>tr</key>
-        <string>Çeviriyi Görüntüle</string>
-        <key>tt</key>
-        <string>Тәрҗемәне Карау</string>
-        <key>udm</key>
-        <string>View Translation</string>
-        <key>uk</key>
-        <string>Переглянути Переклад</string>
-        <key>ur</key>
-        <string>ترجمہ دیکھیں</string>
-        <key>uz</key>
-        <string>Tarjimani Ko'rish</string>
-        <key>vi</key>
-        <string>Xem bản dịch</string>
-        <key>yi</key>
-        <string>View איבערזעצונג</string>
-        <key>zh</key>
-        <string>查看翻译</string>
+		<string>View Translation</string>
+		<key>ka</key>
+		<string>Თარგმანის Ნახვა</string>
+		<key>kk</key>
+		<string>Аударманы Көру</string>
+		<key>kn</key>
+		<string>ಅನುವಾದವನ್ನು ವೀಕ್ಷಿಸಿ</string>
+		<key>ko</key>
+		<string>번역 보기</string>
+		<key>ky</key>
+		<string>Translation View</string>
+		<key>la</key>
+		<string>Visum Translation</string>
+		<key>lt</key>
+		<string>Žiūrėti Vertimą</string>
+		<key>mg</key>
+		<string>Jereo ny Dikanteny</string>
+		<key>mi</key>
+		<string>Tiro Whakamaori</string>
+		<key>mk</key>
+		<string>Погледнете го преводот</string>
+		<key>ml</key>
+		<string>വിവർത്തനം കാണുക</string>
+		<key>mn</key>
+		<string>Орчуулга Үзэх</string>
+		<key>mr</key>
+		<string>भाषांतर पहा</string>
+		<key>ms</key>
+		<string>Lihat Terjemahan</string>
+		<key>mt</key>
+		<string>Ara Traduzzjoni</string>
+		<key>ne</key>
+		<string>अनुवाद हेर्नुहोस्</string>
+		<key>nl</key>
+		<string>Vertaling Bekijken</string>
+		<key>no</key>
+		<string>Se Oversettelse</string>
+		<key>pa</key>
+		<string>ਅਨੁਵਾਦ ਦੇਖੋ</string>
+		<key>pl</key>
+		<string>Wyświetl Tłumaczenie</string>
+		<key>pt</key>
+		<string>Ver Tradução</string>
+		<key>ro</key>
+		<string>Vedeți Traducerea</string>
+		<key>ru</key>
+		<string>Посмотреть Перевод</string>
+		<key>si</key>
+		<string>පරිවර්තනය බලන්න</string>
+		<key>sk</key>
+		<string>Zobraziť Preklad</string>
+		<key>sl</key>
+		<string>Ogled Prevoda</string>
+		<key>sq</key>
+		<string>Shiko Përkthimin</string>
+		<key>sr</key>
+		<string>Погледај Превод</string>
+		<key>su</key>
+		<string>Témbongkeun Tarjamahan</string>
+		<key>sv</key>
+		<string>Visa Översättning</string>
+		<key>sw</key>
+		<string>Tazama Tafsiri</string>
+		<key>ta</key>
+		<string>மொழிபெயர்ப்பைக் காண்க</string>
+		<key>te</key>
+		<string>అనువాదాన్ని వీక్షించండి</string>
+		<key>tg</key>
+		<string>Намоиши Тарҷума</string>
+		<key>th</key>
+		<string>ดูคำแปล</string>
+		<key>tl</key>
+		<string>Tingnan ang Pagsasalin</string>
+		<key>tr</key>
+		<string>Çeviriyi Görüntüle</string>
+		<key>tt</key>
+		<string>Тәрҗемәне Карау</string>
+		<key>udm</key>
+		<string>View Translation</string>
+		<key>uk</key>
+		<string>Переглянути Переклад</string>
+		<key>ur</key>
+		<string>ترجمہ دیکھیں</string>
+		<key>uz</key>
+		<string>Tarjimani Ko&apos;rish</string>
+		<key>vi</key>
+		<string>Xem bản dịch</string>
+		<key>yi</key>
+		<string>View איבערזעצונג</string>
+		<key>zh</key>
+		<string>查看翻译</string>
+	</dict>
+	<key>delete</key>
+	<dict>
+		<key>af</key>
+		<string>Vee uit</string>
+		<key>ar</key>
+		<string>حذف</string>
+		<key>az</key>
+		<string>Sil</string>
+		<key>ba</key>
+		<string>Delete</string>
+		<key>be</key>
+		<string>Выдаліць</string>
+		<key>bg</key>
+		<string>Изтрий</string>
+		<key>bn</key>
+		<string>মুছে ফেলা</string>
+		<key>bs</key>
+		<string>Izbriši</string>
+		<key>ca</key>
+		<string>Suprimeix</string>
+		<key>ceb</key>
+		<string>Pagtangtang</string>
+		<key>cs</key>
+		<string>Vymazat</string>
+		<key>cy</key>
+		<string>Dileu</string>
+		<key>da</key>
+		<string>Slet</string>
+		<key>de</key>
+		<string>Löschen</string>
+		<key>el</key>
+		<string>Διαγράφω</string>
+		<key>en</key>
+		<string>Delete</string>
+		<key>eo</key>
+		<string>Forigi</string>
+		<key>es</key>
+		<string>Borrar</string>
+		<key>et</key>
+		<string>Kustuta</string>
+		<key>eu</key>
+		<string>Ezabatu</string>
+		<key>fa</key>
+		<string>حذف</string>
+		<key>fi</key>
+		<string>Poistaa</string>
+		<key>fr</key>
+		<string>Effacer</string>
+		<key>ga</key>
+		<string>Scrios</string>
+		<key>gd</key>
+		<string>Sguab às</string>
+		<key>gl</key>
+		<string>Eliminar</string>
+		<key>gu</key>
+		<string>કાઢી નાખો</string>
+		<key>he</key>
+		<string>לִמְחוֹק</string>
+		<key>hi</key>
+		<string>मिटाना</string>
+		<key>hr</key>
+		<string>Izbrisati</string>
+		<key>ht</key>
+		<string>Efase</string>
+		<key>hu</key>
+		<string>Töröl</string>
+		<key>hy</key>
+		<string>Ջնջել</string>
+		<key>id</key>
+		<string>Menghapus</string>
+		<key>is</key>
+		<string>Eyða</string>
+		<key>it</key>
+		<string>Elimina</string>
+		<key>ja</key>
+		<string>消去</string>
+		<key>jv</key>
+		<string>Delete</string>
+		<key>ka</key>
+		<string>Წაშლა</string>
+		<key>kk</key>
+		<string>Жою</string>
+		<key>kn</key>
+		<string>ಅಳಿಸಿ</string>
+		<key>ko</key>
+		<string>삭제</string>
+		<key>ky</key>
+		<string>Жок кылуу</string>
+		<key>la</key>
+		<string>Delere</string>
+		<key>lt</key>
+		<string>Ištrinti</string>
+		<key>mg</key>
+		<string>Mamafa</string>
+		<key>mi</key>
+		<string>Mukua</string>
+		<key>mk</key>
+		<string>Избриши</string>
+		<key>ml</key>
+		<string>ഇല്ലാതാക്കുക</string>
+		<key>mn</key>
+		<string>Устгах</string>
+		<key>mr</key>
+		<string>हटवा</string>
+		<key>ms</key>
+		<string>Padam</string>
+		<key>mt</key>
+		<string>Ħassar</string>
+		<key>ne</key>
+		<string>मेटाउन</string>
+		<key>nl</key>
+		<string>Verwijderen</string>
+		<key>no</key>
+		<string>Slett</string>
+		<key>pa</key>
+		<string>ਮਿਟਾਓ</string>
+		<key>pl</key>
+		<string>Usuwać</string>
+		<key>pt</key>
+		<string>Excluir</string>
+		<key>ro</key>
+		<string>Șterge</string>
+		<key>ru</key>
+		<string>Удалить</string>
+		<key>si</key>
+		<string>මකන්න</string>
+		<key>sk</key>
+		<string>Odstrániť</string>
+		<key>sl</key>
+		<string>Izbriši</string>
+		<key>sq</key>
+		<string>Fshije</string>
+		<key>sr</key>
+		<string>Избриши</string>
+		<key>su</key>
+		<string>Mupus</string>
+		<key>sv</key>
+		<string>Radera</string>
+		<key>sw</key>
+		<string>Futa</string>
+		<key>ta</key>
+		<string>அழி</string>
+		<key>te</key>
+		<string>తొలగించు</string>
+		<key>tg</key>
+		<string>Нобуд кунед</string>
+		<key>th</key>
+		<string>ลบ</string>
+		<key>tl</key>
+		<string>Tanggalin</string>
+		<key>tr</key>
+		<string>Silmek</string>
+		<key>tt</key>
+		<string>Бетерү</string>
+		<key>udm</key>
+		<string>Delete</string>
+		<key>uk</key>
+		<string>Видалити</string>
+		<key>ur</key>
+		<string>حذف کریں۔</string>
+		<key>uz</key>
+		<string>Oʻchirish</string>
+		<key>vi</key>
+		<string>Xóa bỏ</string>
+		<key>yi</key>
+		<string>ויסמעקן</string>
+		<key>zh</key>
+		<string>删除</string>
+	</dict>
+	<key>hold_to_retry</key>
+	<dict>
+		<key>af</key>
+		<string>⚠️ Hou ingedruk om weer te probeer vertaal</string>
+		<key>ar</key>
+		<string>⚠️ اضغط باستمرار لإعادة محاولة الترجمة</string>
+		<key>az</key>
+		<string>⚠️ Tərcüməni yenidən cəhd etmək üçün basıb saxlayın</string>
+		<key>ba</key>
+		<string>⚠️ Hold down to retry translation</string>
+		<key>be</key>
+		<string>⚠️ Каб паўтарыць спробу перакладу, утрымлівайце</string>
+		<key>bg</key>
+		<string>⚠️ Задръжте, за да опитате отново превода</string>
+		<key>bn</key>
+		<string>⚠️ অনুবাদ পুনরায় চেষ্টা করতে চেপে ধরুন</string>
+		<key>bs</key>
+		<string>⚠️ Držite pritisnuto da ponovo pokušate prevesti</string>
+		<key>ca</key>
+		<string>⚠️ Mantén premut per tornar a provar la traducció</string>
+		<key>ceb</key>
+		<string>⚠️ Pagpugong aron sulayan pag-usab ang paghubad</string>
+		<key>cs</key>
+		<string>⚠️ Podržením zopakujete překlad</string>
+		<key>cy</key>
+		<string>⚠️ Daliwch ati i roi cynnig arall ar gyfieithu</string>
+		<key>da</key>
+		<string>⚠️ Hold nede for at prøve at oversætte igen</string>
+		<key>de</key>
+		<string>⚠️ Gedrückt halten, um die Übersetzung erneut zu versuchen</string>
+		<key>el</key>
+		<string>⚠️ Κρατήστε πατημένο για να δοκιμάσετε ξανά τη μετάφραση</string>
+		<key>en</key>
+		<string>⚠️ Hold down to retry translation</string>
+		<key>eo</key>
+		<string>⚠️ Tenu premutan por reprovi tradukadon</string>
+		<key>es</key>
+		<string>⚠️ Mantenga presionado para reintentar</string>
+		<key>et</key>
+		<string>⚠️ Tõlkimise uuesti proovimiseks hoidke all</string>
+		<key>eu</key>
+		<string>⚠️ Eduki sakatuta itzulpena berriro saiatzeko</string>
+		<key>fa</key>
+		<string>⚠️ برای تلاش مجدد ترجمه را فشار دهید</string>
+		<key>fi</key>
+		<string>⚠️ Pidä painettuna yrittääksesi kääntää uudelleen</string>
+		<key>fr</key>
+		<string>⚠️ Maintenez enfoncé pour réessayer la traduction</string>
+		<key>ga</key>
+		<string>⚠️ Coinnigh síos le haistriúchán a thriail arís</string>
+		<key>gd</key>
+		<string>⚠️ Cùm sìos gus feuchainn air eadar-theangachadh a-rithist</string>
+		<key>gl</key>
+		<string>⚠️ Mantén premido para tentar de novo</string>
+		<key>gu</key>
+		<string>⚠️ અનુવાદનો ફરી પ્રયાસ કરવા માટે દબાવી રાખો</string>
+		<key>he</key>
+		<string>⚠️ לחץ לחיצה ארוכה כדי לנסות שוב לתרגם</string>
+		<key>hi</key>
+		<string>⚠️ अनुवाद का पुनः प्रयास करने के लिए दबाए रखें</string>
+		<key>hr</key>
+		<string>⚠️ Držite za ponovni pokušaj prijevoda</string>
+		<key>ht</key>
+		<string>⚠️ Kenbe la pou w eseye refè tradiksyon an</string>
+		<key>hu</key>
+		<string>⚠️ Tartsa lenyomva a fordítás újrapróbálásához</string>
+		<key>hy</key>
+		<string>⚠️ Սեղմեք՝ թարգմանությունը նորից փորձելու համար</string>
+		<key>id</key>
+		<string>⚠️ Tahan untuk mencoba lagi terjemahan</string>
+		<key>is</key>
+		<string>⚠️ Haltu inni til að reyna aftur að þýða</string>
+		<key>it</key>
+		<string>⚠️ Tieni premuto per riprovare la traduzione</string>
+		<key>ja</key>
+		<string>⚠️翻訳を再試行するには長押しします</string>
+		<key>jv</key>
+		<string>⚠️ Hold down to retry translation</string>
+		<key>ka</key>
+		<string>⚠️ გეჭიროთ თარგმანი ხელახლა საცდელად</string>
+		<key>kk</key>
+		<string>⚠️ Аударманы қайталап көру үшін басып тұрыңыз</string>
+		<key>kn</key>
+		<string>⚠️ ಅನುವಾದವನ್ನು ಮರುಪ್ರಯತ್ನಿಸಲು ಹಿಡಿದಿಟ್ಟುಕೊಳ್ಳಿ</string>
+		<key>ko</key>
+		<string>⚠️ 번역을 다시 시도하려면 길게 누르세요.</string>
+		<key>ky</key>
+		<string>⚠️ Кайра которуу үчүн басып туруңуз</string>
+		<key>la</key>
+		<string>⚠️ Deprimatis ad retry translatione</string>
+		<key>lt</key>
+		<string>⚠️ Laikykite nuspaudę, kad bandytumėte iš naujo išversti</string>
+		<key>mg</key>
+		<string>⚠️ Tazony hanandrana indray ny fandikana</string>
+		<key>mi</key>
+		<string>⚠️ Purihia kia ngana ano ki te whakamaori</string>
+		<key>mk</key>
+		<string>⚠️ Држете за да се обидете повторно со преводот</string>
+		<key>ml</key>
+		<string>⚠️ വിവർത്തനം വീണ്ടും ശ്രമിക്കാൻ അമർത്തിപ്പിടിക്കുക</string>
+		<key>mn</key>
+		<string>⚠️ Дахин орчуулахыг оролдохын тулд удаан дарна уу</string>
+		<key>mr</key>
+		<string>⚠️ भाषांतराचा पुन्हा प्रयत्न करण्यासाठी दाबून ठेवा</string>
+		<key>ms</key>
+		<string>⚠️ Tahan untuk mencuba semula terjemahan</string>
+		<key>mt</key>
+		<string>⚠️ Żomm buttuna biex terġa&apos; tipprova t-traduzzjoni</string>
+		<key>ne</key>
+		<string>⚠️ अनुवाद पुन: प्रयास गर्न होल्ड गर्नुहोस्</string>
+		<key>nl</key>
+		<string>⚠️ Houd ingedrukt om de vertaling opnieuw te proberen</string>
+		<key>no</key>
+		<string>⚠️ Hold nede for å prøve å oversette på nytt</string>
+		<key>pa</key>
+		<string>⚠️ ਅਨੁਵਾਦ ਦੀ ਦੁਬਾਰਾ ਕੋਸ਼ਿਸ਼ ਕਰਨ ਲਈ ਹੋਲਡ ਕਰੋ</string>
+		<key>pl</key>
+		<string>⚠️ Przytrzymaj, aby powtórzyć tłumaczenie</string>
+		<key>pt</key>
+		<string>⚠️ Segure para repetir a tradução</string>
+		<key>ro</key>
+		<string>⚠️ Țineți apăsat pentru a reîncerca traducerea</string>
+		<key>ru</key>
+		<string>⚠️ Удерживайте, чтобы повторить попытку перевода</string>
+		<key>si</key>
+		<string>⚠️ පරිවර්තනය නැවත උත්සාහ කිරීමට රැඳී සිටින්න</string>
+		<key>sk</key>
+		<string>⚠️ Podržaním zopakujete preklad</string>
+		<key>sl</key>
+		<string>⚠️ Pridržite za ponovni poskus prevoda</string>
+		<key>sq</key>
+		<string>⚠️ Mbani të shtypur për të riprovuar përkthimin</string>
+		<key>sr</key>
+		<string>⚠️ Држите притиснуто да бисте поново покушали превод</string>
+		<key>su</key>
+		<string>⚠️ Tahan pikeun nyobaan deui tarjamahan</string>
+		<key>sv</key>
+		<string>⚠️ Håll ned för att försöka översätta igen</string>
+		<key>sw</key>
+		<string>⚠️ Shikilia ili ujaribu tena kutafsiri</string>
+		<key>ta</key>
+		<string>⚠️ மொழிபெயர்ப்பை மீண்டும் முயற்சிக்க, அழுத்திப் பிடிக்கவும்</string>
+		<key>te</key>
+		<string>⚠️ అనువాదాన్ని మళ్లీ ప్రయత్నించడానికి పట్టుకోండి</string>
+		<key>tg</key>
+		<string>⚠️ Барои дубора кӯшиш кардани тарҷума пахш кунед</string>
+		<key>th</key>
+		<string>⚠️ กดค้างไว้เพื่อลองแปลอีกครั้ง</string>
+		<key>tl</key>
+		<string>⚠️ Pindutin nang matagal upang subukang muli ang pagsasalin</string>
+		<key>tr</key>
+		<string>⚠️ Çeviriyi yeniden denemek için basılı tutun</string>
+		<key>tt</key>
+		<string>⚠️ Translation Тәрҗемәне кабатлап карагыз</string>
+		<key>udm</key>
+		<string>⚠️ Hold down to retry translation</string>
+		<key>uk</key>
+		<string>⚠️ Утримуйте, щоб повторити переклад</string>
+		<key>ur</key>
+		<string>⚠️ ترجمہ کی دوبارہ کوشش کرنے کے لیے دبائے رکھیں</string>
+		<key>uz</key>
+		<string>⚠️ Qayta tarjima qilish uchun bosib turing</string>
+		<key>vi</key>
+		<string>⚠️ Nhấn giữ để thử dịch lại</string>
+		<key>yi</key>
+		<string>⚠️ האַלטן אַראָפּ צו פּרובירן איבערזעצונג ווידער</string>
+		<key>zh</key>
+		<string>⚠️ 按住重试翻译</string>
+	</dict>
+	<key>retry_translation</key>
+	<dict>
+		<key>af</key>
+		<string>Probeer vertaling weer</string>
+		<key>ar</key>
+		<string>أعد محاولة الترجمة</string>
+		<key>az</key>
+		<string>Tərcüməni yenidən cəhd edin</string>
+		<key>ba</key>
+		<string>Retry Translation</string>
+		<key>be</key>
+		<string>Паўтарыць Пераклад</string>
+		<key>bg</key>
+		<string>Повторен опит за превод</string>
+		<key>bn</key>
+		<string>অনুবাদ পুনরায় চেষ্টা করুন</string>
+		<key>bs</key>
+		<string>Ponovite Prevod</string>
+		<key>ca</key>
+		<string>Torna a provar la traducció</string>
+		<key>ceb</key>
+		<string>Sulayi pag-usab ang Paghubad</string>
+		<key>cs</key>
+		<string>Opakovat Překlad</string>
+		<key>cy</key>
+		<string>Ailgynnig Cyfieithiad</string>
+		<key>da</key>
+		<string>Prøv at oversætte igen</string>
+		<key>de</key>
+		<string>Übersetzung erneut versuchen</string>
+		<key>el</key>
+		<string>Δοκιμάστε ξανά τη μετάφραση</string>
+		<key>en</key>
+		<string>Retry Translation</string>
+		<key>eo</key>
+		<string>Reprovi Tradukadon</string>
+		<key>es</key>
+		<string>Reintentar Traducción</string>
+		<key>et</key>
+		<string>Proovige tõlkida uuesti</string>
+		<key>eu</key>
+		<string>Saiatu berriro itzulpena</string>
+		<key>fa</key>
+		<string>ترجمه را دوباره امتحان کنید</string>
+		<key>fi</key>
+		<string>Yritä käännöstä uudelleen</string>
+		<key>fr</key>
+		<string>Réessayer la traduction</string>
+		<key>ga</key>
+		<string>Bain triail eile as Aistriúchán</string>
+		<key>gd</key>
+		<string>Feuch eadar-theangachadh a-rithist</string>
+		<key>gl</key>
+		<string>Volve tentar a tradución</string>
+		<key>gu</key>
+		<string>અનુવાદનો ફરી પ્રયાસ કરો</string>
+		<key>he</key>
+		<string>נסה שוב תרגום</string>
+		<key>hi</key>
+		<string>अनुवाद का पुनः प्रयास करें</string>
+		<key>hr</key>
+		<string>Ponovi Prijevod</string>
+		<key>ht</key>
+		<string>Reesye Tradiksyon</string>
+		<key>hu</key>
+		<string>Próbáld újra a fordítást</string>
+		<key>hy</key>
+		<string>Կրկին փորձեք թարգմանությունը</string>
+		<key>id</key>
+		<string>Coba Terjemahan</string>
+		<key>is</key>
+		<string>Reyndu þýðingu aftur</string>
+		<key>it</key>
+		<string>Riprova Traduzione</string>
+		<key>ja</key>
+		<string>翻訳を再試行</string>
+		<key>jv</key>
+		<string>Retry Translation</string>
+		<key>ka</key>
+		<string>ხელახლა სცადეთ თარგმანი</string>
+		<key>kk</key>
+		<string>Аударманы қайталап көріңіз</string>
+		<key>kn</key>
+		<string>ಅನುವಾದವನ್ನು ಮರುಪ್ರಯತ್ನಿಸಿ</string>
+		<key>ko</key>
+		<string>번역 재시도</string>
+		<key>ky</key>
+		<string>Котормосун кайталап көрүңүз</string>
+		<key>la</key>
+		<string>Retry Translation</string>
+		<key>lt</key>
+		<string>Bandyti iš naujo išversti</string>
+		<key>mg</key>
+		<string>Andramo indray ny Dikanteny</string>
+		<key>mi</key>
+		<string>Ngana Anō Whakamaori</string>
+		<key>mk</key>
+		<string>Обидете се повторно со превод</string>
+		<key>ml</key>
+		<string>വിവർത്തനം വീണ്ടും ശ്രമിക്കുക</string>
+		<key>mn</key>
+		<string>Орчуулгыг дахин оролдоно уу</string>
+		<key>mr</key>
+		<string>भाषांतराचा पुन्हा प्रयत्न करा</string>
+		<key>ms</key>
+		<string>Cuba semula Terjemahan</string>
+		<key>mt</key>
+		<string>Erġa&apos; pprova t-Traduzzjoni</string>
+		<key>ne</key>
+		<string>अनुवाद पुन: प्रयास गर्नुहोस्</string>
+		<key>nl</key>
+		<string>Probeer de vertaling opnieuw</string>
+		<key>no</key>
+		<string>Prøv oversettelse på nytt</string>
+		<key>pa</key>
+		<string>ਅਨੁਵਾਦ ਦੀ ਮੁੜ ਕੋਸ਼ਿਸ਼ ਕਰੋ</string>
+		<key>pl</key>
+		<string>Ponów Tłumaczenie</string>
+		<key>pt</key>
+		<string>Repetir Tradução</string>
+		<key>ro</key>
+		<string>Reîncercați Traducerea</string>
+		<key>ru</key>
+		<string>Повторить Перевод</string>
+		<key>si</key>
+		<string>පරිවර්තනය නැවත උත්සාහ කරන්න</string>
+		<key>sk</key>
+		<string>Opakovať Preklad</string>
+		<key>sl</key>
+		<string>Poskusi znova s prevodom</string>
+		<key>sq</key>
+		<string>Riprovo Përkthimin</string>
+		<key>sr</key>
+		<string>Поновите Превод</string>
+		<key>su</key>
+		<string>Coba deui Tarjamahan</string>
+		<key>sv</key>
+		<string>Försök översättning igen</string>
+		<key>sw</key>
+		<string>Jaribu tena Tafsiri</string>
+		<key>ta</key>
+		<string>மொழிபெயர்ப்பை மீண்டும் முயற்சிக்கவும்</string>
+		<key>te</key>
+		<string>అనువాదాన్ని మళ్లీ ప్రయత్నించండి</string>
+		<key>tg</key>
+		<string>Тарҷумаро такрор кунед</string>
+		<key>th</key>
+		<string>ลองแปลอีกครั้ง</string>
+		<key>tl</key>
+		<string>Subukan muli ang Pagsasalin</string>
+		<key>tr</key>
+		<string>Çeviriyi Yeniden Dene</string>
+		<key>tt</key>
+		<string>Тәрҗемәне кабатлап кара</string>
+		<key>udm</key>
+		<string>Retry Translation</string>
+		<key>uk</key>
+		<string>Повторити Переклад</string>
+		<key>ur</key>
+		<string>ترجمہ کی دوبارہ کوشش کریں۔</string>
+		<key>uz</key>
+		<string>Tarjimani qaytadan sinab ko&apos;ring</string>
+		<key>vi</key>
+		<string>Thử dịch lại</string>
+		<key>yi</key>
+		<string>פּרוּווט איבערזעצן</string>
+		<key>zh</key>
+		<string>重试翻译</string>
+	</dict>
+	<key>copy</key>
+	<dict>
+		<key>af</key>
+		<string>Kopieer</string>
+		<key>ar</key>
+		<string>ينسخ</string>
+		<key>az</key>
+		<string>Kopyalayın</string>
+		<key>ba</key>
+		<string>Copiar</string>
+		<key>be</key>
+		<string>Копія</string>
+		<key>bg</key>
+		<string>Копие</string>
+		<key>bn</key>
+		<string>কপি</string>
+		<key>bs</key>
+		<string>Kopiraj</string>
+		<key>ca</key>
+		<string>Còpia</string>
+		<key>ceb</key>
+		<string>Kopyaha</string>
+		<key>cs</key>
+		<string>Kopírovat</string>
+		<key>cy</key>
+		<string>Copi</string>
+		<key>da</key>
+		<string>Kopi</string>
+		<key>de</key>
+		<string>Kopieren</string>
+		<key>el</key>
+		<string>Αντίγραφο</string>
+		<key>en</key>
+		<string>Copy</string>
+		<key>eo</key>
+		<string>Kopiu</string>
+		<key>es</key>
+		<string>Copiar</string>
+		<key>et</key>
+		<string>Kopeeri</string>
+		<key>eu</key>
+		<string>Kopiatu</string>
+		<key>fa</key>
+		<string>کپی 🀄</string>
+		<key>fi</key>
+		<string>Kopio</string>
+		<key>fr</key>
+		<string>Copie</string>
+		<key>ga</key>
+		<string>Cóip</string>
+		<key>gd</key>
+		<string>Dèan lethbhreac</string>
+		<key>gl</key>
+		<string>Copiar</string>
+		<key>gu</key>
+		<string>નકલ કરો</string>
+		<key>he</key>
+		<string>עותק</string>
+		<key>hi</key>
+		<string>प्रतिलिपि</string>
+		<key>hr</key>
+		<string>Kopirati</string>
+		<key>ht</key>
+		<string>Kopi</string>
+		<key>hu</key>
+		<string>Másolat</string>
+		<key>hy</key>
+		<string>Պատճենել</string>
+		<key>id</key>
+		<string>Salinan</string>
+		<key>is</key>
+		<string>Afrita</string>
+		<key>it</key>
+		<string>Copia</string>
+		<key>ja</key>
+		<string>コピー</string>
+		<key>jv</key>
+		<string>Copiar</string>
+		<key>ka</key>
+		<string>Კოპირება</string>
+		<key>kk</key>
+		<string>Көшіру</string>
+		<key>kn</key>
+		<string>ನಕಲು ಮಾಡಿ</string>
+		<key>ko</key>
+		<string>복사</string>
+		<key>ky</key>
+		<string>Көчүрүү</string>
+		<key>la</key>
+		<string>Copy</string>
+		<key>lt</key>
+		<string>Kopijuoti</string>
+		<key>mg</key>
+		<string>Dika mitovy</string>
+		<key>mi</key>
+		<string>Tārua</string>
+		<key>mk</key>
+		<string>Копирај</string>
+		<key>ml</key>
+		<string>പകർത്തുക</string>
+		<key>mn</key>
+		<string>Хуулах</string>
+		<key>mr</key>
+		<string>कॉपी करा</string>
+		<key>ms</key>
+		<string>Salinan</string>
+		<key>mt</key>
+		<string>Kopja</string>
+		<key>ne</key>
+		<string>कापी</string>
+		<key>nl</key>
+		<string>Kopiëren</string>
+		<key>no</key>
+		<string>Kopiere</string>
+		<key>pa</key>
+		<string>ਕਾਪੀ ਕਰੋ</string>
+		<key>pl</key>
+		<string>Kopiuj</string>
+		<key>pt</key>
+		<string>Copiar</string>
+		<key>ro</key>
+		<string>Copie</string>
+		<key>ru</key>
+		<string>Копировать</string>
+		<key>si</key>
+		<string>පිටපත් කරන්න</string>
+		<key>sk</key>
+		<string>Kopírovať</string>
+		<key>sl</key>
+		<string>Kopirati</string>
+		<key>sq</key>
+		<string>Kopjo</string>
+		<key>sr</key>
+		<string>Копирај</string>
+		<key>su</key>
+		<string>Nyalin</string>
+		<key>sv</key>
+		<string>Kopiera</string>
+		<key>sw</key>
+		<string>Nakili</string>
+		<key>ta</key>
+		<string>நகலெடுக்கவும்</string>
+		<key>te</key>
+		<string>కాపీ చేయండి</string>
+		<key>tg</key>
+		<string>Нусхабардорӣ</string>
+		<key>th</key>
+		<string>สำเนา</string>
+		<key>tl</key>
+		<string>Kopya</string>
+		<key>tr</key>
+		<string>Kopyala</string>
+		<key>tt</key>
+		<string>Күчермә</string>
+		<key>udm</key>
+		<string>Copy</string>
+		<key>uk</key>
+		<string>Копіювати</string>
+		<key>ur</key>
+		<string>کاپی</string>
+		<key>uz</key>
+		<string>Nusxalash</string>
+		<key>vi</key>
+		<string>Sao chép</string>
+		<key>yi</key>
+		<string>קאָפּי</string>
+		<key>zh</key>
+		<string>复制</string>
+	</dict>
+	<key>speak</key>
+	<dict>
+		<key>af</key>
+		<string>Praat</string>
+		<key>ar</key>
+		<string>يتكلم</string>
+		<key>az</key>
+		<string>Danış</string>
+		<key>ba</key>
+		<string>Speak</string>
+		<key>be</key>
+		<string>Казаць</string>
+		<key>bg</key>
+		<string>Говори</string>
+		<key>bn</key>
+		<string>কথা বলুন</string>
+		<key>bs</key>
+		<string>Govori</string>
+		<key>ca</key>
+		<string>Parla</string>
+		<key>ceb</key>
+		<string>Isulti</string>
+		<key>cs</key>
+		<string>Mluvit</string>
+		<key>cy</key>
+		<string>Siaradwch</string>
+		<key>da</key>
+		<string>Tale</string>
+		<key>de</key>
+		<string>Sprechen</string>
+		<key>el</key>
+		<string>Μιλώ</string>
+		<key>en</key>
+		<string>Speak</string>
+		<key>eo</key>
+		<string>Paroli</string>
+		<key>es</key>
+		<string>Hablar</string>
+		<key>et</key>
+		<string>Rääkige</string>
+		<key>eu</key>
+		<string>Hitz egin</string>
+		<key>fa</key>
+		<string>صحبت</string>
+		<key>fi</key>
+		<string>Puhua</string>
+		<key>fr</key>
+		<string>Parlez</string>
+		<key>ga</key>
+		<string>Labhair</string>
+		<key>gd</key>
+		<string>Labhair</string>
+		<key>gl</key>
+		<string>Fala</string>
+		<key>gu</key>
+		<string>બોલો</string>
+		<key>he</key>
+		<string>לְדַבֵּר</string>
+		<key>hi</key>
+		<string>बोलना</string>
+		<key>hr</key>
+		<string>Govoriti</string>
+		<key>ht</key>
+		<string>Pale</string>
+		<key>hu</key>
+		<string>Beszél</string>
+		<key>hy</key>
+		<string>Խոսեք</string>
+		<key>id</key>
+		<string>Berbicara</string>
+		<key>is</key>
+		<string>Tala</string>
+		<key>it</key>
+		<string>Parlare</string>
+		<key>ja</key>
+		<string>話す</string>
+		<key>jv</key>
+		<string>Speak</string>
+		<key>ka</key>
+		<string>Ილაპარაკე</string>
+		<key>kk</key>
+		<string>Сөйлеу</string>
+		<key>kn</key>
+		<string>ಮಾತನಾಡು</string>
+		<key>ko</key>
+		<string>말하다</string>
+		<key>ky</key>
+		<string>Сүйлө</string>
+		<key>la</key>
+		<string>Loquere</string>
+		<key>lt</key>
+		<string>Kalbėk</string>
+		<key>mg</key>
+		<string>Mitenena</string>
+		<key>mi</key>
+		<string>Korero</string>
+		<key>mk</key>
+		<string>Зборувај</string>
+		<key>ml</key>
+		<string>സംസാരിക്കുക</string>
+		<key>mn</key>
+		<string>Ярих</string>
+		<key>mr</key>
+		<string>बोला</string>
+		<key>ms</key>
+		<string>Cakap</string>
+		<key>mt</key>
+		<string>Tkellem</string>
+		<key>ne</key>
+		<string>बोल्नुहोस्</string>
+		<key>nl</key>
+		<string>Spreken</string>
+		<key>no</key>
+		<string>Snakke</string>
+		<key>pa</key>
+		<string>ਬੋਲੋ</string>
+		<key>pl</key>
+		<string>Mówić</string>
+		<key>pt</key>
+		<string>Falar</string>
+		<key>ro</key>
+		<string>Vorbi</string>
+		<key>ru</key>
+		<string>Разговаривать</string>
+		<key>si</key>
+		<string>කතා කරන්න</string>
+		<key>sk</key>
+		<string>Hovorte</string>
+		<key>sl</key>
+		<string>Govoriti</string>
+		<key>sq</key>
+		<string>Fol</string>
+		<key>sr</key>
+		<string>Говорити</string>
+		<key>su</key>
+		<string>Nyarita</string>
+		<key>sv</key>
+		<string>Tala</string>
+		<key>sw</key>
+		<string>Ongea</string>
+		<key>ta</key>
+		<string>பேசு</string>
+		<key>te</key>
+		<string>మాట్లాడండి</string>
+		<key>tg</key>
+		<string>Сухан</string>
+		<key>th</key>
+		<string>พูด</string>
+		<key>tl</key>
+		<string>Magsalita</string>
+		<key>tr</key>
+		<string>Konuşmak</string>
+		<key>tt</key>
+		<string>Сөйлә</string>
+		<key>udm</key>
+		<string>Speak</string>
+		<key>uk</key>
+		<string>Говорити</string>
+		<key>ur</key>
+		<string>بولو</string>
+		<key>uz</key>
+		<string>Gapiring</string>
+		<key>vi</key>
+		<string>Nói chuyện</string>
+		<key>yi</key>
+		<string>רעדן</string>
+		<key>zh</key>
+		<string>说话</string>
+	</dict>
+	<key>stop_speaking</key>
+	<dict>
+		<key>af</key>
+		<string>Hou op Praat</string>
+		<key>ar</key>
+		<string>توقف عن الكلام</string>
+		<key>az</key>
+		<string>Danışmağı Dayandırın</string>
+		<key>ba</key>
+		<string>Stop Speaking</string>
+		<key>be</key>
+		<string>Перастань Гаварыць</string>
+		<key>bg</key>
+		<string>Спрете да говорите</string>
+		<key>bn</key>
+		<string>কথা বলা বন্ধ করুন</string>
+		<key>bs</key>
+		<string>Prestani Govoriti</string>
+		<key>ca</key>
+		<string>Deixa de parlar</string>
+		<key>ceb</key>
+		<string>Hunong sa Pagsulti</string>
+		<key>cs</key>
+		<string>Přestaň Mluvit</string>
+		<key>cy</key>
+		<string>Stopiwch Siarad</string>
+		<key>da</key>
+		<string>Stop med at tale</string>
+		<key>de</key>
+		<string>Hör auf zu reden</string>
+		<key>el</key>
+		<string>Σταμάτα να μιλάς</string>
+		<key>en</key>
+		<string>Stop Speaking</string>
+		<key>eo</key>
+		<string>Ĉesu Paroli</string>
+		<key>es</key>
+		<string>Para de Hablar</string>
+		<key>et</key>
+		<string>Lõpeta Rääkimine</string>
+		<key>eu</key>
+		<string>Hitz egiteari utzi</string>
+		<key>fa</key>
+		<string>صحبت کردن را متوقف کنید</string>
+		<key>fi</key>
+		<string>Lopeta Puhuminen</string>
+		<key>fr</key>
+		<string>Arrête de parler</string>
+		<key>ga</key>
+		<string>Stop ag Labhairt</string>
+		<key>gd</key>
+		<string>Stad a bhruidhinn</string>
+		<key>gl</key>
+		<string>Deixa de falar</string>
+		<key>gu</key>
+		<string>બોલવાનું બંધ કરો</string>
+		<key>he</key>
+		<string>תפסיק לדבר</string>
+		<key>hi</key>
+		<string>बोलना बंद करो</string>
+		<key>hr</key>
+		<string>Prestani Govoriti</string>
+		<key>ht</key>
+		<string>Sispann Pale</string>
+		<key>hu</key>
+		<string>Hagyd abba a beszédet</string>
+		<key>hy</key>
+		<string>Դադարեք Խոսել</string>
+		<key>id</key>
+		<string>Berhenti Berbicara</string>
+		<key>is</key>
+		<string>Hættu að tala</string>
+		<key>it</key>
+		<string>Smettila di parlare</string>
+		<key>ja</key>
+		<string>話すのをやめる</string>
+		<key>jv</key>
+		<string>Stop Speaking</string>
+		<key>ka</key>
+		<string>Შეწყვიტე Საუბარი</string>
+		<key>kk</key>
+		<string>Сөйлеуді Тоқтату</string>
+		<key>kn</key>
+		<string>ಮಾತನಾಡುವುದನ್ನು ನಿಲ್ಲಿಸಿ</string>
+		<key>ko</key>
+		<string>그만 말해</string>
+		<key>ky</key>
+		<string>Сүйлөгөндү Токтот</string>
+		<key>la</key>
+		<string>Nolite Loqui</string>
+		<key>lt</key>
+		<string>Nustokite Kalbėti</string>
+		<key>mg</key>
+		<string>Atsaharo ny fitenenana</string>
+		<key>mi</key>
+		<string>Kati te Korero</string>
+		<key>mk</key>
+		<string>Престани да зборуваш</string>
+		<key>ml</key>
+		<string>സംസാരിക്കുന്നത് നിർത്തുക</string>
+		<key>mn</key>
+		<string>Ярихаа Боль</string>
+		<key>mr</key>
+		<string>बोलणे थांबवा</string>
+		<key>ms</key>
+		<string>Berhenti Bercakap</string>
+		<key>mt</key>
+		<string>Stop Speaking</string>
+		<key>ne</key>
+		<string>बोल्न बन्द गर्नुहोस्</string>
+		<key>nl</key>
+		<string>Stop met praten</string>
+		<key>no</key>
+		<string>Slutt å snakke</string>
+		<key>pa</key>
+		<string>ਬੋਲਣਾ ਬੰਦ ਕਰੋ</string>
+		<key>pl</key>
+		<string>Przestań Mówić</string>
+		<key>pt</key>
+		<string>Pare de Falar</string>
+		<key>ro</key>
+		<string>Nu mai vorbi</string>
+		<key>ru</key>
+		<string>Прекрати Говорить</string>
+		<key>si</key>
+		<string>කතා කිරීම නවත්වන්න</string>
+		<key>sk</key>
+		<string>Prestaňte Hovoriť</string>
+		<key>sl</key>
+		<string>Nehaj Govoriti</string>
+		<key>sq</key>
+		<string>Ndaloni së foluri</string>
+		<key>sr</key>
+		<string>Престани да говориш</string>
+		<key>su</key>
+		<string>Eureun Nyarita</string>
+		<key>sv</key>
+		<string>Sluta Prata</string>
+		<key>sw</key>
+		<string>Acha Kusema</string>
+		<key>ta</key>
+		<string>பேசுவதை நிறுத்து</string>
+		<key>te</key>
+		<string>మాట్లాడటం ఆపు</string>
+		<key>tg</key>
+		<string>Суханро бас кунед</string>
+		<key>th</key>
+		<string>หยุดพูด</string>
+		<key>tl</key>
+		<string>Tumigil sa pagsasalita</string>
+		<key>tr</key>
+		<string>Konuşmayı Bırak</string>
+		<key>tt</key>
+		<string>Сөйләшүне Туктат</string>
+		<key>udm</key>
+		<string>Stop Speaking</string>
+		<key>uk</key>
+		<string>Припиніть Говорити</string>
+		<key>ur</key>
+		<string>بولنا بند کرو</string>
+		<key>uz</key>
+		<string>Gapirishni Toxtating</string>
+		<key>vi</key>
+		<string>Ngừng Nói</string>
+		<key>yi</key>
+		<string>האַלטן גערעדט</string>
+		<key>zh</key>
+		<string>停止说话</string>
+	</dict>
+	<key>message_received</key>
+	<dict>
+		<key>af</key>
+		<string>Boodskap Ontvang</string>
+		<key>ar</key>
+		<string>وصلت الرساله</string>
+		<key>az</key>
+		<string>Mesaj Alındı</string>
+		<key>ba</key>
+		<string>Mensaje Recibido</string>
+		<key>be</key>
+		<string>Паведамленне Атрымана</string>
+		<key>bg</key>
+		<string>Съобщението Прието</string>
+		<key>bn</key>
+		<string>বার্তা পেয়েছি</string>
+		<key>bs</key>
+		<string>Poruka Primljena</string>
+		<key>ca</key>
+		<string>Missatge Rebut</string>
+		<key>ceb</key>
+		<string>Nadawat ang Mensahe</string>
+		<key>cs</key>
+		<string>Zpráva Přijata</string>
+		<key>cy</key>
+		<string>Neges wedi ei Dderbyn</string>
+		<key>da</key>
+		<string>Besked Modtaget</string>
+		<key>de</key>
+		<string>Nachricht Erhalten</string>
+		<key>el</key>
+		<string>Το μήνυμα ελήφθη</string>
+		<key>en</key>
+		<string>Message Received</string>
+		<key>eo</key>
+		<string>Mesaĝo Ricevita</string>
+		<key>es</key>
+		<string>Mensaje Recibido</string>
+		<key>et</key>
+		<string>Sõnum vastu võetud</string>
+		<key>eu</key>
+		<string>Jasotako Mezua</string>
+		<key>fa</key>
+		<string>پیام دریافت شد</string>
+		<key>fi</key>
+		<string>Viesti Vastaanotettu</string>
+		<key>fr</key>
+		<string>Message Reçu</string>
+		<key>ga</key>
+		<string>Teachtaireacht a Fuarthas</string>
+		<key>gd</key>
+		<string>Teachdaireachd air fhaighinn</string>
+		<key>gl</key>
+		<string>Mensaxe Recibida</string>
+		<key>gu</key>
+		<string>સંદેશ મળ્યો</string>
+		<key>he</key>
+		<string>הודעה התקבלה</string>
+		<key>hi</key>
+		<string>संदेश मिल गया</string>
+		<key>hr</key>
+		<string>Poruka Primljena</string>
+		<key>ht</key>
+		<string>Mesaj Resevwa</string>
+		<key>hu</key>
+		<string>Üzenet Érkezett</string>
+		<key>hy</key>
+		<string>Հաղորդագրությունը ստացված է</string>
+		<key>id</key>
+		<string>Pesan Diterima</string>
+		<key>is</key>
+		<string>Skilaboð Móttekin</string>
+		<key>it</key>
+		<string>Messaggio Ricevuto</string>
+		<key>ja</key>
+		<string>メッセージを受信しました</string>
+		<key>jv</key>
+		<string>Mensaje Recibido</string>
+		<key>ka</key>
+		<string>Შეტყობინება Მიღებულია</string>
+		<key>kk</key>
+		<string>Хабарлама Алынды</string>
+		<key>kn</key>
+		<string>ಸಂದೇಶವನ್ನು ಸ್ವೀಕರಿಸಲಾಗಿದೆ</string>
+		<key>ko</key>
+		<string>메시지 받음</string>
+		<key>ky</key>
+		<string>Кат Алынды</string>
+		<key>la</key>
+		<string>Nuntius Accepistis</string>
+		<key>lt</key>
+		<string>Pranešimas Gautas</string>
+		<key>mg</key>
+		<string>Hafatra Voaray</string>
+		<key>mi</key>
+		<string>Kua riro te Karere</string>
+		<key>mk</key>
+		<string>Пораката е примена</string>
+		<key>ml</key>
+		<string>സന്ദേശം ലഭിച്ചു</string>
+		<key>mn</key>
+		<string>Зурвас хүлээн авсан</string>
+		<key>mr</key>
+		<string>मेसेज आला</string>
+		<key>ms</key>
+		<string>Mesej Diterima</string>
+		<key>mt</key>
+		<string>Messaġġ Riċevut</string>
+		<key>ne</key>
+		<string>सन्देश प्राप्त भयो</string>
+		<key>nl</key>
+		<string>Bericht Ontvangen</string>
+		<key>no</key>
+		<string>Beskjed Mottatt</string>
+		<key>pa</key>
+		<string>ਸੁਨੇਹਾ ਪ੍ਰਾਪਤ ਹੋਇਆ</string>
+		<key>pl</key>
+		<string>Wiadomość Otrzymana</string>
+		<key>pt</key>
+		<string>Mensagem Recebida</string>
+		<key>ro</key>
+		<string>Mesaj Receptionat</string>
+		<key>ru</key>
+		<string>Сообщение Доставлено</string>
+		<key>si</key>
+		<string>පණිවිඩය ලැබිණි</string>
+		<key>sk</key>
+		<string>Správa Prijatá</string>
+		<key>sl</key>
+		<string>Sporočilo Prejeto</string>
+		<key>sq</key>
+		<string>Mesazhi u mor</string>
+		<key>sr</key>
+		<string>Порука Примљена</string>
+		<key>su</key>
+		<string>Pesen Ditampi</string>
+		<key>sv</key>
+		<string>Meddelande Mottaget</string>
+		<key>sw</key>
+		<string>Ujumbe Umepokelewa</string>
+		<key>ta</key>
+		<string>செய்தி பெறப்பட்டது</string>
+		<key>te</key>
+		<string>సందేశం అందింది</string>
+		<key>tg</key>
+		<string>Паём гирифта шуд</string>
+		<key>th</key>
+		<string>ข้อความที่ได้รับ</string>
+		<key>tl</key>
+		<string>Natanggap ang mensahe</string>
+		<key>tr</key>
+		<string>Mesaj Alındı</string>
+		<key>tt</key>
+		<string>Хәбәр Алынды</string>
+		<key>udm</key>
+		<string>Message Received</string>
+		<key>uk</key>
+		<string>Повідомлення Отримано</string>
+		<key>ur</key>
+		<string>پیغام موصول ہوا۔</string>
+		<key>uz</key>
+		<string>Xabar qabul qilindi</string>
+		<key>vi</key>
+		<string>Tin nhắn đã nhận</string>
+		<key>yi</key>
+		<string>אָנזאָג באקומען</string>
+		<key>zh</key>
+		<string>收到消息</string>
+	</dict>
+	<key>my_account</key>
+	<dict>
+		<key>af</key>
+		<string>(My Rekening)</string>
+		<key>ar</key>
+		<string>(حسابي)</string>
+		<key>az</key>
+		<string>(Mənim Hesabım)</string>
+		<key>ba</key>
+		<string>(Me)</string>
+		<key>be</key>
+		<string>(Мой Рахунак)</string>
+		<key>bg</key>
+		<string>(Моят Акаунт)</string>
+		<key>bn</key>
+		<string>(আমার অ্যাকাউন্ট)</string>
+		<key>bs</key>
+		<string>(Moj Nalog)</string>
+		<key>ca</key>
+		<string>(El meu compte)</string>
+		<key>ceb</key>
+		<string>(Akong Account)</string>
+		<key>cs</key>
+		<string>(Můj Účet)</string>
+		<key>cy</key>
+		<string>(Fy Nghyfrif )</string>
+		<key>da</key>
+		<string>(Min Konto)</string>
+		<key>de</key>
+		<string>(Mein Konto)</string>
+		<key>el</key>
+		<string>(Ο λογαριασμός μου)</string>
+		<key>en</key>
+		<string>(Me)</string>
+		<key>eo</key>
+		<string>(Mia Konto)</string>
+		<key>es</key>
+		<string>(Mi Cuenta)</string>
+		<key>et</key>
+		<string>(Minu Konto)</string>
+		<key>eu</key>
+		<string>(Nire Kontua)</string>
+		<key>fa</key>
+		<string>(حساب من)</string>
+		<key>fi</key>
+		<string>(Oma Tili)</string>
+		<key>fr</key>
+		<string>(Mon Compte)</string>
+		<key>ga</key>
+		<string>(Mo Chuntas)</string>
+		<key>gd</key>
+		<string>(Mo Chunntas)</string>
+		<key>gl</key>
+		<string>(A miña conta)</string>
+		<key>gu</key>
+		<string>(મારું એકાઉન્ટ)</string>
+		<key>he</key>
+		<string>(החשבון שלי)</string>
+		<key>hi</key>
+		<string>(मेरा खाता)</string>
+		<key>hr</key>
+		<string>(Moj Račun)</string>
+		<key>ht</key>
+		<string>(Kont mwen an)</string>
+		<key>hu</key>
+		<string>(Fiókom)</string>
+		<key>hy</key>
+		<string>(Իմ Հաշիվը)</string>
+		<key>id</key>
+		<string>(Akun Saya)</string>
+		<key>is</key>
+		<string>(Reikningurinn Minn)</string>
+		<key>it</key>
+		<string>(Il mio conto)</string>
+		<key>ja</key>
+		<string>(マイアカウント)</string>
+		<key>jv</key>
+		<string>(Me)</string>
+		<key>ka</key>
+		<string>(ჩემი Ანგარიში)</string>
+		<key>kk</key>
+		<string>(Менің Тіркелгім)</string>
+		<key>kn</key>
+		<string>(ನನ್ನ ಖಾತೆ)</string>
+		<key>ko</key>
+		<string>(내 계정)</string>
+		<key>ky</key>
+		<string>(Менин Аккаунтум)</string>
+		<key>la</key>
+		<string>(Me)</string>
+		<key>lt</key>
+		<string>(Mano Paskyra)</string>
+		<key>mg</key>
+		<string>(Kaontiko)</string>
+		<key>mi</key>
+		<string>(Taku Kaute)</string>
+		<key>mk</key>
+		<string>(Моја Сметка)</string>
+		<key>ml</key>
+		<string>(എന്റെ അക്കൗണ്ട്)</string>
+		<key>mn</key>
+		<string>(Миний Данс)</string>
+		<key>mr</key>
+		<string>(माझे खाते)</string>
+		<key>ms</key>
+		<string>(Akaun Saya)</string>
+		<key>mt</key>
+		<string>(Il-Kont Tiegħi)</string>
+		<key>ne</key>
+		<string>(मेरो खाता)</string>
+		<key>nl</key>
+		<string>(Mijn Account)</string>
+		<key>no</key>
+		<string>(Min Konto)</string>
+		<key>pa</key>
+		<string>(ਮੇਰਾ ਖਾਤਾ)</string>
+		<key>pl</key>
+		<string>(Moje Konto)</string>
+		<key>pt</key>
+		<string>(Minha Conta)</string>
+		<key>ro</key>
+		<string>(Contul Meu)</string>
+		<key>ru</key>
+		<string>(Мой Аккаунт)</string>
+		<key>si</key>
+		<string>(මගේ ගිණුම)</string>
+		<key>sk</key>
+		<string>(Môj Účet)</string>
+		<key>sl</key>
+		<string>(Moj Račun)</string>
+		<key>sq</key>
+		<string>(Llogaria Ime)</string>
+		<key>sr</key>
+		<string>(Мој Налог)</string>
+		<key>su</key>
+		<string>(Akun Abdi)</string>
+		<key>sv</key>
+		<string>(Mitt Konto)</string>
+		<key>sw</key>
+		<string>(Akaunti Yangu)</string>
+		<key>ta</key>
+		<string>(எனது கணக்கு)</string>
+		<key>te</key>
+		<string>(నా ఖాతా)</string>
+		<key>tg</key>
+		<string>(Ҳисоби Ман)</string>
+		<key>th</key>
+		<string>(บัญชีของฉัน)</string>
+		<key>tl</key>
+		<string>(Aking Account)</string>
+		<key>tr</key>
+		<string>(Hesabım)</string>
+		<key>tt</key>
+		<string>(Минем Хисап)</string>
+		<key>udm</key>
+		<string>(Me)</string>
+		<key>uk</key>
+		<string>(Мій обліковий запис)</string>
+		<key>ur</key>
+		<string>(میرا اکاؤنٹ)</string>
+		<key>uz</key>
+		<string>(Mening Hisobim)</string>
+		<key>vi</key>
+		<string>(Tài khoản của tôi)</string>
+		<key>yi</key>
+		<string>(מייַן חשבון)</string>
+		<key>zh</key>
+		<string>(我的帐户)</string>
 	</dict>
 </dict>
 </plist>

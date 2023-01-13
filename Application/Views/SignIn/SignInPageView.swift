@@ -11,6 +11,8 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import AlertKit
+import Firebase
+import FirebaseAuth
 import PhoneNumberKit
 
 public struct SignInPageView: View {
@@ -19,21 +21,24 @@ public struct SignInPageView: View {
     
     /* MARK: - Properties */
     
+    // Other
     @StateObject public var viewModel: SignInPageViewModel
     @StateObject public var viewRouter: ViewRouter
+    
+    // Booleans
+    @State private var pressedContinue = false
+    @State private var verified = false
     
     // Strings
     @State public var phoneNumberString: String
     @State public var fromSignUp: Bool
+    
     @State private var verificationIdentifier: String = "" {
         didSet {
             verified = true
         }
     }
     @State private var verificationCode: String = ""
-    
-    // Other
-    @State private var verified = false
     @State private var selectedRegion = "US"
     
     //==================================================//
@@ -91,6 +96,8 @@ public struct SignInPageView: View {
                     }
                     
                     Button {
+                        pressedContinue = true
+                        
                         if verified {
                             authenticateUser()
                         } else {
@@ -104,6 +111,7 @@ public struct SignInPageView: View {
                     .padding(.top, 5)
                     .accentColor(.blue)
                     .disabled(verified ? verificationCode.lowercasedTrimmingWhitespace.count != 6 : phoneNumberString.removingOccurrences(of: ["+"]).lowercasedTrimmingWhitespace.count < 7)
+                    .disabled(pressedContinue)
                     
                     Button {
                         if verified {
@@ -131,14 +139,15 @@ public struct SignInPageView: View {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func authenticateUser() {
         viewModel.authenticateUser(identifier: verificationIdentifier,
                                    verificationCode: verificationCode) { (userID, returnedError) in
+            self.pressedContinue = false
+            
             guard let identifier = userID else {
-                let error = returnedError == nil ? Exception(metadata: [#file, #function, #line]) : Exception(returnedError!,
-                                                                                                              metadata: [#file, #function, #line])
+                let error = returnedError == nil ? Exception(metadata: [#file, #function, #line]) : Exception(returnedError!, metadata: [#file, #function, #line])
                 Logger.log(error,
                            with: .errorAlert)
                 return
@@ -146,25 +155,47 @@ public struct SignInPageView: View {
             
             RuntimeStorage.store(identifier, as: .currentUserID)
             viewRouter.currentPage = .conversations
+            AnalyticsService.logEvent(.logIn)
         }
     }
     
     private func verifyPhoneNumber() {
-        let compiledNumber = "\(RuntimeStorage.callingCodeDictionary![selectedRegion]!)\(phoneNumberString.digits)".digits
+        let compiledNumber = "\(RuntimeStorage.callingCodeDictionary![selectedRegion]!)\(phoneNumberString.digits)"
+        let phoneNumber = PhoneNumber(digits: compiledNumber.digits,
+                                      rawStringHasPlusPrefix: true,
+                                      formattedString: phoneNumberString,
+                                      callingCode: RuntimeStorage.callingCodeDictionary![selectedRegion]!)
         
-        viewModel.verifyPhoneNumber("+\(compiledNumber)") { (returnedIdentifier,
-                                                             returnedError) in
+        PhoneNumberService.verifyUser(phoneNumber: phoneNumber) { _, exception, hasAccount in
+            self.pressedContinue = false
             
-            guard let identifier = returnedIdentifier else {
-                let error = returnedError == nil ? Exception(metadata: [#file, #function, #line]) : Exception(returnedError!,
-                                                                                                              metadata: [#file, #function, #line])
-                Logger.log(error,
-                           with: .errorAlert)
+            guard hasAccount else {
+                let alert = AKAlert(message: "There is no account registered with this phone number. Please sign up instead.", actions: [AKAction(title: "Sign Up", style: .preferred)])
+                
+                alert.present() { actionID in
+                    guard actionID == -1 else {
+                        RuntimeStorage.store(phoneNumberString, as: .numberFromSignIn)
+                        viewRouter.currentPage = .signUp_selectLanguage
+                        return
+                    }
+                }
+                
                 return
             }
             
-            verificationIdentifier = identifier
-            RuntimeStorage.remove(.selectedRegionCode)
+            Auth.auth().languageCode = RuntimeStorage.languageCode!
+            PhoneAuthProvider.provider().verifyPhoneNumber("+\(compiledNumber.digits)",
+                                                           uiDelegate: nil) { (identifier,
+                                                                               error) in
+                guard let identifier else {
+                    let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
+                    Logger.log(exception, with: .errorAlert)
+                    return
+                }
+                
+                verificationIdentifier = identifier
+                RuntimeStorage.remove(.selectedRegionCode)
+            }
         }
     }
 }

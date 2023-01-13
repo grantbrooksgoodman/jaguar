@@ -22,12 +22,13 @@ public struct SelectLanguagePageView: View {
     
     /* MARK: - Properties */
     
+    public var languages = Array(RuntimeStorage.languageCodeDictionary!.values).sorted()
+    
     @StateObject public var viewModel: SelectLanguagePageViewModel
     @StateObject public var viewRouter: ViewRouter
     
+    @State private var pressedContinue = false
     @State private var selectedLanguage: String = RuntimeStorage.languageCodeDictionary![RuntimeStorage.languageCode!]!
-    
-    public var languages = Array(RuntimeStorage.languageCodeDictionary!.values).sorted()
     
     //==================================================//
     
@@ -71,12 +72,14 @@ public struct SelectLanguagePageView: View {
                         AKCore.shared.setLanguageCode(selectedLanguageCode)
                         
                         viewRouter.currentPage = .signUp_verifyNumber
+                        pressedContinue = true
                     } label: {
                         Text(translations["continue"]!.output)
                             .bold()
                     }
                     .padding(.top, 5)
                     .foregroundColor(.blue)
+                    .disabled(pressedContinue)
                     
                     Button {
                         viewRouter.currentPage = .initial

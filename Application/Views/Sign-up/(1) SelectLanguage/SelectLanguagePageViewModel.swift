@@ -32,7 +32,7 @@ public class SelectLanguagePageViewModel: ObservableObject {
     
     private let inputs = ["title": Translator.TranslationInput("Select Language"),
                           "subtitle": Translator.TranslationInput("To begin, please select your language."),
-                          "instruction": Translator.TranslationInput("You speak:", alternate: "Language you speak:"),
+                          "instruction": Translator.TranslationInput("I speak:", alternate: "Language you speak:"),
                           "continue": Translator.TranslationInput("Continue"),
                           "back": Translator.TranslationInput("Back", alternate: "Go back")]
     
@@ -42,7 +42,7 @@ public class SelectLanguagePageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Initializer Method */
     
     public func load() {
         state = .loading

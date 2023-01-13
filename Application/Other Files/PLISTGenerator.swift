@@ -38,6 +38,7 @@ public enum PLISTGenerator {
             return nil
         }
         
+        NSData(data: Data()).write(toFile: path, atomically: true)
         NSDictionary(dictionary: dictionary).write(toFile: path, atomically: true)
         return path
     }

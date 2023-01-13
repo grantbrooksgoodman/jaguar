@@ -1,5 +1,5 @@
 //
-//  PhoneNumberService.swift
+//  PhoneNumberService_OLD.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 28/09/2022.
@@ -9,7 +9,7 @@
 /* Third-party Frameworks */
 import PhoneNumberKit
 
-public enum PhoneNumberService {
+public enum PhoneNumberService_OLD {
     
     //==================================================//
     
@@ -18,7 +18,7 @@ public enum PhoneNumberService {
     private static func backformedCallingCodes(forNumber: String) -> [String] {
         var candidates = [String]()
         
-#warning("Will have different keys every time for each one with duplicates.")
+        // #warning("Will have different keys every time for each one with duplicates.")
         guard let callingCodes = RuntimeStorage.callingCodeDictionary else { return candidates }
         
         let uniqueCallingCodeDictionary = callingCodes.uniqueValues()
@@ -58,49 +58,6 @@ public enum PhoneNumberService {
         } catch _ { }
         
         return callingCodes
-    }
-    
-    public static func possibleCallingCodes(forNumber: String) -> [String] {
-        var candidates = [String]()
-        
-        guard let lookupTables = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "LookupTables", ofType: "plist") ?? "") as? [String: [String]] else { return candidates }
-        
-        for possibleRawNumber in forNumber.possibleRawNumbers() {
-            guard let possibleCodes = lookupTables[String(possibleRawNumber.count)] else { continue }
-            candidates.append(contentsOf: possibleCodes)
-        }
-        
-        //        candidates.append(contentsOf: backformedCallingCodes(forNumber: forNumber))
-        //        candidates.append(contentsOf: extractCallingCodes(fromNumber: forNumber))
-        
-        return candidates.unique()
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Hashing */
-    
-    public static func possibleHashes(forNumber: String) -> [String] {
-        let digits = forNumber.digits
-        var candidates = [digits.compressedHash]
-        
-        for dropCount in 1...3 {
-            let droppedNumber = digits.dropPrefix(dropCount)
-            
-            candidates.append(droppedNumber.compressedHash)
-        }
-        
-        return candidates
-    }
-    
-    public static func possibleHashes(forNumbers: [String]) -> [String] {
-        var candidates = [String]()
-        
-        for number in forNumbers {
-            candidates.append(contentsOf: possibleHashes(forNumber: number))
-        }
-        
-        return candidates
     }
     
     //==================================================//
@@ -241,21 +198,5 @@ public extension Dictionary where Key == String, Value == String {
         }
         
         return result
-    }
-}
-
-/* MARK: String */
-public extension String {
-    func possibleRawNumbers() -> [String] {
-        var candidates = [self.digits]
-        
-        guard self.count > 3 else { return [] }
-        
-        for dropCount in 1...3 {
-            let droppedNumber = self.digits.dropPrefix(dropCount)
-            candidates.append(droppedNumber)
-        }
-        
-        return candidates
     }
 }

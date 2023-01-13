@@ -30,16 +30,16 @@ public class AuthCodePageViewModel: ObservableObject {
     /* MARK: - Properties */
     
     private let inputs = ["title": Translator.TranslationInput("Enter Verification Code"),
-                          "subtitle": Translator.TranslationInput("A verification code was sent to your device. It may take a minute or so to arrive.\n\nWhen ready, press continue to complete setup."),
+                          "subtitle": Translator.TranslationInput("A verification code was sent to your device. It may take a minute or so to arrive."),
                           "instruction": Translator.TranslationInput("Enter the code sent to your device:"),
-                          "finish": Translator.TranslationInput("Finish"),
+                          "continue": Translator.TranslationInput("Continue"),
                           "back": Translator.TranslationInput("Back", alternate: "Go back")]
     
     @Published private(set) var state = State.idle
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Initializer Method */
     
     public func load() {
         state = .loading
@@ -62,7 +62,7 @@ public class AuthCodePageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Other Functions */
+    /* MARK: - Other Methods */
     
     public func authenticateUser(identifier: String,
                                  verificationCode: String,

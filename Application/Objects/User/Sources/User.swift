@@ -9,7 +9,7 @@
 /* First-party Frameworks */
 import UIKit
 
-/* Third-party Frameworks */
+/* First-party Frameworks */
 import PhoneNumberKit
 
 public class User: Codable {
@@ -22,10 +22,11 @@ public class User: Codable {
     public var conversationIDs: [ConversationID]?
     public var openConversations: [Conversation]? {
         didSet {
-            openConversations = openConversations?.uniquedByIdentifiers().sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
+            openConversations = openConversations?.uniquedByIdentifiers().visibleForCurrentUser.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate })
             conversationIDs = openConversations?.identifiers()
         }
     }
+    public var pushTokens: [String]?
     
     // Strings
     public var callingCode: String!
@@ -39,31 +40,39 @@ public class User: Codable {
     
     //==================================================//
     
-    /* MARK: - Constructor Function */
+    /* MARK: - Constructor Method */
     
     public init(identifier: String,
                 callingCode: String,
                 languageCode: String,
                 conversationIDs: [ConversationID]?,
                 phoneNumber: String,
+                pushTokens: [String]?,
                 region: String) {
         self.identifier = identifier
         self.callingCode = callingCode
         self.languageCode = languageCode
         self.conversationIDs = conversationIDs
         self.phoneNumber = phoneNumber
+        self.pushTokens = pushTokens
         self.region = region
     }
     
     //==================================================//
     
-    /* MARK: - Getter Functions */
+    /* MARK: - Getter Methods */
     
     public func canStartConversation(with user: User,
                                      completion: @escaping(_ canStart: Bool,
                                                            _ exception: Exception?) -> Void) {
         guard user.identifier != identifier else {
             completion(false, Exception("Cannot start a conversation with yourself.",
+                                        metadata: [#file, #function, #line]))
+            return
+        }
+        
+        guard user.languageCode != languageCode else {
+            completion(false, Exception("Cannot start a conversation with a user who speaks the same language.",
                                         metadata: [#file, #function, #line]))
             return
         }
@@ -76,8 +85,20 @@ public class User: Codable {
             }
             
             guard !conversations.contains(where: { $0.participants.contains(where: { $0.userID == user.identifier }) }) else {
+                for conversation in conversations {
+                    if conversation.participants.contains(where: { $0.userID == user.identifier }) {
+                        if let selfParticipant = conversation.participants.first(where: { $0.userID == self.identifier }),
+                           selfParticipant.hasDeleted {
+                            completion(true, nil)
+                            return
+                        }
+                    }
+                }
+                
                 completion(false, Exception("Conversation with this user already exists.",
-                                            extraParams: ["UserID": user.identifier!],
+                                            isReportable: false,
+                                            extraParams: ["UserID": user.identifier!,
+                                                          "CellTitle": user.cellTitle],
                                             metadata: [#file, #function, #line]))
                 return
             }
@@ -88,7 +109,8 @@ public class User: Codable {
     
     public func deSerializeConversations(completion: @escaping (_ conversations: [Conversation]?,
                                                                 _ exception: Exception?) -> Void) {
-        GeneralSerializer.getValues(atPath: "/allUsers/\(identifier!)/openConversations") { returnedIdentifiers, exception in
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
+        GeneralSerializer.getValues(atPath: "\(pathPrefix)\(identifier!)/openConversations") { returnedIdentifiers, exception in
             guard let updatedIdentifiers = returnedIdentifiers as? [String] else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
@@ -159,12 +181,13 @@ public class User: Codable {
     
     //==================================================//
     
-    /* MARK: - Setter Functions */
+    /* MARK: - Setter Methods */
     
     public func update(isTyping: Bool,
                        inConversationWithID: String,
                        completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
-        GeneralSerializer.getValues(atPath: "/allConversations/\(inConversationWithID)") { returnedValues, exception in
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        GeneralSerializer.getValues(atPath: "\(pathPrefix)\(inConversationWithID)") { returnedValues, exception in
             guard let values = returnedValues as? [String: Any] else {
                 let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
@@ -173,16 +196,18 @@ public class User: Codable {
                 return
             }
             
-            guard let participants = values["participants"] as? [String] else {
+            guard let participants = values["participants"] as? [String],
+                  let currentUserParticipant = participants.filter({ $0.components(separatedBy: " | ")[0] == self.identifier! }).first?.asParticipant else {
                 completion(Exception("Couldn't deserialize participants.",
                                      metadata: [#file, #function, #line]))
                 return
             }
             
             let otherUserID = participants.filter { $0.components(separatedBy: " | ")[0] != self.identifier! }.first!
-            let updatedParticipants = ["\(self.identifier!) | \(isTyping)", otherUserID]
+            let updatedParticipants = ["\(self.identifier!) | \(currentUserParticipant.hasDeleted!) | \(isTyping)", otherUserID]
             
-            GeneralSerializer.setValue(onKey: "/allConversations/\(inConversationWithID)/participants",
+            let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+            GeneralSerializer.setValue(onKey: "\(pathPrefix)\(inConversationWithID)/participants",
                                        withData: updatedParticipants) { returnedError in
                 guard let error = returnedError else {
                     completion(nil)
@@ -194,8 +219,36 @@ public class User: Codable {
         }
     }
     
+    public func updatePushTokens(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        guard let newToken = RuntimeStorage.pushToken else {
+            completion(Exception("No stored push token.",
+                                 metadata: [#file, #function, #line]))
+            return
+        }
+        
+        var pushTokens = pushTokens ?? []
+        guard !pushTokens.contains(newToken) else {
+            completion(Exception("Push token already stored on server!",
+                                 metadata: [#file, #function, #line]))
+            return
+        }
+        
+        pushTokens.append(newToken)
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
+        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/pushTokens",
+                                   withData: pushTokens) { error in
+            guard error == nil else {
+                completion(Exception(error!, metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(nil)
+        }
+    }
+    
     public func updateLastActiveDate() {
-        GeneralSerializer.setValue(onKey: "/allUsers/\(identifier!)/lastActive",
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
+        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/lastActive",
                                    withData: Core.secondaryDateFormatter!.string(from: Date())) { returnedError in
             if let error = returnedError {
                 Logger.log(Exception(error,
@@ -207,7 +260,118 @@ public class User: Codable {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Push Notification Methods */
+    
+    public func notifyOfNewMessage(_ text: String,
+                                   completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        guard let pushTokens else {
+            completion(Exception("User hasn't registered for push notifications!",
+                                 metadata: [#file, #function, #line]))
+            return
+        }
+        
+        let dispatchGroup = DispatchGroup()
+        
+        var exceptions = [Exception]()
+        for token in pushTokens {
+            dispatchGroup.enter()
+            notify(for: token, text) { exception in
+                if let exception {
+                    exceptions.append(exception)
+                }
+                
+                dispatchGroup.leave()
+            }
+        }
+        
+        dispatchGroup.notify(queue: .main) {
+            completion(exceptions.compiledException)
+        }
+    }
+    
+    private func notify(for pushToken: String,
+                        _ text: String,
+                        completion: @escaping(_ exception: Exception?) -> Void) {
+        guard let url = URL(string: "https://fcm.googleapis.com/fcm/send") else {
+            completion(Exception("Couldn't generate URL.",
+                                 metadata: [#file, #function, #line]))
+            return
+        }
+        
+        guard let apiKey = RuntimeStorage.pushApiKey else {
+            completion(Exception("Couldn't get push API key.",
+                                 metadata: [#file, #function, #line]))
+            return
+        }
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("key=\(apiKey)", forHTTPHeaderField: "Authorization")
+        
+        var title = Localizer.preLocalizedString(for: .messageReceived,
+                                                 language: languageCode) ?? "Message Received"
+        if let currentUser = RuntimeStorage.currentUser {
+            title = currentUser.compiledPhoneNumber.phoneNumberFormatted
+        }
+        
+        var payload: [String: Any] = ["to": pushToken,
+                                      "mutable_content": true]
+        payload["notification"] = ["title": title,
+                                   "body": text,
+                                   "badge": badgeNumber]
+        payload["data"] = ["userHash": phoneNumber.digits.compressedHash]
+        
+        do {
+            try request.httpBody = JSONSerialization.data(withJSONObject: payload)
+        } catch let error {
+            completion(Exception(error, metadata: [#file, #function, #line]))
+        }
+        
+        URLSession.shared.dataTask(with: request) { data, response, error in
+            guard error == nil else {
+                completion(Exception(error!, metadata: [#file, #function, #line]))
+                return
+            }
+            
+            guard let httpStatus = response as? HTTPURLResponse else {
+                completion(Exception("Couldn't get response as HTTP URL response.",
+                                     metadata: [#file, #function, #line]))
+                return
+            }
+            
+            guard httpStatus.statusCode == 200 else {
+                completion(Exception("Should have status code 200.",
+                                     extraParams: ["StatusCode": httpStatus.statusCode],
+                                     metadata: [#file, #function, #line]))
+                return
+            }
+            
+            guard let data else {
+                completion(Exception("Couldn't get data from HTTP response.",
+                                     metadata: [#file, #function, #line]))
+                return
+            }
+            
+            if let responseString = String(data: data, encoding: .utf8) {
+                guard responseString.contains("\"success\":1") else {
+                    completion(Exception("Response data did not indicate success.",
+                                         extraParams: ["ResponseString": responseString],
+                                         metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                completion(nil)
+            } else {
+                completion(nil)
+            }
+        }.resume()
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Private Methods */
     
     private func fetchConversations(_ identifiers: [ConversationID],
                                     completion: @escaping (_ returnedConversations: [Conversation]?,
@@ -387,20 +551,6 @@ public extension Array where Element == User {
     }
 }
 
-/* MARK: PhoneNumberFormat */
-public extension PhoneNumberFormat {
-    func asString() -> String {
-        switch self {
-        case .e164:
-            return "E164"
-        case .international:
-            return "International"
-        case .national:
-            return "National"
-        }
-    }
-}
-
 /* MARK: Sequence */
 public extension Sequence where Iterator.Element == String {
     func containsAny(in array: [String]) -> Bool {
@@ -436,94 +586,45 @@ public extension Sequence where Iterator.Element == String {
     }
 }
 
-/* MARK: String */
-public extension String {
-    func callingCodeFormatted(region: String) -> String {
-        let phoneNumberKit = PhoneNumberKit()
-        let callingCode = RuntimeStorage.callingCodeDictionary?[region] ?? ""
-        
-        let mutableSelf = self
-        let digits = mutableSelf.digits
-        let nationalNumber = digits.dropPrefix(callingCode.count)
-        
-        var formattedNumber = "\(nationalNumber)"
-        
-        do {
-            let parsed = try phoneNumberKit.parse("\(nationalNumber)", withRegion: region)
-            
-            formattedNumber = phoneNumberKit.format(parsed, toType: .international)
-            formattedNumber = formattedNumber.removingOccurrences(of: ["+"])
-        } catch { }
-        
-        if !formattedNumber.contains(" ") || (formattedNumber.characterArray.count(of: "-") == 2 &&
-                                              formattedNumber.digits.count == 11) {
-            formattedNumber = PartialFormatter(phoneNumberKit: PhoneNumberKit(),
-                                               defaultRegion: region,
-                                               withPrefix: true,
-                                               maxDigits: nil).formatPartial(nationalNumber)
-        }
-        
-        return "+\(callingCode) \(formattedNumber)".replacingOccurrences(of: "1(", with: "(")
-    }
-    
-    func formattedPhoneNumber(region: String) -> String {
-        guard let callingCode = RuntimeStorage.callingCodeDictionary![region] else { return self }
-        
-        let phoneNumberKit = PhoneNumberKit()
-        
-        let mutableSelf = self
-        let digits = mutableSelf.digits
-        
-        guard digits.count != 10 && callingCode != "1" else {
-            let formatted = PartialFormatter(phoneNumberKit: PhoneNumberKit(),
-                                             defaultRegion: "US",
-                                             withPrefix: true,
-                                             maxDigits: nil).formatPartial(digits)
-            return formatted.replacingOccurrences(of: "1(", with: "(")
-        }
-        
-        var formattedNumber = "\(callingCode)\(digits)"
-        
-        do {
-            let parsed = try phoneNumberKit.parse("\(digits)", withRegion: region)
-            
-            formattedNumber = phoneNumberKit.format(parsed, toType: .international)
-            formattedNumber = formattedNumber.removingOccurrences(of: ["+"])
-        } catch { }
-        
-        if !formattedNumber.contains(" ") {
-            formattedNumber = PartialFormatter(phoneNumberKit: PhoneNumberKit(),
-                                               defaultRegion: region,
-                                               withPrefix: true,
-                                               maxDigits: nil).formatPartial(digits)
-        }
-        
-        if formattedNumber.characterArray.count(of: "-") == 2,
-           formattedNumber.digits.count == 11 {
-            formattedNumber = "\(PartialFormatter().formatPartial(self))"
-        }
-        
-        return (formattedNumber.hasPrefix("\(callingCode) ") ? formattedNumber.dropPrefix(callingCode.count + 1) : formattedNumber).replacingOccurrences(of: "1(", with: "(")
-    }
-}
-
 /* MARK: User */
 public extension User {
-    var cellTitle: String {
-        var regionCode = RegionDetailServer.getRegionCode(forCallingCode: callingCode)
-        regionCode = (regionCode == "multiple" && callingCode == "1") ? "US" : regionCode
+    var compiledPhoneNumber: String {
+        return "\(callingCode!)\(phoneNumber!)"
+    }
+    
+    var badgeNumber: Int {
+        var badgeNumber = 0
         
-        let formattedNumber = phoneNumber.formattedPhoneNumber(region: regionCode)
-        var contactName = "+\(callingCode!) \(formattedNumber)"
+        guard let openConversations,
+              !openConversations.isEmpty else { return 0 }
         
-        if let name = ContactService.fetchContactName(forNumber: phoneNumber),
-           !(name.givenName.lowercasedTrimmingWhitespace == "" && name.familyName.lowercasedTrimmingWhitespace == "") {
-            contactName = "\(name.givenName) \(name.familyName)"
-        } else if let name = ContactService.fetchContactName(forNumber: "\(callingCode!)\(phoneNumber!)".digits),
-                  !(name.givenName.lowercasedTrimmingWhitespace == "" && name.familyName.lowercasedTrimmingWhitespace == "") {
-            contactName = "\(name.givenName) \(name.familyName)"
+        for conversation in openConversations {
+            guard let lastFromCurrentUser = conversation.messages.last(where: { $0.fromAccountIdentifier == identifier }),
+                  let indexOfLast = conversation.messages.firstIndex(of: lastFromCurrentUser) else { continue }
+            
+            guard conversation.messages.count > indexOfLast else { continue }
+            
+            let slice = conversation.messages[indexOfLast...conversation.messages.count - 1]
+            guard slice.count > 1 else { continue }
+            
+            let filteredSlice = slice.filter({ $0.fromAccountIdentifier != identifier })
+            guard filteredSlice.count > 0 else { continue }
+            
+            for message in filteredSlice {
+                guard message.readDate == nil else { continue }
+                badgeNumber += 1
+            }
         }
         
-        return contactName
+        return badgeNumber
+    }
+    
+    var cellTitle: String {
+        guard let archivedPair = ContactArchiver.getFromArchive(withUserHash: phoneNumber.compressedHash),
+              archivedPair.contact.firstName.lowercasedTrimmingWhitespace != "" else {
+            return "\(callingCode!)\(phoneNumber!)".phoneNumberFormatted
+        }
+        
+        return "\(archivedPair.contact.firstName) \(archivedPair.contact.lastName)"
     }
 }

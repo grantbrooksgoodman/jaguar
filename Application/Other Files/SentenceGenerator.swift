@@ -13,7 +13,24 @@ public enum SentenceGenerator {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Public Methods */
+    
+    public static func getWords(count: Int) -> String {
+        guard count > 0 else { return "" }
+        
+        guard let words = getWords() else {
+            Logger.log(Exception("Couldn't get words.",
+                                 metadata: [#file, #function, #line]))
+            return ""
+        }
+        
+        var generatedWords = [String]()
+        for _ in 1...count {
+            generatedWords.append(words[numericCast(arc4random_uniform(numericCast(words.count)))])
+        }
+        
+        return generatedWords.joined(separator: "-")
+    }
     
     public static func generateSentence(wordCount: Int) -> String {
         guard let words = getWords() else {
@@ -51,7 +68,7 @@ public enum SentenceGenerator {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private static func getWords() -> [String]? {
         guard let path = Bundle.main.path(forResource: "words", ofType: "txt") else {

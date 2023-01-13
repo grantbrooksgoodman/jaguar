@@ -22,7 +22,7 @@ public struct UserTestingSerializer {
     
     //==================================================//
     
-    /* MARK: - Miscellaneous Functions */
+    /* MARK: - Miscellaneous Methods */
     
     public func createRandomUser(region: String? = nil,
                                  completion: @escaping (_ returnedIdentifier: String?,
@@ -40,16 +40,18 @@ public struct UserTestingSerializer {
         
         // TODO: Verfify user with same language code doesn't already exist
         
-        guard let generatedKey = Database.database().reference().child("/allUsers/").childByAutoId().key else {
+        guard let generatedKey = Database.database().reference().child("/\(GeneralSerializer.environment.shortString)/users/").childByAutoId().key else {
             completion(nil, Exception("Unable to generate key for new user.",
                                       metadata: [#file, #function, #line]))
             return
         }
         
+        let pushToken = RuntimeStorage.pushToken
         UserSerializer.shared.createUser(generatedKey,
                                          callingCode: RuntimeStorage.callingCodeDictionary![randomRegionCode.uppercased()]!,
                                          languageCode: randomRegionCode.lowercased(),
                                          phoneNumber: exampleNumber.digits,
+                                         pushTokens: pushToken == nil ? nil : [pushToken!],
                                          region: randomRegionCode.uppercased()) { exception in
             guard exception == nil else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
@@ -62,7 +64,7 @@ public struct UserTestingSerializer {
     
     public func getRandomUserID(completion: @escaping (_ returnedIdentifier: String?,
                                                        _ exception: Exception?) -> Void) {
-        Database.database().reference().child("/allUsers").observeSingleEvent(of: .value) { (returnedSnapshot) in
+        Database.database().reference().child("/\(GeneralSerializer.environment.shortString)/users").observeSingleEvent(of: .value) { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   let data = snapshot as? [String: Any] else {
                 completion(nil, Exception("Couldn't get user list.",
@@ -112,7 +114,7 @@ public struct UserTestingSerializer {
     
     public func getAllUserIDs(completion: @escaping (_ returnedIdentifiers: [String]?,
                                                      _ exception: Exception?) -> Void) {
-        Database.database().reference().child("/allUsers").observeSingleEvent(of: .value) { (returnedSnapshot) in
+        Database.database().reference().child("/\(GeneralSerializer.environment.shortString)/users").observeSingleEvent(of: .value) { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   let data = snapshot as? [String: Any] else {
                 completion(nil, Exception("Couldn't get user list.",
@@ -121,6 +123,43 @@ public struct UserTestingSerializer {
             }
             
             completion(Array(data.keys), nil)
+        }
+    }
+    
+    /// - Warning: Completion variables are *not* mutually exclusive.
+    public func getUserIDs(forLanguageCode languageCode: String, completion: @escaping(_ userIDs: [String]?,
+                                                                                       _ exception: Exception?) -> Void) {
+        getAllUserIDs { returnedIdentifiers, exception in
+            guard let userIDs = returnedIdentifiers else {
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            let dispatchGroup = DispatchGroup()
+            var exceptions = [Exception]()
+            var matchingIds = [String]()
+            
+            for id in userIDs {
+                dispatchGroup.enter()
+                GeneralSerializer.getValues(atPath: "/\(GeneralSerializer.environment.shortString)/users/\(id)/languageCode") { returnedValues, returnedException in
+                    guard let code = returnedValues as? String else {
+                        exceptions.append(returnedException ?? Exception(metadata: [#file, #function, #line]))
+                        dispatchGroup.leave()
+                        return
+                    }
+                    
+                    if code.lowercased() == languageCode.lowercased() {
+                        matchingIds.append(id)
+                    }
+                    
+                    dispatchGroup.leave()
+                }
+            }
+            
+            dispatchGroup.notify(queue: .main) {
+                completion(matchingIds.isEmpty ? nil : matchingIds,
+                           exceptions.isEmpty ? nil : exceptions.compiledException)
+            }
         }
     }
     
@@ -137,6 +176,7 @@ public struct UserTestingSerializer {
         RuntimeStorage.remove(.currentUser)
         RuntimeStorage.remove(.currentUserID)
         
+        // #warning("Will never be executed.")
         if let userList = UserDefaults.standard.value(forKey: "userList") as? [String],
            let position = UserDefaults.standard.value(forKey: "userListPosition") as? Int {
             getSetUser(with: userList,
@@ -144,7 +184,7 @@ public struct UserTestingSerializer {
                 completion(exception)
             }
         } else {
-            GeneralSerializer.getValues(atPath: "/allUsers") { returnedValues, returnedException in
+            GeneralSerializer.getValues(atPath: "/\(GeneralSerializer.environment.shortString)/users") { returnedValues, returnedException in
                 guard let values = returnedValues as? [String: Any] else {
                     completion(returnedException ?? Exception(metadata: [#file, #function, #line]))
                     return
@@ -169,8 +209,8 @@ public struct UserTestingSerializer {
             return
         }
         
-        UserSerializer.shared.findUsers(forPhoneNumbers: [phoneNumber.digits]) { returnedUsers, exception in
-            guard let users = returnedUsers else {
+        UserSerializer.shared.findUsers(for: phoneNumber) { users, exception in
+            guard let users else {
                 completion(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
@@ -190,7 +230,7 @@ public struct UserTestingSerializer {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func getSetUser(with list: [String],
                             position: Int,

@@ -46,12 +46,13 @@ public struct NewChatPageView: View {
                      let contactPairs):
             loadedView(translations: translations,
                        contactPairs: contactPairs)
+            .onAppear { AnalyticsService.logEvent(.accessNewChatPage) }
         case .failed(let exception):
             Color.clear.onAppear {
                 isPresenting = false
                 
                 Core.gcd.after(seconds: 1) {
-                    viewModel.presentExceptionAlert(exception)
+                    AKErrorAlert(error: exception.asAkError()).present()
                 }
             }
         }
@@ -66,7 +67,7 @@ public struct NewChatPageView: View {
                     ChatPageView(conversation: Binding(get: { return conversationToUse },
                                                        set: { conversationToUse = $0 }))
                 }
-                .navigationBarTitle(Localizer.preLocalizedString(for: .newMessage) ?? "New Message",
+                .navigationBarTitle(LocalizedString.newMessage,
                                     displayMode: .inline)
                 //                .navigationBar(backgroundColor: Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x2A2A2C) : UIColor(hex: 0xF8F8F8)),
                 //                               titleColor: colorScheme == .dark ? .white : .black)
@@ -86,6 +87,11 @@ public struct NewChatPageView: View {
                     guard newValue else { return }
                     dismiss()
                 }
+                .onChange(of: stateProvider.wantsToInvite) { newValue in
+                    guard newValue else { return }
+                    stateProvider.wantsToInvite = false
+                    handleContactSelectorDismissed()
+                }
             }
             .sheet(isPresented: $showingContactSelector) {
                 ContactSelectorView(isPresenting: $showingContactSelector,
@@ -100,16 +106,19 @@ public struct NewChatPageView: View {
                 }
             }
         }
+        .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
     }
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func dismiss() {
         RuntimeStorage.messagesVC?.messageInputBar.inputTextView.resignFirstResponder()
         RuntimeStorage.messagesVC?.messageInputBar.alpha = 0
         isPresenting = false
+        
+        RuntimeStorage.remove(.contactPairs)
     }
     
     private func handleContactSelectorDismissed() {
@@ -120,7 +129,7 @@ public struct NewChatPageView: View {
         } else if RuntimeStorage.wantsToInvite! {
             isPresenting = false
             Core.gcd.after(seconds: 2) {
-                viewModel.presentShareSheet()
+                viewModel.inviteUsers()
                 RuntimeStorage.store(false, as: .wantsToInvite)
             }
         } else {
@@ -138,18 +147,6 @@ public struct NewChatPageView: View {
 
 /**/
 
-/* MARK: Conversation */
-public extension Conversation {
-    static func empty() -> Conversation {
-        return Conversation(identifier: ConversationID(key: "EMPTY",
-                                                       hash: "EMPTY"),
-                            messageIdentifiers: [],
-                            messages: [],
-                            lastModifiedDate: Date(),
-                            participants: [])
-    }
-}
-
 /* MARK: View */
 extension View {
     @available(iOS 14, *)
@@ -161,17 +158,6 @@ extension View {
         let uiTitleColor = UIColor(titleColor)
         appearance.largeTitleTextAttributes = [.foregroundColor: uiTitleColor]
         appearance.titleTextAttributes = [.foregroundColor: uiTitleColor]
-        
-        if RuntimeStorage.navigationBarStandardAppearance == nil {
-            RuntimeStorage.store(UINavigationBar.appearance().standardAppearance,
-                                 as: .navigationBarStandardAppearance)
-        }
-        
-        if RuntimeStorage.navgationBarScrollEdgeAppearance == nil,
-           let scrollEdgeAppearance = UINavigationBar.appearance().scrollEdgeAppearance {
-            RuntimeStorage.store(scrollEdgeAppearance,
-                                 as: .navgationBarScrollEdgeAppearance)
-        }
         
         UINavigationBar.appearance().standardAppearance = appearance
         UINavigationBar.appearance().scrollEdgeAppearance = appearance

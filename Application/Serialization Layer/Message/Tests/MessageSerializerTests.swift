@@ -13,7 +13,7 @@ final class MessageSerializerTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Overridden Functions */
+    /* MARK: Overridden Methods */
     
     override func setUp() {
         super.setUp()
@@ -25,7 +25,7 @@ final class MessageSerializerTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Testing Functions */
+    /* MARK: Testing Methods */
     
     func testGetMessages() {
         let expectation = XCTestExpectation(description: "No error returned")

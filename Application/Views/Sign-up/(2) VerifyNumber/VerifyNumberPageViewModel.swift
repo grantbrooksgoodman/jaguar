@@ -10,10 +10,6 @@
 import SwiftUI
 
 /* Third-party Frameworks */
-import AlertKit
-import Firebase
-import FirebaseAuth
-import PhoneNumberKit
 import Translator
 
 public class VerifyNumberPageViewModel: ObservableObject {
@@ -43,7 +39,7 @@ public class VerifyNumberPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Initializer Method */
     
     public func load() {
         state = .loading
@@ -61,50 +57,6 @@ public class VerifyNumberPageViewModel: ObservableObject {
             }
             
             self.state = .loaded(translations: translations)
-        }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Other Functions */
-    
-    public func verifyPhoneNumber(_ string: String,
-                                  completion: @escaping (_ returnedIdentifier: String?,
-                                                         _ exception: Exception?) -> Void) {
-        Auth.auth().languageCode = RuntimeStorage.languageCode!
-        PhoneAuthProvider.provider().verifyPhoneNumber(string,
-                                                       uiDelegate: nil) { (returnedIdentifier,
-                                                                           returnedError) in
-            completion(returnedIdentifier,
-                       returnedError == nil ? nil : Exception(returnedError!,
-                                                              metadata: [#file, #function, #line]))
-        }
-    }
-    
-    public func verifyUser(phoneNumber: String,
-                           completion: @escaping (_ returnedIdentifier: String?,
-                                                  _ exception: Exception?,
-                                                  _ hasAccount: Bool) -> Void) {
-        UserSerializer.shared.findUsers(forPhoneNumbers: [phoneNumber]) { returnedUsers, exception in
-            if returnedUsers == nil || returnedUsers?.count == 0 {
-                self.verifyPhoneNumber("+\(phoneNumber)") { (returnedIdentifier,
-                                                             exception) in
-                    guard let identifier = returnedIdentifier else {
-                        completion(nil,
-                                   exception ?? Exception(metadata: [#file, #function, #line]),
-                                   false)
-                        return
-                    }
-                    
-                    completion(identifier,
-                               nil,
-                               false)
-                }
-            } else {
-                completion(nil,
-                           nil,
-                           true)
-            }
         }
     }
 }

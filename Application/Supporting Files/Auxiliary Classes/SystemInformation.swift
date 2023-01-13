@@ -21,7 +21,7 @@ public enum SystemInformationError: Error {
 
 //==================================================//
 
-/* MARK: - Public Functions */
+/* MARK: - Public Methods */
 
 public func getInformation(fromLevelName: String) throws -> [Int32] {
     var levelBufferSize = Int(CTL_MAXNAME)
@@ -85,7 +85,7 @@ public func informationString(withName: String) throws -> String {
 
 //==================================================//
 
-/* MARK: - Private Functions */
+/* MARK: - Private Methods */
 
 private func integerFromSystemInformation(withLevels: [Int32]) throws -> Int64 {
     let informationBuffer = try getInformation(withLevels: withLevels)

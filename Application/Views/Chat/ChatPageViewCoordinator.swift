@@ -7,6 +7,7 @@
 //
 
 /* First-party Frameworks */
+import NaturalLanguage
 import SwiftUI
 
 /* Third-party Frameworks */
@@ -50,15 +51,28 @@ public final class ChatPageViewCoordinator {
     
     //==================================================//
     
-    /* MARK: - Constructor Function */
+    /* MARK: - Constructor Method */
     
     public init(conversation: Binding<Conversation>) {
         self.conversation = conversation
+        RuntimeStorage.store(self, as: .coordinator)
+    }
+    
+    public func setConversation(_ conversation: Conversation) {
+        var mutableConversation = conversation
+        mutableConversation.messages = mutableConversation.sortedFilteredMessages()
+        
+        self.conversation = Binding(get: { mutableConversation },
+                                    set: { mutableConversation = $0 })
+        
+        RuntimeStorage.store(self.conversation.wrappedValue, as: .globalConversation)
+        RuntimeStorage.store(RuntimeStorage.globalConversation!.get(.last, messages: 10),
+                             as: .currentMessageSlice)
     }
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func presentOfflineAlert() {
         AKCore.shared.setLanguageCode("en")
@@ -71,16 +85,16 @@ public final class ChatPageViewCoordinator {
         AKErrorAlert(message: Localizer.preLocalizedString(for: .noInternetMessage,
                                                            language: RuntimeStorage.languageCode!) ?? "The internet connection appears to be offline.\nPlease connect to the internet and try again.",
                      error: exception.asAkError(),
-                     cancelButtonTitle: "OK").present { _ in
+                     cancelButtonTitle: "OK",
+                     shouldTranslate: [.title, .message]).present { _ in
             AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
         }
     }
     
-    private func rollBackProgressForTimeout(_ inputBar: InputBarAccessoryView,
-                                            text: String) {
+    private func rollBackProgressForTimeout(text: String) {
         let wrappedConversation = conversation.wrappedValue
         
-        toggleInputBar(inputBar, sending: false)
+        RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
         
         wrappedConversation.messages.removeAll(where: { $0.identifier == "NEW" })
         wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
@@ -109,40 +123,11 @@ public final class ChatPageViewCoordinator {
         conversations.removeLast()
         conversations.append(wrappedConversation)
         
-        RuntimeStorage.currentUser!.openConversations = conversations
         RuntimeStorage.store(true, as: .shouldReloadData)
         RuntimeStorage.store(false, as: .isSendingMessage)
-    }
-    
-    private func toggleInputBarForProgress(_ inputBar: InputBarAccessoryView,
-                                           sending: Bool) {
-        guard sending else {
-            return
-        }
         
-        inputBar.inputTextView.text = ""
-        inputBar.sendButton.isEnabled = false
-    }
-    
-    private func toggleInputBar(_ inputBar: InputBarAccessoryView,
-                                sending: Bool) {
-        guard sending else {
-            inputBar.sendButton.stopAnimating()
-            
-            let localizedString = Localizer.preLocalizedString(for: .newMessage)
-            inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
-            inputBar.inputTextView.tintColor = .systemBlue
-            inputBar.inputTextView.isUserInteractionEnabled = true
-            
-            return
-        }
-        
-        inputBar.sendButton.startAnimating()
-        
-        inputBar.inputTextView.text = ""
-        inputBar.inputTextView.placeholder = Localizer.preLocalizedString(for: .sending) ?? "Sending..."
-        inputBar.inputTextView.tintColor = .clear
-        inputBar.inputTextView.isUserInteractionEnabled = false
+        guard let currentUser = RuntimeStorage.currentUser else { return }
+        currentUser.openConversations = conversations
     }
 }
 
@@ -157,11 +142,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
-    
-    public func inputBar(_ inputBar: InputBarAccessoryView, didSwipeTextViewWith gesture: UISwipeGestureRecognizer) {
-        print("detected swipe")
-    }
+    /* MARK: - Overridden Methods */
     
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          didPressSendButtonWith text: String) {
@@ -176,6 +157,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         
         inputBar.inputTextView.text = ""
         inputBar.sendButton.isEnabled = false
+        inputBar.sendButton.startAnimating()
+        
         deliveryProgress += 0.1
         deliveryTimer = Timer.scheduledTimer(timeInterval: 0.01,
                                              target: self,
@@ -186,26 +169,26 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         Logger.openStream(metadata: [#file, #function, #line])
         
         guard wrappedConversation.identifier.key != "EMPTY" else {
-            self.createConversationForNewMessage(inputBar: inputBar, text: text)
+            self.createConversationForNewMessage(text: text)
             return
         }
         
-        finishSendingMessage(conversation: wrappedConversation,
-                             inputBar: inputBar,
-                             text: text)
+        sendMessage(conversation: wrappedConversation,
+                    text: text)
     }
     
-    @objc public func incrementProgress() {
-        guard deliveryProgress + 0.001 < 1 else { return }
-        deliveryProgress += 0.001
+    public func inputBar(_ inputBar: InputBarAccessoryView, didSwipeTextViewWith gesture: UISwipeGestureRecognizer) {
+        print("detected swipe")
     }
     
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          textViewTextDidChangeTo text: String) {
+        guard let currentUser = RuntimeStorage.currentUser else { return }
+        
         let isTyping = text.lowercasedTrimmingWhitespace != ""
         if conversation.wrappedValue.identifier.key != "EMPTY" {
-            RuntimeStorage.currentUser!.update(isTyping: isTyping,
-                                               inConversationWithID: conversation.identifier.wrappedValue!.key)
+            currentUser.update(isTyping: isTyping,
+                               inConversationWithID: conversation.identifier.wrappedValue!.key)
         }
         
         let lines = Int(inputBar.inputTextView.contentSize.height / inputBar.inputTextView.font.lineHeight)
@@ -228,13 +211,39 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Selector Methods */
+    
+    @objc public func incrementProgress() {
+        guard deliveryProgress + 0.001 < 1 else { return }
+        deliveryProgress += 0.001
+    }
+    
+    @objc private func toggleDoneButton() {
+        if let messagesVC = RuntimeStorage.messagesVC {
+            messagesVC.messageInputBar.inputTextView.resignFirstResponder()
+        }
+        
+        StateProvider.shared.tappedDone = true
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Private Methods */
     
     private func appendMockMessage(text: String) {
+        guard let currentUser = RuntimeStorage.currentUser,
+              let currentUserID = RuntimeStorage.currentUserID else { return }
+        
+        if let messagesVC = RuntimeStorage.messagesVC,
+           messagesVC.recipientBar?.selectedContactPair != nil,
+           !conversation.wrappedValue.messages.isEmpty {
+            hideNewChatControls()
+        }
+        
         let wrappedConversation = conversation.wrappedValue
         let otherUser = wrappedConversation.otherUser!
         
-        let mockLanguagePair = Translator.LanguagePair(from: RuntimeStorage.currentUser!.languageCode,
+        let mockLanguagePair = Translator.LanguagePair(from: currentUser.languageCode,
                                                        to: otherUser.languageCode)
         
         let mockTranslation = Translator.Translation(input: TranslationInput(text),
@@ -242,7 +251,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                                                      languagePair: mockLanguagePair)
         
         let mockMessage = Message(identifier: "NEW",
-                                  fromAccountIdentifier: RuntimeStorage.currentUserID!,
+                                  fromAccountIdentifier: currentUserID,
                                   languagePair: mockLanguagePair,
                                   translation: mockTranslation,
                                   readDate: nil,
@@ -265,7 +274,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         currentMessageSlice.append(mockMessage)
         RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
         
-        guard var conversations = RuntimeStorage.currentUser?.openConversations else {
+        guard var conversations = currentUser.openConversations else {
             Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
                        with: .errorAlert,
                        metadata: [#file, #function, #line])
@@ -273,17 +282,16 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         }
         
         conversations.append(wrappedConversation)
-        RuntimeStorage.currentUser!.openConversations = conversations
-        //        RuntimeStorage.store(conversations, as: .conversations)
+        currentUser.openConversations = conversations
         
         RuntimeStorage.store(true, as: .shouldReloadData)
     }
     
-    private func createConversationForNewMessage(inputBar: InputBarAccessoryView,
-                                                 text: String) {
+    private func createConversationForNewMessage(text: String) {
         guard let user = ContactNavigationRouter.currentlySelectedUser else {
             Logger.log(Exception("No selected user!",
                                  metadata: [#file, #function, #line]))
+            RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
             return
         }
         
@@ -291,6 +299,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                                                                    user]) { conversation, exception in
             guard var createdConversation = conversation else {
                 Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 return
             }
             
@@ -299,9 +308,12 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             self.conversation = Binding(get: { createdConversation },
                                         set: { createdConversation = $0 })
             
-            self.finishSendingMessage(conversation: self.conversation.wrappedValue,
-                                      inputBar: inputBar,
-                                      text: text)
+            self.sendMessage(conversation: self.conversation.wrappedValue,
+                             text: text)
+            
+            AnalyticsService.logEvent(.createNewConversation,
+                                      with: ["conversationIdKey": createdConversation.identifier.key!,
+                                             "participants": createdConversation.participants.userIdPair])
             
             ContactNavigationRouter.currentlySelectedUser = nil
         }
@@ -310,14 +322,16 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     private func createMessage(withTranslation: Translator.Translation,
                                completion: @escaping (_ returnedMessage: Message?,
                                                       _ exception: Exception?) -> Void) {
-        let wrappedConversation = conversation.wrappedValue
+        guard let currentUserID = RuntimeStorage.currentUserID else { return }
         
-        MessageSerializer.shared.createMessage(fromAccountWithIdentifier: RuntimeStorage.currentUserID!,
+        let wrappedConversation = conversation.wrappedValue
+        MessageSerializer.shared.createMessage(fromAccountWithIdentifier: currentUserID,
                                                inConversationWithIdentifier: wrappedConversation.identifier!.key!,
                                                translation: withTranslation) { (returnedMessage,
                                                                                 exception) in
             guard let message = returnedMessage else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 return
             }
             
@@ -328,13 +342,15 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     private func debugTranslate(_ text: String,
                                 completion: @escaping (_ returnedTranslation: Translator.Translation?,
                                                        _ exception: Exception?) -> Void) {
-        let debugLanguagePair = Translator.LanguagePair(from: "en",
-                                                        to: RuntimeStorage.currentUser!.languageCode)
+        guard let currentUser = RuntimeStorage.currentUser else { return }
         
+        let debugLanguagePair = Translator.LanguagePair(from: "en",
+                                                        to: currentUser.languageCode)
         FirebaseTranslator.shared.translate(TranslationInput(text),
                                             with: debugLanguagePair) { (returnedTranslation, exception) in
             guard let translation = returnedTranslation else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 return
             }
             
@@ -343,12 +359,74 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     }
     
     private func finishSendingMessage(conversation: Conversation,
-                                      inputBar: InputBarAccessoryView,
                                       text: String) {
+        let timeout = Timeout(alertingAfter: 20, metadata: [#file, #function, #line]) {
+            self.rollBackProgressForTimeout(text: text)
+        }
+        
+        translateMessage(text,
+                         otherUser: conversation.otherUser!) { translation, exception in
+            self.deliveryProgress += 0.2
+            
+            guard let translation else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
+                RuntimeStorage.store(false, as: .isSendingMessage)
+                return
+            }
+            
+            self.createMessage(withTranslation: translation) { (returnedMessage,
+                                                                exception) in
+                guard let message = returnedMessage else {
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                               with: .errorAlert)
+                    RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
+                    RuntimeStorage.store(false, as: .isSendingMessage)
+                    return
+                }
+                
+                self.deliveryProgress += 0.2
+                
+                AnalyticsService.logEvent(.sendMessage,
+                                          with: ["conversationIdKey": conversation.identifier.key!,
+                                                 "languagePair": translation.languagePair.asString(),
+                                                 "messageId": message.identifier!])
+                
+                self.updateConversationData(conversation,
+                                            for: message,
+                                            timeout: timeout)
+            }
+        }
+    }
+    
+    private func hideNewChatControls() {
+        // #warning("Do we want to couple these guard conditions?")
+        guard let messagesVC = RuntimeStorage.messagesVC,
+              let pair = messagesVC.recipientBar?.selectedContactPair else { return }
+        
+        messagesVC.recipientBar?.removeFromSuperview()
+        messagesVC.messagesCollectionView.contentInset.top = 0
+        messagesVC.messagesCollectionView.isUserInteractionEnabled = true
+        
+        messagesVC.parent!.navigationItem.title = "\(pair.contact.firstName) \(pair.contact.lastName)"
+        
+        let doneButton = UIBarButtonItem(title: LocalizedString.done,
+                                         style: .done,
+                                         target: self,
+                                         action: #selector(self.toggleDoneButton))
+        messagesVC.parent!.navigationItem.rightBarButtonItems = [doneButton]
+    }
+    
+    private func sendMessage(conversation: Conversation,
+                             text: String) {
         appendMockMessage(text: text)
         
-        let timeout = Timeout(alertingAfter: 20, metadata: [#file, #function, #line]) {
-            self.rollBackProgressForTimeout(inputBar, text: text)
+        guard Build.developerModeEnabled else {
+            finishSendingMessage(conversation: conversation,
+                                 text: text)
+            
+            return
         }
         
         debugTranslate(text) { (returnedDebugTranslation,
@@ -356,62 +434,30 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             guard let debugTranslation = returnedDebugTranslation else {
                 Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
                            with: .errorAlert)
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 RuntimeStorage.store(false, as: .isSendingMessage)
                 return
             }
             
             self.deliveryProgress += 0.2
-            
-            self.translateMessage(debugTranslation.output,
-                                  otherUser: conversation.otherUser!) { (returnedTranslation,
-                                                                         exception) in
-                self.deliveryProgress += 0.2
-                
-                guard let translation = returnedTranslation else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                               with: .errorAlert)
-                    RuntimeStorage.store(false, as: .isSendingMessage)
-                    return
-                }
-                
-                self.createMessage(withTranslation: translation) { (returnedMessage,
-                                                                    exception) in
-                    guard let message = returnedMessage else {
-                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                                   with: .errorAlert)
-                        RuntimeStorage.store(false, as: .isSendingMessage)
-                        return
-                    }
-                    
-                    self.deliveryProgress += 0.2
-                    
-                    self.updateConversationData(conversation,
-                                                for: message,
-                                                timeout: timeout)
-                }
-            }
+            self.finishSendingMessage(conversation: conversation,
+                                      text: debugTranslation.output)
         }
-    }
-    
-    @objc private func toggleDoneButton() {
-        if let messagesVC = RuntimeStorage.messagesVC {
-            messagesVC.messageInputBar.inputTextView.resignFirstResponder()
-        }
-        
-        StateProvider.shared.tappedDone = true
     }
     
     private func translateMessage(_ text: String,
                                   otherUser: User,
                                   completion: @escaping (_ returnedTranslation: Translator.Translation?,
                                                          _ exception: Exception?) -> Void) {
-        let languagePair = Translator.LanguagePair(from: RuntimeStorage.currentUser!.languageCode,
+        guard let currentUser = RuntimeStorage.currentUser else { return }
+        let languagePair = Translator.LanguagePair(from: currentUser.languageCode,
                                                    to: otherUser.languageCode)
         
         FirebaseTranslator.shared.translate(TranslationInput(text),
                                             with: languagePair,
                                             using: .google) { (returnedTranslation, exception) in
             guard let translation = returnedTranslation else {
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
@@ -440,6 +486,11 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             if let error = exception {
                 Logger.log(error,
                            with: .errorAlert)
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
+            }
+            
+            if let otherUser = conversation.otherUser {
+                otherUser.notifyOfNewMessage(newMessage.translation.output)
             }
             
             RuntimeStorage.store(conversation, as: .globalConversation)
@@ -448,6 +499,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                 Logger.log("Couldn't retrieve current message slice from RuntimeStorage.",
                            with: .errorAlert,
                            metadata: [#file, #function, #line])
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 RuntimeStorage.store(false, as: .isSendingMessage)
                 return
             }
@@ -463,11 +515,13 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                 Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
                            with: .errorAlert,
                            metadata: [#file, #function, #line])
+                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 RuntimeStorage.store(false, as: .isSendingMessage)
                 return
             }
             
             conversations.removeLast()
+            //            conversations.removeAll(where: { $0.identifier.key == conversation.identifier.key })
             conversations.append(conversation)
             RuntimeStorage.currentUser!.openConversations = conversations
             
@@ -480,21 +534,11 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                 self.deliveryProgress += 1 - self.deliveryProgress
             }
             
-            // #warning("Do we want to couple these guard conditions?")
+            RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
+            
             guard let messagesVC = RuntimeStorage.messagesVC,
-                  let pair = messagesVC.recipientBar?.selectedContactPair else { return }
-            
-            messagesVC.recipientBar?.removeFromSuperview()
-            messagesVC.messagesCollectionView.contentInset.top = 0
-            messagesVC.messagesCollectionView.isUserInteractionEnabled = true
-            
-            messagesVC.parent!.navigationItem.title = "\(pair.contact.firstName) \(pair.contact.lastName)"
-            
-            let doneButton = UIBarButtonItem(title: LocalizedString.done,
-                                             style: .done,
-                                             target: self,
-                                             action: #selector(self.toggleDoneButton))
-            messagesVC.parent!.navigationItem.rightBarButtonItems = [doneButton]
+                  messagesVC.recipientBar?.selectedContactPair != nil else { return }
+            self.hideNewChatControls()
         }
     }
 }
@@ -521,21 +565,30 @@ extension Message: MessageType {
 
 /* MARK: MessagesDataSource */
 extension ChatPageViewCoordinator: MessagesDataSource {
-    public func currentSender() -> SenderType {
-        return Sender(senderId: RuntimeStorage.currentUserID!, displayName: "??")
-    }
-    
     public func cellBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
-        let messageArray = RuntimeStorage.currentMessageSlice!
+        guard let currentUser = RuntimeStorage.currentUser,
+              let messageSlice = RuntimeStorage.currentMessageSlice,
+              messageSlice.count > indexPath.section else { return nil }
         
-        let lastMessageIndex = messageArray.count - 1
+        let translation = messageSlice[indexPath.section].translation!
+        let lastMessageIndex = messageSlice.count - 1
         
-        if indexPath.section == lastMessageIndex &&
-            messageArray[lastMessageIndex].fromAccountIdentifier == RuntimeStorage.currentUser!.identifier &&
-            messageArray[lastMessageIndex].identifier != "NEW" {
+        if translation.input.value() == translation.output,
+           RecognitionService.shouldMarkUntranslated(translation.output,
+                                                     for: translation.languagePair) {
+            let retryString = LocalizedString.holdToRetry
+            let attributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 12),
+                                                             .foregroundColor: UIColor.gray]
+            
+            return retryString.attributed(mainAttributes: attributes,
+                                          alternateAttributes: attributes,
+                                          alternateAttributeRange: [retryString])
+        } else if indexPath.section == lastMessageIndex &&
+                    messageSlice[lastMessageIndex].fromAccountIdentifier == currentUser.identifier &&
+                    messageSlice[lastMessageIndex].identifier != "NEW" {
             let boldAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 12), .foregroundColor: UIColor.gray]
             
-            guard let readDate = messageArray[lastMessageIndex].readDate else {
+            guard let readDate = messageSlice[lastMessageIndex].readDate else {
                 let deliveredString = Localizer.preLocalizedString(for: .delivered) ?? "Delivered"
                 
                 return NSAttributedString(string: deliveredString, attributes: boldAttributes)
@@ -561,11 +614,12 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     }
     
     public func cellTopLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
-        return RuntimeStorage.currentMessageSlice![indexPath.section].sentDate.separatorDateString()
+        guard let messages = RuntimeStorage.currentMessageSlice else { return nil }
+        return messages[indexPath.section].sentDate.separatorDateString()
     }
     
-    public func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
-        return RuntimeStorage.currentMessageSlice!.count
+    public func currentSender() -> SenderType {
+        return Sender(senderId: RuntimeStorage.currentUserID!, displayName: "??")
     }
     
     public func messageBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
@@ -575,15 +629,30 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     }
     
     public func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageType {
-        let messages = RuntimeStorage.currentMessageSlice!
+        guard let currentUser = RuntimeStorage.currentUser,
+              let currentUserID = RuntimeStorage.currentUserID,
+              let messages = RuntimeStorage.currentMessageSlice else { return Message.empty() }
         
+        guard !messages.isEmpty else { return Message.empty() }
+        guard indexPath.section < messages.count else { return messages[messages.count - 1] }
+        
+        let message = messages[indexPath.section]
         if indexPath.section == messages.count - 1 &&
-            messages[indexPath.section].fromAccountIdentifier != RuntimeStorage.currentUserID! &&
-            messages[indexPath.section].readDate == nil {
-            messages[indexPath.section].updateReadDate()
+            message.fromAccountIdentifier != currentUserID &&
+            message.readDate == nil {
+            message.updateReadDate()
+#if !EXTENSION
+            UIApplication.shared.applicationIconBadgeNumber = currentUser.badgeNumber
+#endif
+            RuntimeStorage.store(true, as: .shouldUpdateReadState)
         }
         
-        return messages[indexPath.section]
+        return message
+    }
+    
+    public func numberOfSections(in messagesCollectionView: MessagesCollectionView) -> Int {
+        guard let messages = RuntimeStorage.currentMessageSlice else { return 0 }
+        return messages.count
     }
 }
 
@@ -596,6 +665,18 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
             color = UIColor(hex: 0x27252A)
         }
         
+        guard let messages = RuntimeStorage.currentMessageSlice else {
+            return message.sender.senderId == RuntimeStorage.currentUserID! ? .systemBlue : color
+        }
+        
+        let translation = messages[indexPath.section].translation!
+        if translation.input.value() == translation.output,
+           message.sender.senderId == RuntimeStorage.currentUserID!,
+           RecognitionService.shouldMarkUntranslated(translation.output,
+                                                     for: translation.languagePair) {
+            return UIColor(hex: 0x65C466)
+        }
+        
         return message.sender.senderId == RuntimeStorage.currentUserID! ? .systemBlue : color
     }
     
@@ -603,12 +684,14 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
                                     for message: MessageType,
                                     at indexPath: IndexPath,
                                     in messagesCollectionView: MessagesCollectionView) {
+        guard let currentUserID = RuntimeStorage.currentUserID,
+              let otherUser = conversation.wrappedValue.otherUser else { return }
         
-        if message.sender.senderId != RuntimeStorage.currentUserID! {
-            if let contactThumbnail = ContactService.fetchContactThumbnail(forNumber: conversation.wrappedValue.otherUser!.phoneNumber.digits),
+        if message.sender.senderId != currentUserID {
+            if let contactThumbnail = ContactService.fetchContactThumbnail(forUser: otherUser),
                contactThumbnail != UIImage() {
                 avatarView.image = contactThumbnail
-            } else if let name = ContactService.fetchContactName(forNumber: conversation.wrappedValue.otherUser!.phoneNumber.digits),
+            } else if let name = ContactService.fetchContactName(forUser: otherUser),
                       name != ("", "") {
                 
                 avatarView.set(avatar: Avatar(image: nil,
@@ -631,9 +714,18 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
     public func cellBottomLabelHeight(for message: MessageType,
                                       at indexPath: IndexPath,
                                       in messagesCollectionView: MessagesCollectionView) -> CGFloat {
-        let lastMessageIndex = RuntimeStorage.currentMessageSlice!.count - 1
+        guard let currentUser = RuntimeStorage.currentUser,
+              let messageSlice = RuntimeStorage.currentMessageSlice,
+              messageSlice.count > indexPath.section else { return 0 }
         
-        if indexPath.section == lastMessageIndex && RuntimeStorage.currentMessageSlice![lastMessageIndex].fromAccountIdentifier == RuntimeStorage.currentUser!.identifier {
+        let lastMessageIndex = messageSlice.count - 1
+        let messageTranslation: Translator.Translation = messageSlice[indexPath.section].translation
+        
+        if (messageTranslation.input.value() == messageTranslation.output &&
+            RecognitionService.shouldMarkUntranslated(messageTranslation.output,
+                                                      for: messageTranslation.languagePair)) ||
+            (indexPath.section == lastMessageIndex &&
+             messageSlice[lastMessageIndex].fromAccountIdentifier == currentUser.identifier) {
             return 20.0
         } else if indexPath.section == lastMessageIndex {
             return 5
@@ -644,14 +736,14 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
     
     public func cellTopLabelHeight(for message: MessageType, at indexPath: IndexPath,
                                    in messagesCollectionView: MessagesCollectionView) -> CGFloat {
-        if (indexPath.section - 1) > -1 {
-            if RuntimeStorage.currentMessageSlice![indexPath.section].sentDate.amountOfSeconds(from: RuntimeStorage.currentMessageSlice![indexPath.section - 1].sentDate) > 5400 {
-                return 25
-            }
-        }
+        guard indexPath.section != 0 else { return 15 }
         
-        if indexPath.section == 0 {
-            return 15
+        guard let messageSlice = RuntimeStorage.currentMessageSlice,
+              messageSlice.count > indexPath.section else { return 0 }
+        
+        if (indexPath.section - 1) > -1,
+           messageSlice[indexPath.section].sentDate.amountOfSeconds(from: messageSlice[indexPath.section - 1].sentDate) > 5400 {
+            return 25
         }
         
         return 0
@@ -660,10 +752,6 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
     public func messageTopLabelHeight(for message: MessageType,
                                       at indexPath: IndexPath,
                                       in messagesCollectionView: MessagesCollectionView) -> CGFloat {
-        if indexPath.section == 0 {
-            return 10
-        }
-        
-        return 0
+        return indexPath.section == 0 ? 10 : 0
     }
 }

@@ -19,7 +19,7 @@ public enum ConversationArchiver {
     
     //==================================================//
     
-    /* MARK: - Addition/Retrieval Functions */
+    /* MARK: - Addition/Retrieval Methods */
     
     public static func addToArchive(_ conversation: Conversation) {
         initializeArchive()
@@ -53,9 +53,14 @@ public enum ConversationArchiver {
         return conversationArchive.filter({ $0.identifier.key == withKey }).first
     }
     
+    public static func removeFromArchive(withKey: String) {
+        initializeArchive()
+        conversationArchive.removeAll(where: { $0.identifier.key == withKey })
+    }
+    
     //==================================================//
     
-    /* MARK: - Getter/Setter Functions */
+    /* MARK: - Getter/Setter Methods */
     
     public static func clearArchive() {
         UserDefaults.standard.setValue(nil, forKey: "conversationArchive")
@@ -112,14 +117,12 @@ public enum ConversationArchiver {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private static func initializeArchive() {
         getArchive { returnedTuple,
             _ in
-            guard let tuple = returnedTuple else {
-                return
-            }
+            guard let tuple = returnedTuple else { return }
             
             conversationArchive = tuple.conversations
         }
@@ -127,9 +130,12 @@ public enum ConversationArchiver {
     
     private static func setUpStaticArchive(_ with: (conversations: [Conversation], userID: String)) {
         guard with.userID == RuntimeStorage.currentUserID else {
-            Logger.log("Different user ID – nuking conversation archive.",
+            Logger.log("Different user ID – nuking conversation & contact archive.",
                        metadata: [#file, #function, #line])
             clearArchive()
+            // Not sure how I feel about doing this here...
+            ContactArchiver.clearArchive()
+            RuntimeStorage.remove(.contactPairs)
             return
         }
         

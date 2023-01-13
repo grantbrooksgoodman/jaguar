@@ -33,6 +33,8 @@ public extension Array {
 }
 
 public extension Array where Element == String {
+    /* MARK: - Methods */
+    
     func containsAny(in: [String]) -> Bool {
         for value in `in` {
             if contains(value) {
@@ -65,6 +67,15 @@ public extension Array where Element == String {
         }
         
         return count
+    }
+    
+    //--------------------------------------------------//
+    
+    /* MARK: - Variables */
+    
+    var duplicates: [String]? {
+        let duplicates = Array(Set(filter({ (s: String) in filter({ $0 == s }).count > 1})))
+        return duplicates.isEmpty ? nil : duplicates
     }
 }
 
@@ -128,10 +139,46 @@ public extension Array where Element == Translation {
 
 //==================================================//
 
+/* MARK: - CharacterSet Extensions */
+
+public extension CharacterSet {
+    func characters() -> [Character] {
+        return codePoints().compactMap { UnicodeScalar($0) }.map { Character($0) }.unique()
+    }
+    
+    func codePoints() -> [Int] {
+        var result: [Int] = []
+        var plane = 0
+        
+        for (i, w) in bitmapRepresentation.enumerated() {
+            let k = i % 0x2001
+            
+            if k == 0x2000 {
+                // plane index byte
+                plane = Int(w) << 13
+                continue
+            }
+            
+            let base = (plane + k) << 3
+            for j in 0 ..< 8 where w & 1 << j != 0 {
+                result.append(base + j)
+            }
+        }
+        
+        return result
+    }
+    
+    func strings() -> [String] {
+        return characters().map { String($0) }
+    }
+}
+
+//==================================================//
+
 /* MARK: - Date Extensions */
 
 public extension Date {
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     func elapsedInterval() -> String {
         let interval = Core.currentCalendar!.dateComponents([.year, .month, .day, .hour, .minute], from: self, to: Date())
@@ -215,7 +262,7 @@ public extension Dictionary where Value: Equatable {
 /* MARK: - Int Extensions */
 
 public extension Int {
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     ///Returns a random integer value.
     func random(min: Int, max: Int) -> Int {
@@ -264,7 +311,7 @@ public extension Sequence where Iterator.Element: Hashable {
 /* MARK: - String Extensions */
 
 public extension String {
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     func asLanguagePair() -> LanguagePair? {
         let components = self.components(separatedBy: "-")
@@ -429,6 +476,19 @@ public extension String {
         return ((alphabetArray.firstIndex(of: Character(lowercased())))! + 1)
     }
     
+    var asEnvironment: GeneralSerializer.Environment? {
+        switch self.lowercased() {
+        case "prod":
+            return .production
+        case "stage":
+            return .staging
+        case "dev":
+            return .developer
+        default:
+            return nil
+        }
+    }
+    
     var characterArray: [String] {
         return map { String($0) }
     }
@@ -455,6 +515,17 @@ public extension String {
     
     var isValidEmail: Bool {
         return NSPredicate(format: "SELF MATCHES[c] %@", "^[\\w\\.-]+@([\\w\\-]+\\.)+[A-Z]{1,4}$").evaluate(with: self)
+    }
+    
+    var languageName: String? {
+        guard self != "",
+              self.lowercasedTrimmingWhitespace != "",
+              let languageCodes = RuntimeStorage.languageCodeDictionary,
+              let name = languageCodes[self] else { return nil }
+        
+        let components = name.components(separatedBy: " (")
+        guard !components.isEmpty else { return name }
+        return components[0]
     }
     
     var lowercasedTrimmingWhitespace: String {
@@ -560,7 +631,7 @@ public extension UIImageView {
 /* MARK: - UILabel Extensions */
 
 public extension UILabel {
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     func fontSizeThatFits(_ alternateText: String?) -> CGFloat {
         if let labelText = alternateText ?? text {
@@ -694,7 +765,7 @@ public extension UITextView {
 /* MARK: - UIView Extensions */
 
 public extension UIView {
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     func addBlur(withActivityIndicator: Bool, withStyle: UIBlurEffect.Style, withTag: Int, alpha: CGFloat) {
         let blurEffectView = UIVisualEffectView(effect: UIBlurEffect(style: withStyle))
@@ -862,6 +933,27 @@ public extension UIView {
         }
         
         return nil
+    }
+}
+
+//==================================================//
+
+/* MARK: - UserDefaults Extensions */
+
+public extension UserDefaults {
+    static func reset() {
+        let defaults = UserDefaults.standard
+        
+        let developerModeEnabled = defaults.value(forKey: "developerModeEnabled") as? Bool
+        let dictionary = defaults.dictionaryRepresentation()
+        
+        dictionary.keys.forEach { key in
+            defaults.removeObject(forKey: key)
+        }
+        
+        if let developerModeEnabled {
+            defaults.set(developerModeEnabled, forKey: "developerModeEnabled")
+        }
     }
 }
 

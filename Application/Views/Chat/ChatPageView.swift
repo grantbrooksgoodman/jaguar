@@ -25,7 +25,7 @@ public struct ChatPageView: UIViewControllerRepresentable {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Public Methods */
     
     public func makeCoordinator() -> ChatPageViewCoordinator {
         return ChatPageViewCoordinator(conversation: $conversation)
@@ -41,6 +41,7 @@ public struct ChatPageView: UIViewControllerRepresentable {
         
         messagesVC.scrollsToLastItemOnKeyboardBeginsEditing = true // default false
         //        messagesVC.maintainPositionOnKeyboardFrameChanged = true // default false
+        //        messagesVC.maintainPositionOnKeyboardFrameChanged = true
         messagesVC.showMessageTimestampOnSwipeLeft = true // default false
         
         conversation.messages = conversation.sortedFilteredMessages()
@@ -62,13 +63,13 @@ public struct ChatPageView: UIViewControllerRepresentable {
                                                                  left: 5,
                                                                  bottom: 5,
                                                                  right: 0)
-        let localizedString = Localizer.preLocalizedString(for: .newMessage)
+        inputBar.inputTextView.placeholder = " \(LocalizedString.newMessage)"
         
-        inputBar.inputTextView.placeholder = " \(localizedString ?? " New Message")"
-        
-        let randomNumber = Int().random(min: 1, max: 999)
-        let randomSentence = SentenceGenerator.generateSentence(wordCount: Int().random(min: 3, max: 15))
-        inputBar.inputTextView.text = randomNumber % 2 == 0 ? randomSentence : ""
+        if Build.developerModeEnabled {
+            let randomNumber = Int().random(min: 1, max: 999)
+            let randomSentence = SentenceGenerator.generateSentence(wordCount: Int().random(min: 3, max: 15))
+            inputBar.inputTextView.text = randomNumber % 2 == 0 ? randomSentence : ""
+        }
         
         setUpNewMessageObserver()
         setUpReadDateObserver()
@@ -93,15 +94,15 @@ public struct ChatPageView: UIViewControllerRepresentable {
     
     //==================================================//
     
-    /* MARK: - Observer Functions */
+    /* MARK: - Observer Methods */
     
     private func setUpNewMessageObserver() {
-        Database.database().reference().child("allConversations/\(RuntimeStorage.globalConversation!.identifier!.key!)/messages").observe(.childAdded) { (returnedSnapshot) in
+        guard let conversation = RuntimeStorage.globalConversation else { return }
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/conversations/"
+        Database.database().reference().child("\(pathPrefix)\(conversation.identifier!.key!)/messages").observe(.childAdded) { (returnedSnapshot) in
             
             guard let identifier = returnedSnapshot.value as? String,
-                  !RuntimeStorage.globalConversation!.messages.contains(where: { $0.identifier == identifier }) else {
-                return
-            }
+                  !conversation.messages.contains(where: { $0.identifier == identifier }) else { return }
             
             MessageSerializer.shared.getMessage(withIdentifier: identifier) { (returnedMessage,
                                                                                exception) in
@@ -116,7 +117,8 @@ public struct ChatPageView: UIViewControllerRepresentable {
                     return
                 }
                 
-                guard message.fromAccountIdentifier != RuntimeStorage.currentUserID! else { return }
+                guard let currentUserID = RuntimeStorage.currentUserID,
+                      message.fromAccountIdentifier != currentUserID else { return }
                 
                 print("Appending message with ID: \(message.identifier!)")
                 conversation.messages.append(message)
@@ -143,8 +145,8 @@ public struct ChatPageView: UIViewControllerRepresentable {
     }
     
     private func setUpReadDateObserver() {
-#warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.") // correlate read date with last active date
-        Database.database().reference().child("/allMessages").observe(.childChanged) { returnedSnapshot, _ in
+        // #warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.") // correlate read date with last active date
+        Database.database().reference().child(GeneralSerializer.environment.shortString).child("/messages").observe(.childChanged) { returnedSnapshot, _ in
             guard let lastMessage = conversation.sortedFilteredMessages().last else {
                 let exception = Exception("Couldn't get last message.",
                                           extraParams: ["UnsortedMessageCount": conversation.messages.count,
@@ -162,9 +164,7 @@ public struct ChatPageView: UIViewControllerRepresentable {
                 return
             }
             
-            guard returnedSnapshot.key == lastMessage.identifier else {
-                return
-            }
+            guard returnedSnapshot.key == lastMessage.identifier else { return }
             
             guard let readDateString = data["readDate"] as? String,
                   let readDate = Core.secondaryDateFormatter!.date(from: readDateString) else {
@@ -184,119 +184,18 @@ public struct ChatPageView: UIViewControllerRepresentable {
     }
     
     private func setUpTypingIndicatorObserver() {
-        Database.database().reference().child("/allConversations/\(RuntimeStorage.globalConversation!.identifier!.key!)/participants").observe(.childChanged) { (returnedSnapshot) in
+        guard let conversation = RuntimeStorage.globalConversation else { return }
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        Database.database().reference().child("\(pathPrefix)\(conversation.identifier!.key!)/participants").observe(.childChanged) { (returnedSnapshot) in
             guard let updatedTyper = returnedSnapshot.value as? String,
-                  updatedTyper.components(separatedBy: " | ")[0] != RuntimeStorage.currentUserID! else {
-                return
-            }
+                  updatedTyper.components(separatedBy: " | ")[0] != RuntimeStorage.currentUserID! else { return }
             
-            RuntimeStorage.store(updatedTyper.components(separatedBy: " | ")[1] == "true",
+            RuntimeStorage.store(updatedTyper.components(separatedBy: " | ")[2] == "true",
                                  as: .typingIndicator)
         } withCancel: { (returnedError) in
             Logger.log(returnedError,
                        with: .errorAlert,
                        metadata: [#file, #function, #line])
         }
-    }
-}
-
-//==================================================//
-
-/* MARK: - Extensions */
-
-/**/
-
-/* MARK: Date */
-public extension Date {
-    func amountOfSeconds(from date: Date) -> Int {
-        return Calendar.current.dateComponents([.second], from: date, to: self).second ?? 0
-    }
-    
-    func dayOfWeek() -> String? {
-        switch Calendar.current.component(.weekday, from: self) {
-        case 1:
-            return Localizer.preLocalizedString(for: .sunday) ?? "Sunday"
-        case 2:
-            return Localizer.preLocalizedString(for: .monday) ?? "Monday"
-        case 3:
-            return Localizer.preLocalizedString(for: .tuesday) ?? "Tuesday"
-        case 4:
-            return Localizer.preLocalizedString(for: .wednesday) ?? "Wednesday"
-        case 5:
-            return Localizer.preLocalizedString(for: .thursday) ?? "Thursday"
-        case 6:
-            return Localizer.preLocalizedString(for: .saturday) ?? "Friday"
-        case 7:
-            return Localizer.preLocalizedString(for: .saturday) ?? "Saturday"
-        default:
-            return nil
-        }
-    }
-    
-    func separatorDateString() -> NSAttributedString {
-        let calendar = Core.currentCalendar!
-        let dateDifference = calendar.startOfDay(for: Date()).distance(to: calendar.startOfDay(for: self))
-        
-        let timeString = DateFormatter.localizedString(from: self,
-                                                       dateStyle: .none,
-                                                       timeStyle: .short)
-        
-        let overYearFormatter = DateFormatter()
-        overYearFormatter.locale = Locale(identifier: RuntimeStorage.languageCode!)
-        overYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "MMM dd yyyy, " : "dd MMM yyyy, "
-        
-        let overYearString = overYearFormatter.string(from: self)
-        
-        let regularFormatter = DateFormatter()
-        regularFormatter.locale = Locale(identifier: RuntimeStorage.languageCode!)
-        regularFormatter.dateFormat = "yyyy-MM-dd"
-        
-        let underYearFormatter = DateFormatter()
-        underYearFormatter.locale = Locale(identifier: RuntimeStorage.languageCode!)
-        underYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "E MMM d, " : "E d MMM, "
-        
-        let underYearString = underYearFormatter.string(from: self)
-        
-        if dateDifference == 0 {
-            let separatorString = Localizer.preLocalizedString(for: .today) ?? "Today"
-            
-            return messagesAttributedString("\(separatorString) \(timeString)", separationIndex: separatorString.count)
-        } else if dateDifference == -86400 {
-            let separatorString = Localizer.preLocalizedString(for: .yesterday) ?? "Yesterday"
-            
-            return messagesAttributedString("\(separatorString) \(timeString)", separationIndex: separatorString.count)
-        } else if dateDifference >= -604800 {
-            guard let selfWeekday = self.dayOfWeek(),
-                  let currentWeekday = Date().dayOfWeek() else {
-                return messagesAttributedString(overYearString + timeString,
-                                                separationIndex: overYearString.components(separatedBy: ",")[0].count + 1)
-            }
-            
-            if selfWeekday != currentWeekday {
-                return messagesAttributedString("\(selfWeekday) \(timeString)", separationIndex: selfWeekday.count)
-            } else {
-                return messagesAttributedString(underYearString + timeString, separationIndex: underYearString.components(separatedBy: ",")[0].count + 1)
-            }
-        } else if dateDifference < -604800 && dateDifference > -31540000 {
-            return messagesAttributedString(underYearString + timeString, separationIndex: underYearString.components(separatedBy: ",")[0].count + 1)
-        }
-        
-        return messagesAttributedString(overYearString + timeString, separationIndex: overYearString.components(separatedBy: ",")[0].count + 1)
-    }
-}
-
-/* MARK: UIFont */
-public extension UIFont {
-    func withTraits(traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
-        let descriptor = fontDescriptor.withSymbolicTraits(traits)
-        return UIFont(descriptor: descriptor!, size: 0) //size 0 means keep the size as it is
-    }
-    
-    func bold() -> UIFont {
-        return withTraits(traits: .traitBold)
-    }
-    
-    func italic() -> UIFont {
-        return withTraits(traits: .traitItalic)
     }
 }

@@ -12,6 +12,8 @@ import SwiftUI
 import AlertKit
 import Translator
 
+import Firebase
+
 public struct BuildInfoOverlayView: View {
     
     //==================================================//
@@ -27,14 +29,13 @@ public struct BuildInfoOverlayView: View {
     public var body: some View {
         VStack {
             Button(action: {
-                presentSendFeedbackAlert()
+                presentSendFeedbackActionSheet()
             }, label: {
-                Text(Localizer
-                    .preLocalizedString(for: .sendFeedback) ?? "Send Feedback")
-                .font(Font.custom("Arial",
-                                  size: 12))
-                .foregroundColor(.white)
-                .underline()
+                Text(LocalizedString.sendFeedback)
+                    .font(Font.custom("Arial",
+                                      size: 12))
+                    .foregroundColor(.white)
+                    .underline()
             })
             .padding(.horizontal, 1)
             .frame(height: 20)
@@ -61,11 +62,15 @@ public struct BuildInfoOverlayView: View {
         }
         .offset(x: -10,
                 y: yOffset)
+        .onShake {
+            guard Build.developerModeEnabled else { return }
+            presentDeveloperModeActionSheet()
+        }
     }
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - User Prompting */
     
     private func presentBuildInformationAlert() {
         let message = "Build Number\n\(String(Build.buildNumber))\n\nBuild Stage\n\(Build.stage.description(short: false).capitalized(with: nil))\n\nBundle Version\n\(Build.bundleVersion)\n\nProject ID\n\(Build.projectID)\n\nSKU\n\(Build.buildSKU)"
@@ -74,8 +79,7 @@ public struct BuildInfoOverlayView: View {
                                                 message: "",
                                                 preferredStyle: .alert)
         
-        alertController.addAction(UIAlertAction(title: Localizer
-            .preLocalizedString(for: .dismiss) ?? "Dismiss",
+        alertController.addAction(UIAlertAction(title: LocalizedString.dismiss,
                                                 style: .cancel,
                                                 handler: nil))
         
@@ -95,11 +99,75 @@ public struct BuildInfoOverlayView: View {
         Core.ui.politelyPresent(viewController: alertController)
     }
     
+    private func presentDestroyDatabaseAlert() {
+        AKConfirmationAlert(title: "Destroy Database",
+                            message: "This will delete all conversations for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
+                            confirmationStyle: .destructivePreferred).present { didConfirm in
+            if didConfirm == 1 {
+                AKConfirmationAlert(title: "Are you sure?",
+                                    message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
+                                    cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
+                                    confirmationStyle: .destructivePreferred).present { confirmed in
+                    if confirmed == 1 {
+                        ConversationTestingSerializer.deleteAllConversations { exception in
+                            guard exception == nil else {
+                                Logger.log(exception!,
+                                           with: .errorAlert)
+                                return
+                            }
+                            
+                            RuntimeStorage.conversationsPageViewModel?.load(silent: false)
+                        }
+                    }
+                }
+            }
+        }
+    }
+    
+    // Make this easier to add to for template.
+    private func presentDeveloperModeActionSheet() {
+        guard let topViewController = UIApplication.topViewController(),
+              !topViewController.isKind(of: UIAlertController.self) else { return }
+        
+        let developerModeActions = [AKAction(title: "Clear Caches", style: .default),
+                                    AKAction(title: "Reset UserDefaults", style: .default),
+                                    AKAction(title: "Switch Environment", style: .default),
+                                    AKAction(title: "Destroy Conversation Database", style: .destructive),
+                                    AKAction(title: "Disable Developer Mode", style: .destructive)]
+        
+        let actionSheet = AKActionSheet(message: "Developer Mode Options",
+                                        actions: developerModeActions,
+                                        shouldTranslate: [.none])
+        actionSheet.present { actionID in
+            switch actionID {
+            case developerModeActions[0].identifier:
+                ContactArchiver.clearArchive()
+                ConversationArchiver.clearArchive()
+                TranslationArchiver.clearArchive()
+                Core.hud.showSuccess(text: "Cleared Caches")
+            case developerModeActions[1].identifier:
+                UserDefaults.reset()
+                UserDefaults.standard.set(true, forKey: "developerModeEnabled")
+                Core.hud.showSuccess(text: "Reset UserDefaults")
+            case developerModeActions[2].identifier:
+                presentSwitchEnvironmentActionSheet()
+            case developerModeActions[3].identifier:
+                presentDestroyDatabaseAlert()
+            case developerModeActions[4].identifier:
+                Build.set(.developerModeEnabled, to: false)
+                UserDefaults.standard.set(false, forKey: "developerModeEnabled")
+                Core.hud.showSuccess(text: "Developer Mode Disabled")
+            default:
+                break
+            }
+        }
+    }
+    
     private func presentDisclaimerAlert() {
         let typeString = Build.stage.description(short: false)
         let expiryString = Build.timebombActive ? "\n\n\(Build.expiryInfoString)" : ""
         
-        var messageToDisplay = "This is a\(typeString == "alpha" ? "n" : "") \(typeString) version of project code name \(Build.codeName).\(expiryString)"
+        var messageToDisplay = "This is a\(typeString == "alpha" ? "n" : "") \(typeString) version of *project code name \(Build.codeName)*.\(expiryString)"
         
         if typeString == "general" {
             messageToDisplay = "This is a pre-release update to \(Build.finalName).\(Build.expiryInfoString)"
@@ -110,12 +178,16 @@ public struct BuildInfoOverlayView: View {
         let projectTitle = "Project \(Build.codeName)"
         let viewBuildInformationString = "View Build Information"
         
+        let enableOrDisable = Build.developerModeEnabled ? "Disable" : "Enable"
+        let developerModeString = "\(enableOrDisable) Developer Mode"
+        
         TranslatorService.shared.getTranslations(for: [TranslationInput(messageToDisplay),
                                                        TranslationInput(projectTitle),
-                                                       TranslationInput(viewBuildInformationString)],
+                                                       TranslationInput(viewBuildInformationString),
+                                                       TranslationInput(developerModeString)],
                                                  languagePair: LanguagePair(from: "en",
                                                                             to: RuntimeStorage.languageCode!),
-                                                 requiresHUD: false /*true*/,
+                                                 requiresHUD: false,
                                                  using: .google) { (returnedTranslations,
                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
@@ -134,9 +206,14 @@ public struct BuildInfoOverlayView: View {
                 self.presentBuildInformationAlert()
             }
             
+            let developerModeAction = UIAlertAction(title: translations.first(where: { $0.input.value() == developerModeString })?.output ?? developerModeString,
+                                                    style: enableOrDisable == "Enable" ? .default : .destructive) { _ in
+                self.presentToggleDeveloperModeActionSheet()
+            }
+            
             alertController.addAction(viewBuildInformationAction)
-            alertController.addAction(UIAlertAction(title: Localizer
-                .preLocalizedString(for: .dismiss) ?? "Dismiss",
+            alertController.addAction(developerModeAction)
+            alertController.addAction(UIAlertAction(title: LocalizedString.dismiss,
                                                     style: .cancel,
                                                     handler: nil))
             
@@ -170,29 +247,26 @@ public struct BuildInfoOverlayView: View {
         }
     }
     
-    private func presentSendFeedbackAlert() {
+    private func presentSendFeedbackActionSheet() {
         let sendFeedbackAction = AKAction(title: "Send Feedback", style: .default)
         let reportBugAction = AKAction(title: "Report a Bug", style: .default)
         
-        let fileReportAlert = AKAlert(title: "File a Report",
-                                      message: "Choose the option which best describes your intention.",
-                                      actions: [sendFeedbackAction, reportBugAction],
-                                      networkDependent: true)
+        let actionSheet = AKActionSheet(message: "File a Report",
+                                        actions: [sendFeedbackAction, reportBugAction],
+                                        networkDependent: true)
         
-        fileReportAlert.present { actionID in
-            guard actionID != -1 else {
-                return
-            }
+        actionSheet.present { actionID in
+            guard actionID != -1 else { return }
             
             if actionID == sendFeedbackAction.identifier {
-                AKCore.shared.reportProvider().fileReport(forBug: false,
+                AKCore.shared.reportDelegate().fileReport(forBug: false,
                                                           body: "Any general feedback is appreciated in the appropriate section.",
                                                           prompt: "General Feedback",
                                                           metadata: [RuntimeStorage.currentFile!,
                                                                      #function,
                                                                      #line])
             } else if actionID == reportBugAction.identifier {
-                AKCore.shared.reportProvider().fileReport(forBug: true,
+                AKCore.shared.reportDelegate().fileReport(forBug: true,
                                                           body: "In the appropriate section, please describe the error encountered and the steps to reproduce it.",
                                                           prompt: "Description/Steps to Reproduce",
                                                           metadata: [RuntimeStorage.currentFile!,
@@ -200,5 +274,107 @@ public struct BuildInfoOverlayView: View {
                                                                      #line])
             }
         }
+    }
+    
+    private func presentSwitchEnvironmentActionSheet() {
+        var actions: [AKAction]!
+        
+        let firebaseEnvironment = GeneralSerializer.environment
+        if firebaseEnvironment == .production {
+            actions = [AKAction(title: "Switch to Staging", style: .default),
+                       AKAction(title: "Switch to Development", style: .default)]
+        } else if firebaseEnvironment == .staging {
+            actions = [AKAction(title: "Switch to Production", style: .destructive),
+                       AKAction(title: "Switch to Development", style: .default)]
+        } else if firebaseEnvironment == .production {
+            actions = [AKAction(title: "Switch to Production", style: .destructive),
+                       AKAction(title: "Switch to Staging", style: .default)]
+        }
+        
+        var environment = firebaseEnvironment.description
+        
+        let actionSheet = AKActionSheet(message: "Switch from \(environment) Environment",
+                                        actions: actions,
+                                        shouldTranslate: [.none])
+        
+        actionSheet.present { actionID in
+            switch firebaseEnvironment {
+            case .production:
+                if actionID == actions[0].identifier {
+                    GeneralSerializer.environment = .staging
+                } else if actionID == actions[1].identifier {
+                    GeneralSerializer.environment = .developer
+                }
+            case .staging:
+                if actionID == actions[0].identifier {
+                    GeneralSerializer.environment = .production
+                } else if actionID == actions[1].identifier {
+                    GeneralSerializer.environment = .developer
+                }
+            case .developer:
+                if actionID == actions[0].identifier {
+                    GeneralSerializer.environment = .production
+                } else if actionID == actions[1].identifier {
+                    GeneralSerializer.environment = .staging
+                }
+            default:
+                break
+            }
+            
+            guard actionID != -1 else { return }
+            
+            ContactArchiver.clearArchive()
+            ConversationArchiver.clearArchive()
+            TranslationArchiver.clearArchive()
+            
+            UserDefaults.reset()
+            
+            environment = GeneralSerializer.environment.description
+            
+            AKAlert(message: "Switched to \(environment) environment. You must now restart the app.",
+                    actions: [AKAction(title: "Exit", style: .destructivePreferred)],
+                    showsCancelButton: false,
+                    shouldTranslate: [.none]).present { _ in
+                UserDefaults.standard.set(true, forKey: "developerModeEnabled")
+                UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
+                
+                fatalError()
+            }
+        }
+    }
+    
+    private func presentToggleDeveloperModeActionSheet() {
+        guard Build.stage != .generalRelease else { return }
+        
+        guard Build.developerModeEnabled else {
+            AKTextFieldAlert(message: "Enter the password to enable Developer Mode.",
+                             actions: [AKAction(title: "Done", style: .preferred)],
+                             textFieldAttributes: [.secureTextEntry: true,
+                                                   .keyboardType: UIKeyboardType.numberPad,
+                                                   .textAlignment: NSTextAlignment.center,
+                                                   .placeholderText: "••••"],
+                             shouldTranslate: [.none]).present { returnedString, actionID in
+                guard actionID != -1 else { return }
+                if let returnedString,
+                   returnedString == ExpiryAlertDelegate().getExpirationOverrideCode() {
+                    Build.set(.developerModeEnabled, to: true)
+                    UserDefaults.standard.set(true, forKey: "developerModeEnabled")
+                    Core.hud.showSuccess(text: "Developer Mode Enabled")
+                } else {
+                    AKAlert(message: "Wrong password. Please try again.",
+                            actions: [AKAction(title: "Try Again", style: .preferred)],
+                            shouldTranslate: [.none]).present { actionID in
+                        guard actionID != -1 else { return }
+                        self.presentToggleDeveloperModeActionSheet()
+                    }
+                }
+            }
+            
+            return
+        }
+        
+        Build.set(.developerModeEnabled, to: false)
+        UserDefaults.standard.set(false, forKey: "developerModeEnabled")
+        Core.hud.showSuccess(text: "Developer Mode Disabled")
     }
 }

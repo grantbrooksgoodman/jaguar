@@ -11,6 +11,9 @@ import Foundation
 import SwiftUI
 import UIKit
 
+/* Third-party Frameworks */
+import InputBarAccessoryView
+
 public class StateProvider: ObservableObject {
     
     /* MARK: - Properties */
@@ -22,6 +25,7 @@ public class StateProvider: ObservableObject {
     
     @Published public var tappedSelectContactButton = false
     @Published public var tappedDone = false
+    @Published public var wantsToInvite = false
 }
 
 public enum RuntimeStorage {
@@ -33,47 +37,62 @@ public enum RuntimeStorage {
     // Enums
     public enum StoredItem: String {
         // MARK: AppDelegate
-        case callingCode
-        case selectedRegionCode
+        case appShareLink
+        case pushApiKey
         
+        case archivedLocalUserHashes
+        case archivedServerUserHashes
+        
+        case callingCode
         case callingCodeDictionary
-        case languageCodeDictionary
+        case lookupTableDictionary
         
         case currentUser
         case currentUserID
         
         case languageCode
+        case languageCodeDictionary
         
-        case shouldUseRandomUser
-        case archivedLocalUserHashes
-        case archivedServerUserHashes
+        case overriddenLanguageCode
+        case selectedRegionCode
         
-        // MARK: SceneDelegate
-        case topWindow
+        case pushToken
+        case updatedPushToken
+        
+        case mismatchedHashes
         
         // MARK: BuildInfoOverlayView
         case currentFile
         
-        // MARK: ConversationsPageViewModel
-        case previousConversations
-        
         // MARK: ChatPageView
+        case contactPairs
+        case coordinator
+        
         case currentMessageSlice
         case globalConversation
         
+        case isPresentingChat
         case isSendingMessage
+        
         case messageOffset
         case messagesVC
         
         case shouldReloadData
         case typingIndicator
+        
         case wantsToInvite
         
-        case isPresentingChat
+        // MARK: ConversationsPageViewModel
+        case becameActive
+        case conversationsPageViewModel
+        case receivedNotification
+        case shouldUpdateReadState
         
-        // MARK: UINavigationBarAppearance
-        case navigationBarStandardAppearance
-        case navgationBarScrollEdgeAppearance
+        // MARK: SceneDelegate
+        case topWindow
+        
+        // MARK: SignInPageView
+        case numberFromSignIn
         
         var description: String {
             return rawValue.snakeCase()
@@ -85,7 +104,7 @@ public enum RuntimeStorage {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Public Methods */
     
     public static func remove(_ item: StoredItem) {
         storedItems[item.description] = nil
@@ -111,46 +130,61 @@ public enum RuntimeStorage {
 /* MARK: RuntimeStorage */
 public extension RuntimeStorage {
     // MARK: AppDelegate
-    static var callingCode: String? { get { return retrieve(.callingCode) as? String } } // Doesn't seem to be used
-    static var selectedRegionCode: String? { get { return retrieve(.selectedRegionCode) as? String } }
+    static var appShareLink: URL? { get { retrieve(.appShareLink) as? URL } }
+    static var pushApiKey: String? { get { retrieve(.pushApiKey) as? String } }
     
-    static var callingCodeDictionary: [String: String]? { get { return retrieve(.callingCodeDictionary) as? [String: String] } }
-    static var languageCodeDictionary: [String: String]? { get { return retrieve(.languageCodeDictionary) as? [String: String] } }
+    static var archivedLocalUserHashes: [String]? { get { retrieve(.archivedLocalUserHashes) as? [String] } }
+    static var archivedServerUserHashes: [String]? { get { retrieve(.archivedServerUserHashes) as? [String] } }
     
-    static var currentUser: User? { get { return retrieve(.currentUser) as? User } }
-    static var currentUserID: String? { get { return retrieve(.currentUserID) as? String } }
+    static var callingCode: String? { get { retrieve(.callingCode) as? String } } // Doesn't seem to be used
+    static var callingCodeDictionary: [String: String]? { get { retrieve(.callingCodeDictionary) as? [String: String] } }
+    static var lookupTableDictionary: [String: [String]]? { get { retrieve(.lookupTableDictionary) as? [String: [String]] } }
     
-    static var languageCode: String? { get { return retrieve(.languageCode) as? String } }
+    static var currentUser: User? { get { retrieve(.currentUser) as? User } }
+    static var currentUserID: String? { get { retrieve(.currentUserID) as? String } }
     
-    static var shouldUseRandomUser: Bool? { get { return retrieve(.shouldUseRandomUser) as? Bool } }
-    static var archivedLocalUserHashes: [String]? { get { return retrieve(.archivedLocalUserHashes) as? [String] } }
-    static var archivedServerUserHashes: [String]? { get { return retrieve(.archivedServerUserHashes) as? [String] } }
+    static var languageCode: String? { get { guard let overridden = retrieve(.overriddenLanguageCode) as? String else { return retrieve(.languageCode) as? String }; return overridden } }
+    static var languageCodeDictionary: [String: String]? { get { retrieve(.languageCodeDictionary) as? [String: String] } }
+    
+    static var pushToken: String? { get { retrieve(.pushToken) as? String } }
+    static var updatedPushToken: Bool? { get { retrieve(.updatedPushToken) as? Bool } }
+    
+    static var selectedRegionCode: String? { get { retrieve(.selectedRegionCode) as? String } }
+    static var mismatchedHashes: [String]? { get { retrieve(.mismatchedHashes) as? [String] } }
     
     // MARK: BuildInfoOverlayView
-    static var currentFile: String? { get { return retrieve(.currentFile) as? String } }
+    static var currentFile: String? { get { retrieve(.currentFile) as? String } }
     
     // MARK: ChatPageView
-    static var currentMessageSlice: [Message]? { get { return retrieve(.currentMessageSlice) as? [Message] } }
-    static var globalConversation: Conversation? { get { return retrieve(.globalConversation) as? Conversation } }
+    static var contactPairs: [ContactPair]? { get { retrieve(.contactPairs) as? [ContactPair] } }
+    static var coordinator: ChatPageViewCoordinator? { get { retrieve(.coordinator) as? ChatPageViewCoordinator } }
     
-    static var isSendingMessage: Bool? { get { return retrieve(.isSendingMessage) as? Bool } }
-    static var messageOffset: Int? { get { return retrieve(.messageOffset) as? Int }  }
-    static var messagesVC: ChatPageViewController? { get { return retrieve(.messagesVC) as? ChatPageViewController } }
+    static var currentMessageSlice: [Message]? { get { retrieve(.currentMessageSlice) as? [Message] } }
+    static var globalConversation: Conversation? { get { retrieve(.globalConversation) as? Conversation } }
     
-    static var shouldReloadData: Bool? { get { return retrieve(.shouldReloadData) as? Bool } }
-    static var typingIndicator: Bool? { get { return retrieve(.typingIndicator) as? Bool } }
-    static var wantsToInvite: Bool? { get { return retrieve(.wantsToInvite) as? Bool } }
+    static var isPresentingChat: Bool? { get { retrieve(.isPresentingChat) as? Bool } }
+    static var isSendingMessage: Bool? { get { retrieve(.isSendingMessage) as? Bool } }
     
-    static var isPresentingChat: Bool? { get { return retrieve(.isPresentingChat) as? Bool } }
+    static var messageOffset: Int? { get { retrieve(.messageOffset) as? Int }  }
+    static var messagesVC: ChatPageViewController? { get { retrieve(.messagesVC) as? ChatPageViewController } }
+    
+    static var shouldReloadData: Bool? { get { retrieve(.shouldReloadData) as? Bool } }
+    static var typingIndicator: Bool? { get { retrieve(.typingIndicator) as? Bool } }
+    
+    static var wantsToInvite: Bool? { get { retrieve(.wantsToInvite) as? Bool } }
     
     // MARK: ConversationsPageViewModel
-    static var previousConversations: [Conversation]? { get { return retrieve(.previousConversations) as? [Conversation] } }
+    static var becameActive: Bool? { get { retrieve(.becameActive) as? Bool } }
+#if !EXTENSION
+    static var conversationsPageViewModel: ConversationsPageViewModel? { get { retrieve(.conversationsPageViewModel) as? ConversationsPageViewModel } }
+#endif
+    static var receivedNotification: Bool? { get { retrieve(.receivedNotification) as? Bool } }
+    static var shouldUpdateReadState: Bool? { get { retrieve(.shouldUpdateReadState) as? Bool } }
     
     // MARK: SceneDelegate
-    static var topWindow: UIWindow? { get { return retrieve(.topWindow) as? UIWindow } }
+    static var topWindow: UIWindow? { get { retrieve(.topWindow) as? UIWindow } }
     
-    // MARK: UINavigationBar
-    static var navigationBarStandardAppearance: UINavigationBarAppearance? { get { return retrieve(.navigationBarStandardAppearance) as? UINavigationBarAppearance } }
-    static var navgationBarScrollEdgeAppearance: UINavigationBarAppearance? { get { return retrieve(.navgationBarScrollEdgeAppearance) as? UINavigationBarAppearance } }
+    // MARK: SignInPageView
+    static var numberFromSignIn: String? { get { retrieve(.numberFromSignIn) as? String } }
 }
 

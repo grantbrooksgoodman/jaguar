@@ -15,6 +15,8 @@ import FirebaseDatabase
 import MessageKit
 import Translator
 
+import FirebaseAnalytics
+
 public struct ConversationsPageView: View {
     
     //==================================================//
@@ -42,17 +44,20 @@ public struct ConversationsPageView: View {
             Color.clear.onAppear { viewModel.load() }
         case .loading:
             ProgressView("" /*"Loading..."*/)
-        case .loaded(let translations):
-            loadedView(translations: translations)
+        case .loaded(let translations,
+                     let conversations):
+            loadedView(translations: translations,
+                       conversations: conversations)
         case .failed(let exception):
             Text(exception.userFacingDescriptor)
         }
     }
     
-    private func loadedView(translations: [String: Translator.Translation]) -> some View {
+    private func loadedView(translations: [String: Translator.Translation],
+                            conversations: [Conversation]) -> some View {
         VStack {
             NavigationView {
-                listView(conversations: RuntimeStorage.currentUser?.openConversations?.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }).unique() ?? [],
+                listView(conversations: conversations.visibleForCurrentUser,
                          messagesTranslation: translations["messages"]!.output)
             }
             .sheet(isPresented: $showingPopover) {
@@ -64,6 +69,8 @@ public struct ConversationsPageView: View {
                 .onDisappear {
                     composeButtonEnabled = true
                     stateProvider.tappedDone = false
+                    
+                    AnalyticsService.logEvent(.dismissNewChatPage)
                 }
             }
         }
@@ -75,7 +82,10 @@ public struct ConversationsPageView: View {
             guard newValue else { return }
             stateProvider.tappedSelectContactButton = false
         })
-        .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
+        .onAppear {
+            RuntimeStorage.store(#file, as: .currentFile)
+        }
+        .navigationViewStyle(.stack)
     }
     
     //==================================================//
@@ -128,8 +138,15 @@ public struct ConversationsPageView: View {
         List {
             ForEach(0..<conversations.count, id: \.self, content: { index in
                 ConversationCell(conversation: conversations[index])
+                    .swipeActions(allowsFullSwipe: false, content: {
+                        Button {
+                            viewModel.deleteConversation(conversations[index])
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                        .tint(.red)
+                    })
             })
-            .onDelete(perform: viewModel.deleteConversation(at:))
         }
         .listStyle(PlainListStyle())
         .navigationBarTitle(messagesTranslation)
@@ -161,20 +178,53 @@ public struct ConversationsPageView: View {
     private func settingsButtonAction() {
         settingsButtonEnabled = false
         
-        let preferenceActions = [AKAction(title: "Log Out", style: .default),
-                                 AKAction(title: "Destroy Database", style: .destructive)]
+        var preferenceActions = [AKAction(title: "Log Out", style: .default),
+                                 AKAction(title: "Clear Caches", style: .default)]
         
-        let actionSheet = AKActionSheet(message: "Preferences",
-                                        actions: preferenceActions)
+        if Build.developerModeEnabled,
+           let currentUser = RuntimeStorage.currentUser,
+           currentUser.languageCode != "en" {
+            let languageCode = currentUser.languageCode!
+            let languageName = languageCode.languageName ?? languageCode.uppercased()
+            
+            let overrideOrRestore = AKCore.shared.languageCodeIsLocked ? "Restore Language to \(languageName)" : "Override Language Code to English"
+            preferenceActions.append(AKAction(title: overrideOrRestore, style: .default))
+        }
+        
+        var translationKeys: [AKTranslationOptionKey] = [.actions(indices: [0, 1, 3])]
+        var message = "Preferences"
+        
+        if Build.developerModeEnabled {
+            let user = RuntimeStorage.currentUser!
+            
+            let regionTitle = RegionDetailServer.getRegionTitle(forCallingCode: user.callingCode)
+            
+            let runtimeCode = RuntimeStorage.languageCode!
+            let appLanguageName = runtimeCode.languageName ?? runtimeCode.uppercased()
+            
+            let userLanguageName = user.languageCode.languageName ?? user.languageCode.uppercased()
+            
+            message = "\(user.cellTitle)\n\nEnvironment: \(GeneralSerializer.environment.description)\n\nApp Language: \(appLanguageName)\nUser Language: \(userLanguageName)\n\nRegion: \(regionTitle)"
+        } else {
+            translationKeys.append(.title)
+        }
+        
+        let actionSheet = AKActionSheet(message: message,
+                                        actions: preferenceActions,
+                                        shouldTranslate: translationKeys)
         
         actionSheet.present { actionID in
             settingsButtonEnabled = true
+            
+            guard actionID != -1 else { return }
             
             switch actionID {
             case preferenceActions[0].identifier:
                 viewModel.confirmSignOut(viewRouter)
             case preferenceActions[1].identifier:
-                viewModel.confirmTrashDatabase()
+                viewModel.confirmClearCaches()
+            case preferenceActions[2].identifier:
+                viewModel.overrideLanguageCode()
             default:
                 return
             }
@@ -183,7 +233,7 @@ public struct ConversationsPageView: View {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func testExceptionDepth() {
         let totalToGenerate = 10

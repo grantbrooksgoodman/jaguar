@@ -7,13 +7,14 @@
 //
 
 /* First-party Frameworks */
+import AudioToolbox
 import CoreTelephony
 
 /* Third-party Frameworks */
 import AlertKit
 import Firebase
 import FirebaseAuth
-import PKHUD
+import FirebaseMessaging
 import Translator
 
 //==================================================//
@@ -28,42 +29,59 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     
     //==================================================//
     
-    /* MARK: - UIApplication Functions */
+    /* MARK: - UIApplication Methods */
     
-    public func application(_: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+    public func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // resetIfNeeded()
+        
         preInitialize()
         
-        setBools()
+        setUpRuntimeStorage()
+        setEnvironment(to: .developer)
         
         setUpCallingCodes()
+        
         setUpFirebase()
+        setUpPushNotifications()
         
-        UserDefaults.standard.setValue(nil, forKey: "currentUserID")
-        
-        RuntimeStorage.store(#file, as: .currentFile)
-        RuntimeStorage.store(0, as: .messageOffset)
-        
-        //        if !RuntimeStorage.shouldUseRandomUser! {
-        //            #if targetEnvironment(simulator)
-        //            currentUserID = "QDpQ8qwwdMOS98QcEMjL9aV1oPn1"
-        ////            currentUserID = "fiIvyzSPnVfVAj14GuXTUctwMh22"
-        //            #else
-        //            currentUserID = "QDpQ8qwwdMOS98QcEMjL9aV1oPn1"
-        //            #endif
-        //        }
-        
-        setUpConversationArchive()
         setUpContactArchive()
+        setUpConversationArchive()
         
-        setUpLocalUserHashes()
-        setUpServerUserHashes()
+        setUpUserHashes()
         
         return true
     }
     
+    public func applicationWillTerminate(_ application: UIApplication) {
+        AnalyticsService.logEvent(.terminateApp)
+    }
+    
     //==================================================//
     
-    /* MARK: - Setup/Initialization Functions */
+    /* MARK: - Setup/Initialization Methods */
+    
+    private func resetIfNeeded() {
+        guard Build.stage != .generalRelease,
+              !Build.developerModeEnabled else { return }
+        
+        guard let previousBuildNumber = UserDefaults.standard.value(forKey: "buildNumber") as? Int else {
+            UserDefaults.standard.set(Build.buildNumber, forKey: "buildNumber")
+            return
+        }
+        
+        if previousBuildNumber != Build.buildNumber {
+            Logger.log("Resetting application due to new build number.",
+                       metadata: [#file, #function, #line])
+            
+            UserDefaults.reset()
+            ContactArchiver.clearArchive()
+            ContactService.clearCache()
+            ConversationArchiver.clearArchive()
+            TranslationArchiver.clearArchive()
+            
+            UserDefaults.standard.set(Build.buildNumber, forKey: "buildNumber")
+        }
+    }
     
     private func preInitialize() {
         /* MARK: Build & Logger Setup */
@@ -71,61 +89,97 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         RuntimeStorage.store(Locale.preferredLanguages[0].components(separatedBy: "-")[0],
                              as: .languageCode)
         
+        var developerModeEnabled = false
+        if let developerMode = UserDefaults.standard.value(forKey: "developerModeEnabled") as? Bool {
+            developerModeEnabled = developerMode
+        }
+        
         Build.set([.appStoreReleaseVersion: 0,
                    .codeName: "Jaguar",
+                   .developerModeEnabled: developerModeEnabled,
                    .dmyFirstCompileDateString: "23042022",
                    .finalName: "Hello",
+                   .loggingEnabled: true,
                    .stage: Build.Stage.releaseCandidate,
                    .timebombActive: true])
         
-        Logger.exposureLevel = .verbose
+        if Build.stage == .generalRelease {
+            Build.set(.developerModeEnabled, to: false)
+        }
+        
+        UserDefaults.standard.setValue(Build.stage == .generalRelease ? false : developerModeEnabled,
+                                       forKey: "developerModeEnabled")
+        
+        Logger.exposureLevel = .normal
         
         /* MARK: AlertKit Setup */
         
-        let expiryAlertProvider = ExpiryAlertProvider()
-        let reportProvider = ReportProvider()
-        let translationProvider = TranslationProvider()
+        let expiryAlertDelegate = ExpiryAlertDelegate()
+        let reportDelegate = ReportDelegate()
+        let translationDelegate = TranslationDelegate()
         
         AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
-        AKCore.shared.register(expiryAlertProvider: expiryAlertProvider,
-                               reportProvider: reportProvider,
-                               translationProvider: translationProvider)
+        AKCore.shared.register(expiryAlertDelegate: expiryAlertDelegate,
+                               reportDelegate: reportDelegate,
+                               translationDelegate: translationDelegate)
         
         /* MARK: Localization Setup */
         
-        if let essentialLocalizations = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "EssentialLocalizations", ofType: "plist") ?? "") as? [String: [String: String]] {
-            RuntimeStorage.store(essentialLocalizations["language_codes"]!, as: .languageCodeDictionary)
-            
-            guard let languageCodeDictionary = RuntimeStorage.languageCodeDictionary else {
-                Logger.log("No language code dictionary!",
-                           metadata: [#file, #function, #line])
-                return
-            }
-            
-            if languageCodeDictionary[RuntimeStorage.languageCode!] == nil {
-                RuntimeStorage.store("en", as: .languageCode)
-                AKCore.shared.setLanguageCode("en")
-                
-                Logger.log("Unsupported language code; reverting to English.",
-                           metadata: [#file, #function, #line])
-            }
-        } else {
+        guard let essentialLocalizations = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "EssentialLocalizations", ofType: "plist") ?? "") as? [String: [String: String]] else {
             Logger.log("Essential localizations missing.",
                        with: .fatalAlert,
                        metadata: [#file, #function, #line])
+            return
+        }
+        
+        RuntimeStorage.store(essentialLocalizations["language_codes"]!, as: .languageCodeDictionary)
+        
+        guard let languageCodeDictionary = RuntimeStorage.languageCodeDictionary else {
+            Logger.log("No language code dictionary!",
+                       metadata: [#file, #function, #line])
+            return
+        }
+        
+        guard languageCodeDictionary[RuntimeStorage.languageCode!] != nil else {
+            RuntimeStorage.store("en", as: .overriddenLanguageCode)
+            AKCore.shared.lockLanguageCode(to: "en")
+            
+            Logger.log("Unsupported language code; reverting to English.",
+                       metadata: [#file, #function, #line])
+            return
         }
     }
     
-    private func setBools() {
-        RuntimeStorage.store(false, as: .shouldUseRandomUser)
-        
+    private func setUpRuntimeStorage() {
         StateProvider.shared.hasDisappeared = false
-        RuntimeStorage.store(false, as: .isSendingMessage)
-        
-        RuntimeStorage.store(false, as: .shouldReloadData)
-        RuntimeStorage.store(false, as: .wantsToInvite)
         
         RuntimeStorage.store(false, as: .isPresentingChat)
+        RuntimeStorage.store(false, as: .isSendingMessage)
+        RuntimeStorage.store(false, as: .receivedNotification)
+        RuntimeStorage.store(false, as: .shouldReloadData)
+        RuntimeStorage.store(false, as: .shouldUpdateReadState)
+        RuntimeStorage.store(false, as: .updatedPushToken)
+        RuntimeStorage.store(false, as: .wantsToInvite)
+        
+        RuntimeStorage.store(#file, as: .currentFile)
+        RuntimeStorage.store(0, as: .messageOffset)
+        RuntimeStorage.store([], as: .mismatchedHashes)
+        
+        if let mismatchedHashes = UserDefaults.standard.value(forKey: "mismatchedHashes") as? [String] {
+            RuntimeStorage.store(mismatchedHashes, as: .mismatchedHashes)
+        }
+    }
+    
+    private func setEnvironment(to environment: GeneralSerializer.Environment? = nil) {
+        guard let environment else {
+            if let environmentString = UserDefaults.standard.value(forKey: "firebaseEnvironment") as? String,
+               let environment = environmentString.asEnvironment {
+                GeneralSerializer.environment = environment
+            }
+            return
+        }
+        
+        GeneralSerializer.environment = environment
     }
     
     private func setUpCallingCodes() {
@@ -133,6 +187,14 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
             RuntimeStorage.store(callingCodes, as: .callingCodeDictionary)
         } else {
             Logger.log("Calling codes missing.",
+                       with: .fatalAlert,
+                       metadata: [#file, #function, #line])
+        }
+        
+        if let lookupTables = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "LookupTables", ofType: "plist") ?? "") as? [String: [String]] {
+            RuntimeStorage.store(lookupTables, as: .lookupTableDictionary)
+        } else {
+            Logger.log("Lookup tables missing.",
                        with: .fatalAlert,
                        metadata: [#file, #function, #line])
         }
@@ -147,44 +209,41 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         if let userID = UserDefaults.standard.value(forKey: "currentUserID") as? String {
             RuntimeStorage.store(userID, as: .currentUserID)
         }
+        
+#if !EXTENSION
+        FirebaseAnalytics.Analytics.setAnalyticsCollectionEnabled(true)
+#endif
+        
+        AnalyticsService.logEvent(.openApp)
     }
     
-    private func setUpConversationArchive() {
-        ConversationArchiver.getArchive { _, exception in
-            guard let error = exception else {
-                return
-            }
-            
-            Logger.log(error)
-        }
+    private func setUpPushNotifications() {
+        UNUserNotificationCenter.current().delegate = self
+        Messaging.messaging().delegate = self
     }
     
     private func setUpContactArchive() {
         ContactArchiver.getArchive { _, exception in
-            guard let error = exception else {
-                return
-            }
+            guard let error = exception else { return }
             
             Logger.log(error)
         }
     }
     
-    private func setUpLocalUserHashes() {
-        if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
-            RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
-        } else {
-            let updatedLocalUserHashes = ContactService.getLocalUserHashes()
-            UserDefaults.standard.set(updatedLocalUserHashes, forKey: "archivedLocalUserHashes")
-            RuntimeStorage.store(updatedLocalUserHashes, as: .archivedLocalUserHashes)
+    private func setUpConversationArchive() {
+        ConversationArchiver.getArchive { _, exception in
+            guard let error = exception else { return }
+            
+            Logger.log(error)
         }
     }
     
-    private func setUpServerUserHashes() {
+    private func setUpUserHashes() {
         if let archivedHashes = UserDefaults.standard.value(forKey: "archivedServerUserHashes") as? [String] {
             RuntimeStorage.store(archivedHashes, as: .archivedServerUserHashes)
         } else {
-            ContactService.getServerUserHashes { returnedHashes, exception in
-                guard let updatedServerUserHashes = returnedHashes else {
+            ContactService.getServerUserHashes { hashes, exception in
+                guard let updatedServerUserHashes = hashes else {
                     Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
@@ -193,34 +252,43 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
                 RuntimeStorage.store(updatedServerUserHashes, as: .archivedServerUserHashes)
             }
         }
+        
+        guard let localUserHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] else { return }
+        RuntimeStorage.store(localUserHashes, as: .archivedLocalUserHashes)
     }
     
     //==================================================//
     
-    /* MARK: - Push Notification Functions */
+    /* MARK: - Push Notification Methods */
     
-    public func application(_: UIApplication, didReceiveRemoteNotification userInfo: [AnyHashable: Any], fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
+    public func application(_: UIApplication,
+                            didFailToRegisterForRemoteNotificationsWithError error: Error) {
+        Logger.log(Exception(error, metadata: [#file, #function, #line]))
+    }
+    
+    public func application(_: UIApplication,
+                            didReceiveRemoteNotification userInfo: [AnyHashable: Any],
+                            fetchCompletionHandler completionHandler: @escaping (UIBackgroundFetchResult) -> Void) {
         if Auth.auth().canHandleNotification(userInfo) {
             completionHandler(.noData)
             return
         }
     }
     
-    public func application(_: UIApplication, didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
-        Auth.auth().setAPNSToken(deviceToken, type: .unknown)
+    public func application(_: UIApplication,
+                            didRegisterForRemoteNotificationsWithDeviceToken deviceToken: Data) {
+        Messaging.messaging().apnsToken = deviceToken
     }
     
-    public func application(_: UIApplication, open url: URL, options _: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
-        if Auth.auth().canHandle(url) {
-            return true
-        }
-        
-        return false
+    public func application(_: UIApplication,
+                            open url: URL,
+                            options _: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
+        return Auth.auth().canHandle(url)
     }
     
     //==================================================//
     
-    /* MARK: - Miscellaneous Functions */
+    /* MARK: - Miscellaneous Methods */
     
     private func getCallingCode() -> String? {
         guard let callingCodes = NSDictionary(contentsOfFile: Bundle.main.path(forResource: "CallingCodes", ofType: "plist") ?? "") as? [String: String] else { return nil }
@@ -228,9 +296,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         guard let carrier = telephonyNetworkInfo.serviceSubscriberCellularProviders?.first?.value,
               let countryCode = carrier.isoCountryCode else {
             guard let countryCode = (Locale.current as NSLocale).object(forKey: .countryCode) as? String,
-                  let callingCode = callingCodes[countryCode.uppercased()] else {
-                return nil
-            }
+                  let callingCode = callingCodes[countryCode.uppercased()] else { return nil }
             
             return callingCode
         }
@@ -241,7 +307,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
 
 //==================================================//
 
-/* MARK: - Miscellaneous Functions */
+/* MARK: - Miscellaneous Methods */
 
 public func messagesAttributedString(_ forString: String,
                                      separationIndex: Int) -> NSAttributedString {
@@ -260,4 +326,59 @@ public func messagesAttributedString(_ forString: String,
                                                                      length: attributedString.length - separationIndex))
     
     return attributedString
+}
+
+//==================================================//
+
+/* MARK: - Extensions */
+
+/**/
+
+/* MARK: MessagingDelegate */
+extension AppDelegate: MessagingDelegate {
+    public func messaging(_ messaging: Messaging,
+                          didReceiveRegistrationToken fcmToken: String?) {
+        let tokenDict = ["token": fcmToken ?? ""]
+        NotificationCenter.default.post(name: Notification.Name("FCMToken"),
+                                        object: nil,
+                                        userInfo: tokenDict)
+        guard let token = fcmToken else {
+            return
+        }
+        
+        RuntimeStorage.store(token, as: .pushToken)
+    }
+}
+
+/* MARK: UNUserNotificationCenterDelegate */
+extension AppDelegate: UNUserNotificationCenterDelegate {
+    public func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                       didReceive response: UNNotificationResponse,
+                                       withCompletionHandler completionHandler: @escaping () -> Void) {
+        completionHandler()
+    }
+    
+    public func userNotificationCenter(_ center: UNUserNotificationCenter,
+                                       willPresent notification: UNNotification,
+                                       withCompletionHandler completionHandler:
+                                       @escaping (UNNotificationPresentationOptions) -> Void) {
+#if !EXTENSION
+        switch UIApplication.shared.applicationState {
+        case .background, .inactive:
+            completionHandler([[.banner, .sound, .badge]])
+        case .active:
+            //            let userInfo = notification.request.content.userInfo
+            //            guard let pushServiceContent = userInfo["aps"] as? [AnyHashable: Any],
+            //                  let alertContent = pushServiceContent["alert"] as? [AnyHashable: Any],
+            //                  let title = alertContent["title"] as? String,
+            //                  let body = alertContent["body"] as? String else { return }
+            
+            RuntimeStorage.store(true, as: .receivedNotification)
+            AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
+            RuntimeStorage.conversationsPageViewModel?.reloadIfNeeded()
+        @unknown default:
+            completionHandler([[.banner, .sound, .badge]])
+        }
+#endif
+    }
 }

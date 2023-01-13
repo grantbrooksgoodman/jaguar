@@ -16,26 +16,31 @@ public struct Participant: Codable, Equatable {
     /* MARK: - Properties */
     
     public var userID: String!
+    public var hasDeleted: Bool!
     public var isTyping: Bool!
     
     //==================================================//
     
-    /* MARK: - Constructor Function */
+    /* MARK: - Constructor Method */
     
-    public init(userID: String, isTyping: Bool) {
+    public init(userID: String,
+                hasDeleted: Bool,
+                isTyping: Bool) {
         self.userID = userID
+        self.hasDeleted = hasDeleted
         self.isTyping = isTyping
     }
     
     //==================================================//
     
-    /* MARK: - Equatable Compliance Function */
+    /* MARK: - Equatable Compliance Method */
     
     public static func == (left: Participant, right: Participant) -> Bool {
         let userIdsMatch = left.userID == right.userID
+        let hasDeletedMatch = left.hasDeleted == right.hasDeleted
         let isTypingsMatch = left.isTyping == right.isTyping
         
-        return userIdsMatch && isTypingsMatch
+        return userIdsMatch && hasDeletedMatch && isTypingsMatch
     }
 }
 
@@ -47,6 +52,16 @@ public struct Participant: Codable, Equatable {
 
 /* MARK: Array */
 public extension Array where Element == Participant {
+    var userIdPair: String {
+        var compiledString = ""
+        
+        for (index, id) in userIDs.enumerated() {
+            compiledString += index == 0 ? id : ", \(id)"
+        }
+        
+        return compiledString
+    }
+    
     var userIDs: [String] {
         var identifiers = [String]()
         
@@ -56,6 +71,16 @@ public extension Array where Element == Participant {
         
         return identifiers
     }
+    
+    var serialized: [String] {
+        var participants = [String]()
+        
+        for participant in self {
+            participants.append("\(participant.userID!) | \(participant.hasDeleted!) | \(participant.isTyping!)")
+        }
+        
+        return participants
+    }
 }
 
 public extension Array where Element == String {
@@ -63,9 +88,7 @@ public extension Array where Element == String {
         var participants = [Participant]()
         
         for item in self {
-            guard let asParticipant = item.asParticipant else {
-                return nil
-            }
+            guard let asParticipant = item.asParticipant else { return nil }
             
             participants.append(asParticipant)
         }
@@ -79,12 +102,14 @@ public extension String {
     var asParticipant: Participant? {
         let components = self.components(separatedBy: " | ")
         
-        guard components.count > 1 else { return nil }
+        guard components.count == 3 else { return nil }
         
         let userID = components[0]
-        let isTyping = components[1] == "true" ? true : false
+        let hasDeleted = components[1] == "true" ? true : false
+        let isTyping = components[2] == "true" ? true : false
         
         return Participant(userID: userID,
+                           hasDeleted: hasDeleted,
                            isTyping: isTyping)
     }
 }

@@ -27,32 +27,42 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
     private var expiryOverlayWindow: UIWindow!
     
     // Other
+    private var lastResigned = Date()
     private var scene: UIScene!
     private var touchTimer: Timer?
     
     //==================================================//
     
-    /* MARK: - Scene Control Functions */
+    /* MARK: - Scene Control Methods */
     
     public func scene(_ scene: UIScene, willConnectTo _: UISceneSession, options _: UIScene.ConnectionOptions) {
         // Use this method to optionally configure and attach the UIWindow `window` to the provided UIWindowScene `scene`.
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         
-        let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line])
-        
-        UserTestingSerializer.shared.getRandomUserID { (returnedIdentifier,
-                                                        exception) in
-            timeout.cancel()
-            
-            guard let identifier = returnedIdentifier else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                return
+        guard !Build.developerModeEnabled || Build.stage == .generalRelease else {
+            let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line]) {
+                self.connectScene(scene)
             }
             
-            RuntimeStorage.store(identifier, as: .currentUserID)
-            self.connectScene(scene)
+            UserTestingSerializer.shared.getRandomUserID { (returnedIdentifier,
+                                                            exception) in
+                timeout.cancel()
+                
+                guard let identifier = returnedIdentifier else {
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                    self.connectScene(scene)
+                    return
+                }
+                
+                RuntimeStorage.store(identifier, as: .currentUserID)
+                self.connectScene(scene)
+            }
+            
+            return
         }
+        
+        connectScene(scene)
     }
     
     public func sceneDidDisconnect(_: UIScene) {
@@ -60,32 +70,54 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
         // This occurs shortly after the scene enters the background, or when its session is discarded.
         // Release any resources associated with this scene that can be re-created the next time the scene connects.
         // The scene may re-connect later, as its session was not necessarily discarded (see `application:didDiscardSceneSessions` instead).
+        RuntimeStorage.store(false, as: .becameActive)
+        lastResigned = Date()
     }
     
     public func sceneDidBecomeActive(_: UIScene) {
         // Called when the scene has moved from an inactive state to an active state.
         // Use this method to restart any tasks that were paused (or not yet started) when the scene was inactive.
+        guard RuntimeStorage.becameActive != nil,
+              abs(lastResigned.seconds(from: Date())) > 4,
+              !RuntimeStorage.becameActive! else { return }
+        
+        RuntimeStorage.store(true, as: .becameActive)
+        RuntimeStorage.conversationsPageViewModel?.reloadIfNeeded()
     }
     
     public func sceneWillResignActive(_: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
+        
+        AnalyticsService.logEvent(.closeApp)
+        RuntimeStorage.store(false, as: .becameActive)
+        lastResigned = Date()
     }
     
     public func sceneWillEnterForeground(_: UIScene) {
         // Called as the scene transitions from the background to the foreground.
         // Use this method to undo the changes made on entering the background.
+        guard RuntimeStorage.becameActive != nil,
+              abs(lastResigned.seconds(from: Date())) > 4,
+              !RuntimeStorage.becameActive! else { return }
+        
+        RuntimeStorage.store(true, as: .becameActive)
+        RuntimeStorage.conversationsPageViewModel?.reloadIfNeeded()
     }
     
     public func sceneDidEnterBackground(_: UIScene) {
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
+        
+        AnalyticsService.logEvent(.closeApp)
+        RuntimeStorage.store(false, as: .becameActive)
+        lastResigned = Date()
     }
     
     //==================================================//
     
-    /* MARK: - Gesture Recognizer Functions */
+    /* MARK: - Gesture Recognizer Methods */
     
     public func gestureRecognizer(_: UIGestureRecognizer, shouldReceive _: UITouch) -> Bool {
         touchTimer?.invalidate()
@@ -115,7 +147,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
     
     //==================================================//
     
-    /* MARK: - Other Functions */
+    /* MARK: - Other Methods */
     
     private func connectScene(_ scene: UIScene) {
         // Create the SwiftUI view that provides the window contents.
@@ -149,8 +181,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             
             if Build.expiryDate == Date().comparator,
                Build.stage != .generalRelease,
-               Build.timebombActive
-            {
+               Build.timebombActive {
                 expiryOverlayWindow = UIWindow()
                 expiryOverlayWindow.frame = CGRect(x: 0,
                                                    y: 0,

@@ -7,8 +7,12 @@
 //
 
 /* First-party Frameworks */
+import Contacts
 import SwiftUI
 import UIKit
+
+/* Third-party Frameworks */
+import AlertKit
 
 public class RecipientBar: UIView {
     
@@ -17,7 +21,8 @@ public class RecipientBar: UIView {
     /* MARK: - Properties */
     
     // Arrays
-    private var contactPairs = [ContactPair]()
+    private let contactPairs: [ContactPair]!
+    
     private var queriedContactPairs = [ContactPair]()
     private var tableViewSections = [TableViewSection]()
     
@@ -39,10 +44,12 @@ public class RecipientBar: UIView {
     
     //==================================================//
     
-    /* MARK: - Constructor Functions */
+    /* MARK: - Constructor Methods */
     
-    public init(delegate: ChatPageViewController) {
+    public init(delegate: ChatPageViewController,
+                contactPairs: [ContactPair]) {
         self.delegate = delegate
+        self.contactPairs = contactPairs
         
         super.init(frame: CGRect(x: 0,
                                  y: 0,
@@ -51,6 +58,7 @@ public class RecipientBar: UIView {
         
         addVerticalBorders(color: UIColor.quaternaryLabel.cgColor,
                            height: 0.3)
+        backgroundColor = UIColor.white.withAlphaComponent(0.98)
     }
     
     required init?(coder: NSCoder) {
@@ -59,10 +67,11 @@ public class RecipientBar: UIView {
     
     //==================================================//
     
-    /* MARK: - Overridden Functions */
+    /* MARK: - Overridden Methods */
     
     public override func layoutSubviews() {
-        if delegate.view.subviews.filter({ $0 is UITableView }).count == 0 {
+        if delegate.view.subviews.filter({ $0 is UITableView }).count == 0/*,
+                                                                           !contactPairs.isEmpty*/ {
             contactTableView = getContactTableView()
             delegate.view.addSubview(contactTableView)
             
@@ -81,7 +90,7 @@ public class RecipientBar: UIView {
             recipientTextField.tag = Core.ui.nameTag(for: "recipientTextField")
             addSubview(recipientTextField)
             
-            Core.gcd.after(milliseconds: 500) {
+            Core.gcd.after(milliseconds: 650) {
                 recipientTextField.becomeFirstResponder()
             }
         }
@@ -91,7 +100,7 @@ public class RecipientBar: UIView {
             selectContactButton.tag = Core.ui.nameTag(for: "selectContactButton")
             addSubview(selectContactButton)
             
-            Core.gcd.after(milliseconds: 500) {
+            Core.gcd.after(milliseconds: 800) {
                 guard !self.isAnimating else { return }
                 selectContactButton.isEnabled = true
             }
@@ -102,62 +111,138 @@ public class RecipientBar: UIView {
     
     /* MARK: - Contact Selection Handler */
     
-    /// - Warning: Not implemented yet.
     private func displayExistingChat(with userID: String) {
         if let openConversations = RuntimeStorage.currentUser!.openConversations,
            let conversation = openConversations.filter({ $0.participants.userIDs.contains(userID) }).first {
-            print(conversation.identifier.key!)
+            if let coordinator = RuntimeStorage.coordinator {
+                coordinator.setConversation(conversation)
+                delegate.messagesCollectionView.reloadData()
+            }
         }
     }
     
     public func handleContactSelected(with contactPair: ContactPair) {
-        ContactNavigationRouter.routeNavigation(with: contactPair) { selectedUser, exception in
-            if exception?.hashlet == JaguarException.conversationAlreadyExists.description,
-               let userID = exception?.extraParams?["UserID"] as? String {
-                self.displayExistingChat(with: userID)
-                Logger.log(exception!,
-                           with: .errorAlert)
-            } else if let exception {
-                Logger.log(exception,
-                           with: .errorAlert)
-            } else {
-                self.selectedContactPair = contactPair
-                self.showSelectedContact(name: "\(contactPair.contact.firstName) \(contactPair.contact.lastName)")
+        func showChat(with userID: String,
+                      contactPair: ContactPair) {
+            displayExistingChat(with: userID)
+            delegate.messagesCollectionView.isUserInteractionEnabled = true
+            
+            selectedContactPair = contactPair
+            showSelectedContact(name: "\(contactPair.contact.firstName) \(contactPair.contact.lastName)",
+                                scrollsToBottom: true)
+        }
+        
+        func resetChat() {
+            if let coordinator = RuntimeStorage.coordinator {
+                coordinator.setConversation(Conversation.empty())
+                self.delegate.messagesCollectionView.reloadData()
             }
+        }
+        
+        ContactNavigationRouter.routeNavigation(with: contactPair) { selectedUser, exception in
+            guard let selectedUser else {
+                guard let exception else {
+                    resetChat()
+                    Logger.log(Exception(metadata: [#file, #function, #line]), with: .errorAlert)
+                    return
+                }
+                
+                if exception.isEqual(to: .conversationAlreadyExists),
+                   let userID = exception.extraParams?["UserID"] as? String {
+                    showChat(with: userID, contactPair: contactPair)
+                } else {
+                    resetChat()
+                    Logger.log(exception, with: .errorAlert)
+                }
+                
+                return
+            }
+            
+            guard RuntimeStorage.currentUser?.openConversations?.filter({ $0.participants.userIDs.contains(selectedUser.identifier) }).first == nil else {
+                showChat(with: selectedUser.identifier, contactPair: contactPair)
+                return
+            }
+            
+            resetChat()
+            self.selectedContactPair = contactPair
+            self.showSelectedContact(name: "\(contactPair.contact.firstName) \(contactPair.contact.lastName)")
         }
     }
     
     private func handleNumberEntered(_ phoneNumber: String) {
+        func showChat(with userID: String,
+                      cellTitle: String) {
+            displayExistingChat(with: userID)
+            delegate.messagesCollectionView.isUserInteractionEnabled = true
+            
+            let phoneNumber = PhoneNumber(digits: phoneNumber.digits,
+                                          rawStringHasPlusPrefix: true)
+            let contact = Contact(firstName: "",
+                                  lastName: "",
+                                  phoneNumbers: [phoneNumber])
+            
+            selectedContactPair = ContactPair(contact: contact,
+                                              numberPairs: nil)
+            showSelectedContact(name: cellTitle, scrollsToBottom: true)
+        }
+        
+        func resetChat() {
+            if let coordinator = RuntimeStorage.coordinator {
+                coordinator.setConversation(Conversation.empty())
+                self.delegate.messagesCollectionView.reloadData()
+            }
+        }
+        
         ContactNavigationRouter.routeNavigation(with: phoneNumber) { selectedUser, exception in
-            guard let user = selectedUser else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
+            guard let selectedUser else {
+                guard let exception else {
+                    resetChat()
+                    Logger.log(Exception(metadata: [#file, #function, #line]), with: .errorAlert)
+                    return
+                }
+                
+                if exception.isEqual(to: .conversationAlreadyExists),
+                   let userID = exception.extraParams?["UserID"] as? String,
+                   let cellTitle = exception.extraParams?["CellTitle"] as? String {
+                    showChat(with: userID, cellTitle: cellTitle)
+                } else if exception.isEqual(to: .noUserWithHashes) ||
+                            exception.isEqual(to: .noUserWithPhoneNumber) ||
+                            exception.isEqual(to: .mismatchedHashAndCallingCode) ||
+                            exception.isEqual(to: .noCallingCodesForNumber) ||
+                            exception.isEqual(to: .noHashesForNumber),
+                          let textField = self.subview(for: "recipientTextField") as? UITextField {
+                    self.selectedContactPair = ContactPair(contact: Contact.empty(), numberPairs: nil)
+                    self.showSelectedContact(name: textField.text!)
+                } else {
+                    resetChat()
+                    Logger.log(exception, with: .errorAlert)
+                }
+                
                 return
             }
             
-            var regionCode = RegionDetailServer.getRegionCode(forCallingCode: user.callingCode)
-            regionCode = (regionCode == "multiple" && user.callingCode == "1") ? "US" : regionCode
-            
-            let formattedNumber = user.phoneNumber.formattedPhoneNumber(region: regionCode)
-            
-            self.selectedContactPair = ContactPair(contact: Contact(firstName: "+\(user.callingCode!)",
-                                                                    lastName: formattedNumber,
-                                                                    phoneNumbers: [PhoneNumber(digits: user.phoneNumber)]),
-                                                   users: [user])
-            
-            var contactName = "+\(user.callingCode!) \(formattedNumber)"
-            
-            if let name = ContactService.fetchContactName(forNumber: user.phoneNumber) {
-                contactName = "\(name.givenName) \(name.familyName)"
-            } else if let name = ContactService.fetchContactName(forNumber: "\(user.callingCode!)\(user.phoneNumber!)".digits) {
-                contactName = "\(name.givenName) \(name.familyName)"
+            guard RuntimeStorage.currentUser?.openConversations?.filter({ $0.participants.userIDs.contains(selectedUser.identifier) }).first == nil else {
+                showChat(with: selectedUser.identifier, cellTitle: selectedUser.cellTitle)
+                return
             }
             
-            self.showSelectedContact(name: contactName)
+            let phoneNumber = PhoneNumber(digits: selectedUser.phoneNumber,
+                                          rawStringHasPlusPrefix: true)
+            let contact = Contact(firstName: "+\(selectedUser.callingCode!)",
+                                  lastName: selectedUser.phoneNumber.phoneNumberFormatted,
+                                  phoneNumbers: [phoneNumber])
+            
+            self.selectedContactPair = ContactPair(contact: contact,
+                                                   numberPairs: [NumberPair(number: selectedUser.phoneNumber,
+                                                                            users: [selectedUser])])
+            self.showSelectedContact(name: selectedUser.cellTitle)
         }
     }
     
-    private func showSelectedContact(name: String) {
+    private func showSelectedContact(name: String,
+                                     scrollsToBottom: Bool? = nil) {
+        let scrollsToBottom = scrollsToBottom ?? false
+        
         removeSubview(Core.ui.nameTag(for: "recipientTextField"), animated: false)
         
         hideTableView()
@@ -182,11 +267,19 @@ public class RecipientBar: UIView {
         let inputBar = delegate.messageInputBar
         inputBar.sendButton.isEnabled = inputBar.inputTextView.text.lowercasedTrimmingWhitespace != "" && !useRedColor
         
-        Core.gcd.after(milliseconds: 100) {
+        if scrollsToBottom {
+            Core.gcd.after(milliseconds: 150) {
+                self.delegate.messagesCollectionView.scrollToLastItem()
+            }
+        }
+        
+        Core.gcd.after(milliseconds: scrollsToBottom ? 750 : 100) {
             if !useRedColor {
                 inputBar.inputTextView.placeholder = " \(LocalizedString.newMessage)"
+#if !EXTENSION
                 guard let topViewController = UIApplication.topViewController(),
                       !topViewController.isKind(of: UIAlertController.self) else { return }
+#endif
                 inputBar.inputTextView.becomeFirstResponder()
             }
         }
@@ -208,7 +301,7 @@ public class RecipientBar: UIView {
     
     //==================================================//
     
-    /* MARK: - Button Action Handlers */
+    /* MARK: - Button Action Selectors */
     
     @objc private func clearButtonAction() {
         selectedContactPair = nil
@@ -232,6 +325,11 @@ public class RecipientBar: UIView {
         reloadTableView()
         delegate.messageInputBar.inputTextView.placeholder = nil
         
+        if let coordinator = RuntimeStorage.coordinator {
+            coordinator.setConversation(Conversation.empty())
+            delegate.messagesCollectionView.reloadData()
+        }
+        
         guard subviews(for: "selectContactButton").isEmpty else {
             if let button = subview(for: "selectContactButton") as? UIButton {
                 button.alpha = 1
@@ -240,7 +338,7 @@ public class RecipientBar: UIView {
             return
         }
         
-        Logger.log("Adding subview for «selectContactButton».",
+        Logger.log("Adding subview for «selectContactButton». (Shouldn't be!)",
                    with: .normalAlert,
                    metadata: [#file, #function, #line])
         
@@ -251,6 +349,29 @@ public class RecipientBar: UIView {
     }
     
     @objc public func selectContactButtonAction() {
+        guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
+            var message = "*Hello* has not been granted permission to access your contact list.\n\nYou can change this in Settings."
+            message = RuntimeStorage.languageCode == "en" ? message.removingOccurrences(of: ["*"]) : message
+            
+            AKAlert(message: message,
+                    actions: [AKAction(title: "Go to Settings", style: .preferred)],
+                    cancelButtonTitle: "Dismiss").present { actionID in
+                guard actionID != -1,
+                      let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+#if !EXTENSION
+                UIApplication.shared.open(settingsURL)
+#endif
+                StateProvider.shared.tappedDone = true
+            }
+            
+            return
+        }
+        
+        guard !contactPairs.isEmpty else {
+            presentInviteAlert()
+            return
+        }
+        
         StateProvider.shared.tappedSelectContactButton = true
         delegate.messageInputBar.inputTextView.resignFirstResponder()
         if let recipientTextField = subview(for: "recipientTextField") as? UITextField {
@@ -293,6 +414,8 @@ public class RecipientBar: UIView {
     }
     
     @objc private func toggleContactSelected() {
+        guard !isAnimating else { return }
+        
         guard let contactEnclosingView = subview(for: "contactEnclosingView"),
               let contactLabel = contactEnclosingView.subview(Core.ui.nameTag(for: "contactLabel")) as? UILabel else {
             Logger.log(Exception("Couldn't unwrap subviews.",
@@ -326,7 +449,7 @@ public class RecipientBar: UIView {
     
     //==================================================//
     
-    /* MARK: - Table View Functions */
+    /* MARK: - Table View Methods */
     
     private func getTableViewSections() -> [TableViewSection] {
         let groupedDictionary = Dictionary(grouping: queriedContactPairs,
@@ -359,23 +482,11 @@ public class RecipientBar: UIView {
             superview!.removeGestureRecognizer(recognizer)
         }
         
-        guard contactPairs.isEmpty else {
-            reset()
-            return
-        }
+        guard !contactPairs.isEmpty else { /*fatalError("Empty «contactPairs»!")*/ return }
         
-        ContactService.loadContacts { contactPairs, exception in
-            guard let pairs = contactPairs else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                return
-            }
-            
-            self.contactPairs = pairs
-            
-            self.contactTableView.dataSource = self
-            self.contactTableView.delegate = self
-            reset()
-        }
+        contactTableView.dataSource = self
+        contactTableView.delegate = self
+        reset()
     }
     
     //==================================================//
@@ -396,6 +507,11 @@ public class RecipientBar: UIView {
         contactTableView.alpha = 1
         
         delegate.messageInputBar.isHidden = true
+        
+        let range = textField.text!.rangeOfCharacter(from: CharacterSet.letters)
+        guard range == nil else { return }
+        
+        textField.text = textField.text!.phoneNumberFormatted
     }
     
     //==================================================//
@@ -485,7 +601,7 @@ public class RecipientBar: UIView {
         
         let recipientTextField = UITextField(frame: CGRect(x: 0,
                                                            y: 0,
-                                                           width: UIScreen.main.bounds.width - 80,
+                                                           width: UIScreen.main.bounds.width - 85,
                                                            height: 54))
         
         recipientTextField.addTarget(self, action: #selector(textFieldDidChange(_:)), for: .editingChanged)
@@ -495,7 +611,7 @@ public class RecipientBar: UIView {
         recipientTextField.frame.origin.x = toLabel.frame.maxX + 5
         
         recipientTextField.autocorrectionType = .no
-        recipientTextField.keyboardType = .emailAddress
+        recipientTextField.keyboardType = .namePhonePad
         recipientTextField.spellCheckingType = .no
         
         return recipientTextField
@@ -536,11 +652,28 @@ public class RecipientBar: UIView {
     
     /* MARK: - View Manipulation */
     
+    private func presentInviteAlert() {
+        let alert = AKAlert(message: "It doesn't appear that any of your contacts have an account with us.\n\nWould you like to send them an invite to sign up?",
+                            actions: [AKAction(title: "Send Invite",
+                                               style: .preferred)],
+                            sender: subview(for: "selectContactButton"))
+        alert.present { (actionID) in
+            guard actionID != -1 else { return }
+            RuntimeStorage.store(true, as: .wantsToInvite)
+            StateProvider.shared.wantsToInvite = true
+        }
+    }
+    
     public func updateAppearance() {
+        backgroundColor = delegate.traitCollection.userInterfaceStyle == .dark ? delegate.messagesCollectionView.backgroundColor : UIColor.white.withAlphaComponent(0.98)
+        
         guard let contactEnclosingView = subview(for: "contactEnclosingView") else { return }
         let selectionColor = UIColor(hex: delegate.traitCollection.userInterfaceStyle == .dark ? 0x2A2A2C : 0xECF0F1)
         contactEnclosingView.backgroundColor = selectionColor
         contactEnclosingView.layer.borderColor = selectionColor.cgColor
+        
+        addVerticalBorders(color: UIColor.quaternaryLabel.cgColor,
+                           height: 0.3)
     }
 }
 
@@ -560,11 +693,8 @@ extension RecipientBar: UITextFieldDelegate {
                 return false
             }
             
-            self.selectedContactPair = ContactPair(contact: Contact(firstName: "",
-                                                                    lastName: "",
-                                                                    phoneNumbers: []),
-                                                   users: nil)
-            self.showSelectedContact(name: textField.text!)
+            selectedContactPair = ContactPair(contact: .empty(), numberPairs: nil)
+            showSelectedContact(name: textField.text!)
             return false
         }
         
@@ -579,6 +709,11 @@ extension RecipientBar: UITextFieldDelegate {
 
 /* MARK: UITableViewDataSource, UITableViewDelegate */
 extension RecipientBar: UITableViewDataSource, UITableViewDelegate {
+    public func scrollViewDidScroll(_ scrollView: UIScrollView) {
+        guard let recipientTextField = subview(for: "recipientTextField") as? UITextField else { return }
+        recipientTextField.resignFirstResponder()
+    }
+    
     public func numberOfSections(in tableView: UITableView) -> Int {
         return tableViewSections.count
     }
@@ -595,11 +730,21 @@ extension RecipientBar: UITableViewDataSource, UITableViewDelegate {
                                                                              lastName: "",
                                                                              phoneNumbers: [])
         
-        let fullName = "\(contact.firstName) \(contact.lastName)"
+        var fullName = "\(contact.firstName) \(contact.lastName)"
         cell.nameLabel.text = fullName
         
-        let mainAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 17)]
-        let alternateAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 17)]
+        var mainAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 17)]
+        var alternateAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 17)]
+        
+        if let users = section.contactPairs[indexPath.row].numberPairs?.users,
+           users.allSatisfy({ $0.identifier == RuntimeStorage.currentUserID! }) {
+            mainAttributes[.foregroundColor] = UIColor.gray
+            alternateAttributes[.foregroundColor] = UIColor.gray
+            cell.isUserInteractionEnabled = false
+            fullName = "\(fullName) \(LocalizedString.myAccount)"
+        } else {
+            cell.isUserInteractionEnabled = true
+        }
         
         cell.nameLabel.attributedText = fullName.attributed(mainAttributes: mainAttributes,
                                                             alternateAttributes: alternateAttributes,
@@ -652,6 +797,7 @@ public extension UIView {
     }
 }
 
+#if !EXTENSION
 /* MARK: UIApplication */
 public extension UIApplication {
     class func topViewController(_ base: UIViewController? = UIApplication.shared.windows.first?.rootViewController) -> UIViewController? {
@@ -672,3 +818,4 @@ public extension UIApplication {
         return base
     }
 }
+#endif

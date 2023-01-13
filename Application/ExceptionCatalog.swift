@@ -12,22 +12,87 @@ import Foundation
 /**
  Use this enum to catalog application-specific **Exceptions** and their corresponding hashlet values.
  */
-public enum JaguarException {
+public enum JRException {
+    case cnContactStoreAccessDenied
+    case contactAccessDenied
+    case emptyContactList
+    
     case conversationAlreadyExists
+    case conversationWithYourself
+    case sameLanguageConversation
+    
+    case failedToRetranslate
+    case operationTimedOut
+    
+    case invalidVerificationCode
+    case verificationCodeExpired
+    
+    case noCallingCodesForNumber
+    case noHashesForNumber
+    
+    case noContactArchive
+    case noTranslationsForLanguagePair
+    
+    case mismatchedHashAndCallingCode
+    case noUserWithCallingCode
+    case noUserWithHashes
+    case noUserWithPhoneNumber
+    
+    case numberInvalidFormat
     case numberTooLong
     case numberTooShort
-    case invalidVerificationCode
     
     var description: String {
         switch self {
+        case .cnContactStoreAccessDenied:
+            return "0865"
+        case .contactAccessDenied:
+            return "8F6D"
+        case .emptyContactList:
+            return "9BAD"
+            
         case .conversationAlreadyExists:
             return "CE84"
+        case .conversationWithYourself:
+            return "F8E5"
+        case .sameLanguageConversation:
+            return "1B76"
+            
+        case .failedToRetranslate:
+            return "1BC2"
+        case .operationTimedOut:
+            return "DE75"
+            
+        case .invalidVerificationCode:
+            return "0A84"
+        case .verificationCodeExpired:
+            return "F623"
+            
+        case .noCallingCodesForNumber:
+            return "0BD7"
+        case .noHashesForNumber:
+            return "452A"
+            
+        case .noContactArchive:
+            return "897E"
+        case .noTranslationsForLanguagePair:
+            return "7CDC"
+            
+        case .mismatchedHashAndCallingCode:
+            return "7592"
+        case .noUserWithCallingCode:
+            return "0E01"
+        case .noUserWithHashes:
+            return "BD49"
+        case .noUserWithPhoneNumber:
+            return "C2F1"
+            
+        case .numberInvalidFormat:
+            return "470A"
         case .numberTooLong:
             return "B5B4"
         case .numberTooShort:
             return "3E46"
-        case .invalidVerificationCode:
-            return "0A84"
         }
     }
 } 
@@ -50,13 +115,13 @@ public extension Exception {
             return "You already have an open conversation with this user."
             
         case "Invalid format.", "The format of the phone number provided is incorrect. Please enter the phone number in a format that can be parsed into E.164 format. E.164 phone numbers are written in the format [+][country code][subscriber number including area code].", "TOO_SHORT", "TOO_LONG":
-            return "The format of the phone number provided is incorrect.\n\nPlease verify that you have fully entered your phone number, including the country and area codes."
+            return "The format of the phone number provided is incorrect.\n\nPlease verify that you have fully entered your phone number, including the area code."
             
         case "No conversation exists with the provided identifier.":
             return "We were unable to retrieve one or more of your conversations.\n\nPlease report this error and try again later."
             
         case "The SMS code has expired. Please re-send the verification code to try again.":
-            return "The verification code has expired. Pleasse try again."
+            return "The verification code has expired. Please try again."
             
         case "The SMS verification code used to create the phone auth credential is invalid. Please resend the verification code SMS and be sure to use the verification code provided by the user.":
             return "The verification code entered was invalid. Please try again."
@@ -64,10 +129,8 @@ public extension Exception {
         case "Unable to send texts.":
             return "Your device is unable to send text messages."
             
-        case "We have blocked all requests from this device due to unusual activity. Try again later.":
-            return "Due to unusual activity, all requests from this device have been temporarily blocked. Please try again later."
         default:
-            return self.descriptor
+            return Build.stage == .generalRelease ? "Something went wrong, please try again later." : self.descriptor
         }
     }
 }

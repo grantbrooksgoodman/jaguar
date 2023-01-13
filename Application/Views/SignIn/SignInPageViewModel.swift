@@ -42,7 +42,7 @@ public class SignInPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Initializer Function */
+    /* MARK: - Initializer Method */
     
     public func load() {
         state = .loading
@@ -65,7 +65,7 @@ public class SignInPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Other Functions */
+    /* MARK: - Other Methods */
     
     public func authenticateUser(identifier: String,
                                  verificationCode: String,

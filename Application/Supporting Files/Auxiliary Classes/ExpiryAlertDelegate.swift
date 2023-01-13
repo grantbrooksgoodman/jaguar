@@ -1,5 +1,5 @@
 //
-//  ExpiryAlertProvider.swift
+//  ExpiryAlertDelegate.swift
 //
 //  Created by Grant Brooks Goodman.
 //  Copyright © NEOTechnica Corporation. All rights reserved.
@@ -12,7 +12,7 @@ import UIKit
 import AlertKit
 import Translator
 
-public class ExpiryAlertProvider: AKExpiryAlertProvider {
+public class ExpiryAlertDelegate: AKExpiryAlertDelegate {
     
     //==================================================//
     
@@ -36,7 +36,7 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Public Methods */
     
     public func presentExpiryAlert() {
         translateStrings {
@@ -124,9 +124,26 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
         }
     }
     
+    public func getExpirationOverrideCode() -> String {
+        let firstLetter = String(Build.codeName.first!)
+        let lastLetter = String(Build.codeName.last!)
+        
+        let middleIndex = Build.codeName.index(Build.codeName.startIndex,
+                                               offsetBy: Int((Double(Build.codeName.count) / 2).rounded(.down)))
+        let middleLetter = String(Build.codeName[middleIndex])
+        
+        var numberStrings: [String] = []
+        
+        for letter in [firstLetter, middleLetter, lastLetter] {
+            numberStrings.append(String(format: "%02d", letter.alphabeticalPosition))
+        }
+        
+        return numberStrings.joined()
+    }
+    
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     @objc private func decrementSecond() {
         remainingSeconds -= 1
@@ -153,23 +170,6 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
             
             setAttributedExpiryMessage()
         }
-    }
-    
-    private func getExpirationOverrideCode() -> String {
-        let firstLetter = String(Build.codeName.first!)
-        let lastLetter = String(Build.codeName.last!)
-        
-        let middleIndex = Build.codeName.index(Build.codeName.startIndex,
-                                               offsetBy: Int((Double(Build.codeName.count) / 2).rounded(.down)))
-        let middleLetter = String(Build.codeName[middleIndex])
-        
-        var numberStrings: [String] = []
-        
-        for letter in [firstLetter, middleLetter, lastLetter] {
-            numberStrings.append(String(format: "%02d", letter.alphabeticalPosition))
-        }
-        
-        return numberStrings.joined()
     }
     
     private func setAttributedExpiryMessage() {
@@ -206,7 +206,7 @@ public class ExpiryAlertProvider: AKExpiryAlertProvider {
         TranslatorService.shared.getTranslations(for: inputsToTranslate,
                                                  languagePair: LanguagePair(from: "en",
                                                                             to: RuntimeStorage.languageCode!),
-                                                 requiresHUD: false /*true*/,
+                                                 requiresHUD: true,
                                                  using: .google) { (returnedTranslations,
                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {

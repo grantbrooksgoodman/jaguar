@@ -13,12 +13,22 @@ public enum RegionDetailServer {
     
     //==================================================//
     
-    /* MARK: - Enums */
+    /* MARK: - Properties */
     
+    // Dictionaries
+    private static var localizedRegionStringsForRegionCodes = [String: String]()
+    private static var imagesForRegionCodes = [String: UIImage]()
+    private static var imagesForRegionTitles = [String: UIImage]()
+    private static var titlesForCallingCodes = [String: String]()
+    private static var titlesForRegionCodes = [String: String]()
+    
+    // Other
     public enum RegionType {
         case regionCode
         case regionTitle
     }
+    
+    private static var regionTitles: [String]?
     
     //==================================================//
     
@@ -35,12 +45,26 @@ public enum RegionDetailServer {
     /* MARK: - Images */
     
     public static func getImage(for: RegionType, with: String) -> UIImage? {
+        guard imagesForRegionCodes[with] == nil else {
+            return imagesForRegionCodes[with]
+        }
+        
+        guard imagesForRegionTitles[with] == nil else {
+            return imagesForRegionTitles[with]
+        }
+        
         let keys = Array(RuntimeStorage.callingCodeDictionary!.keys)
         let matches = `for` == .regionCode ? keys.filter({ $0 == with }) : keys.filter({ getRegionTitle(forRegionCode: $0) == with })
         
         guard matches.count > 0 else { return nil }
         
         guard let image = UIImage(named: "\(matches.first!.lowercased()).png") else { return nil }
+        
+        if `for` == .regionCode {
+            imagesForRegionCodes[with] = image
+        } else {
+            imagesForRegionTitles[with] = image
+        }
         
         return image
     }
@@ -85,6 +109,10 @@ public enum RegionDetailServer {
     /* MARK: - Region Titles */
     
     public static func getLocalizedRegionString(forRegionCode: String) -> String {
+        guard localizedRegionStringsForRegionCodes[forRegionCode] == nil else {
+            return localizedRegionStringsForRegionCodes[forRegionCode]!
+        }
+        
         guard RuntimeStorage.callingCodeDictionary![forRegionCode] != nil else {
             return ""
         }
@@ -93,13 +121,19 @@ public enum RegionDetailServer {
         let regionName = currentLocale.localizedString(forRegionCode: forRegionCode)
         
         guard let name = regionName else {
-            return "Multiple"
+            localizedRegionStringsForRegionCodes[forRegionCode] = "Multiple"
+            return localizedRegionStringsForRegionCodes[forRegionCode]!
         }
         
-        return name
+        localizedRegionStringsForRegionCodes[forRegionCode] = name
+        return localizedRegionStringsForRegionCodes[forRegionCode]!
     }
     
     public static func getRegionTitle(forCallingCode: String) -> String {
+        guard titlesForCallingCodes[forCallingCode] == nil else {
+            return titlesForCallingCodes[forCallingCode]!
+        }
+        
         guard Array(RuntimeStorage.callingCodeDictionary!.values).contains(forCallingCode) else {
             return ""
         }
@@ -107,13 +141,19 @@ public enum RegionDetailServer {
         let regions = RuntimeStorage.callingCodeDictionary!.allKeys(forValue: forCallingCode)
         
         guard regions.count == 1 else {
-            return "+\(forCallingCode) (Multiple)"
+            titlesForCallingCodes[forCallingCode] = "+\(forCallingCode) (Multiple)"
+            return titlesForCallingCodes[forCallingCode]!
         }
         
-        return getRegionTitle(forRegionCode: regions[0])
+        titlesForCallingCodes[forCallingCode] = getRegionTitle(forRegionCode: regions[0])
+        return titlesForCallingCodes[forCallingCode]!
     }
     
     private static func getRegionTitle(forRegionCode: String) -> String {
+        guard titlesForRegionCodes[forRegionCode] == nil else {
+            return titlesForRegionCodes[forRegionCode]!
+        }
+        
         guard RuntimeStorage.callingCodeDictionary![forRegionCode] != nil else {
             return ""
         }
@@ -122,19 +162,26 @@ public enum RegionDetailServer {
         let regionName = currentLocale.localizedString(forRegionCode: forRegionCode)
         
         guard let name = regionName else {
-            return "+\(RuntimeStorage.callingCodeDictionary![forRegionCode]!) (Multiple)"
+            titlesForRegionCodes[forRegionCode] = "+\(RuntimeStorage.callingCodeDictionary![forRegionCode]!) (Multiple)"
+            return titlesForRegionCodes[forRegionCode]!
         }
         
-        return "+\(RuntimeStorage.callingCodeDictionary![forRegionCode]!) (\(name))"
+        titlesForRegionCodes[forRegionCode] = "+\(RuntimeStorage.callingCodeDictionary![forRegionCode]!) (\(name))"
+        return titlesForRegionCodes[forRegionCode]!
     }
     
     public static func regionTitleArray() -> [String] {
+        guard regionTitles == nil else {
+            return regionTitles!
+        }
+        
         var titleArray = [String]()
         
         for key in RuntimeStorage.callingCodeDictionary!.keys {
             titleArray.append(getRegionTitle(forRegionCode: key))
         }
         
-        return titleArray.sorted()
+        regionTitles = titleArray.sorted()
+        return regionTitles!
     }
 }

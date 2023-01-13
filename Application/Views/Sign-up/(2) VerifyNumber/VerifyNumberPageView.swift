@@ -24,12 +24,14 @@ public struct VerifyNumberPageView: View {
     /* MARK: - Properties */
     
     // Strings
-    @State private var phoneNumberString: String = ""
+    @State private var phoneNumberString: String = RuntimeStorage.numberFromSignIn ?? ""
     @State private var selectedRegion = "US"
     
     // Other
     @StateObject public var viewModel: VerifyNumberPageViewModel
     @StateObject public var viewRouter: ViewRouter
+    
+    @State private var pressedContinue = false
     
     //==================================================//
     
@@ -67,7 +69,16 @@ public struct VerifyNumberPageView: View {
                     
                     Button {
                         RuntimeStorage.store(selectedRegion, as: .selectedRegionCode)
-                        verifyUser(phoneNumber: phoneNumberString.digits)
+                        let callingCode = RegionDetailServer.getCallingCode(forRegion: selectedRegion)
+                        let compiledNumber = "\(RuntimeStorage.callingCodeDictionary![selectedRegion]!)\(phoneNumberString.digits)"
+                        
+                        let phoneNumber = PhoneNumber(digits: compiledNumber.digits,
+                                                      rawStringHasPlusPrefix: true,
+                                                      formattedString: phoneNumberString,
+                                                      callingCode: callingCode!)
+                        verifyUser(phoneNumber: phoneNumber)
+                        
+                        pressedContinue = true
                     } label: {
                         Text(translations["continue"]!.output)
                             .bold()
@@ -75,6 +86,7 @@ public struct VerifyNumberPageView: View {
                     .padding(.top, 5)
                     .accentColor(.blue)
                     .disabled(phoneNumberString.removingOccurrences(of: ["+"]).lowercasedTrimmingWhitespace.count < 7)
+                    .disabled(pressedContinue)
                     
                     Button {
                         viewRouter.currentPage = .signUp_selectLanguage
@@ -88,7 +100,8 @@ public struct VerifyNumberPageView: View {
                 .padding(.bottom, 30)
                 
                 Spacer()
-            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
+            }
+            .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let exception):
             Text(exception.userFacingDescriptor)
         }
@@ -96,18 +109,20 @@ public struct VerifyNumberPageView: View {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
-    private func verifyUser(phoneNumber: String) {
-        viewModel.verifyUser(phoneNumber: phoneNumber) { (returnedIdentifier,
-                                                          exception,
-                                                          hasAccount) in
+    private func verifyUser(phoneNumber: PhoneNumber) {
+        PhoneNumberService.verifyUser(phoneNumber: phoneNumber) { (identifier,
+                                                                   exception,
+                                                                   hasAccount) in
+            self.pressedContinue = false
+            
             guard !hasAccount else {
                 let alert = AKAlert(message: "It appears you already have an account. Please sign in instead.", actions: [AKAction(title: "Sign In", style: .preferred)])
                 
                 alert.present() { actionID in
                     guard actionID == -1 else {
-                        viewRouter.currentPage = .signIn(phoneNumber: phoneNumberString.digits.formattedPhoneNumber(region: selectedRegion),
+                        viewRouter.currentPage = .signIn(phoneNumber: phoneNumberString.partiallyFormatted(for: selectedRegion),
                                                          fromSignUp: true)
                         return
                     }
@@ -116,14 +131,14 @@ public struct VerifyNumberPageView: View {
                 return
             }
             
-            guard let identifier = returnedIdentifier else {
+            guard let identifier else {
                 Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
                            with: .errorAlert)
                 return
             }
             
             viewRouter.currentPage = .signUp_authCode(identifier: identifier,
-                                                      phoneNumber: phoneNumber,
+                                                      phoneNumber: phoneNumberString.digits,
                                                       region: RuntimeStorage.selectedRegionCode ?? selectedRegion)
             RuntimeStorage.remove(.selectedRegionCode)
         }

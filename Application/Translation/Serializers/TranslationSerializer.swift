@@ -18,7 +18,7 @@ public enum TranslationSerializer {
     
     //==================================================//
     
-    /* MARK: - Uploading Functions */
+    /* MARK: - Uploading Methods */
     
     public static func uploadTranslation(_ translation: Translator.Translation,
                                          completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
@@ -76,7 +76,7 @@ public enum TranslationSerializer {
     
     //==================================================//
     
-    /* MARK: - Downloading Functions */
+    /* MARK: - Downloading Methods */
     
     public static func downloadTranslations(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
 #warning("Figure out whether the limit will cause any issues. It shouldn't, because we have findTranslation() as a backup, but still.")
@@ -121,6 +121,7 @@ public enum TranslationSerializer {
                 TranslationArchiver.addToArchive(translation)
                 
                 if index == decodedValues.count - 1 {
+#if !EXTENSION
                     let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
                     
                     if var topController = keyWindow?.rootViewController {
@@ -133,6 +134,7 @@ public enum TranslationSerializer {
                             AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
                         }
                     }
+#endif
                     
                     completion(nil)
                 }
@@ -248,7 +250,7 @@ public enum TranslationSerializer {
     
     //==================================================//
     
-    /* MARK: - Removal Functions */
+    /* MARK: - Removal Methods */
     
     public static func removeTranslation(for input: Translator.TranslationInput,
                                          languagePair: Translator.LanguagePair,
@@ -308,7 +310,7 @@ public enum TranslationSerializer {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private static func uploadTranslations(_ translations: [Translator.Translation],
                                            for languagePair: Translator.LanguagePair,

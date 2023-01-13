@@ -16,7 +16,7 @@ final class FirebaseTranslatorTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Overridden Functions */
+    /* MARK: Overridden Methods */
     
     override func setUp() {
         super.setUp()
@@ -28,7 +28,7 @@ final class FirebaseTranslatorTests: XCTestCase {
     
     //==================================================//
     
-    /* MARK: Testing Functions */
+    /* MARK: Testing Methods */
     
     func testTranslateToEnglish() {
         let expectation = XCTestExpectation(description: "No error returned")

@@ -31,7 +31,7 @@ public final class MessageComposer: NSObject, MFMessageComposeViewControllerDele
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Public Methods */
     
     public func compose(withContent content: String) {
         guard MFMessageComposeViewController.canSendText() else {

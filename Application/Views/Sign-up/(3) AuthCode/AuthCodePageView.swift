@@ -26,6 +26,8 @@ public struct AuthCodePageView: View {
     @StateObject public var viewModel: AuthCodePageViewModel
     @StateObject public var viewRouter: ViewRouter
     
+    @State private var pressedContinue = false
+    
     // Strings
     @State public var phoneNumber: String
     @State public var region: String
@@ -59,45 +61,24 @@ public struct AuthCodePageView: View {
                     TextField("000000", text: $verificationCode)
                         .padding(.vertical, 2)
                         .multilineTextAlignment(.center)
-                        .overlay(Rectangle()
-                            .stroke(lineWidth: 1))
+                        .overlay(VStack {
+                            Divider()
+                                .offset(x: 0, y: 15)
+                        })
                         .padding(.horizontal, 30)
                         .keyboardType(.numberPad)
                     
                     Button {
-                        viewModel.authenticateUser(identifier: verificationIdentifier,
-                                                   verificationCode: verificationCode) { (userID, returnedError) in
-                            if let identifier = userID {
-                                let callingCode = RegionDetailServer.getCallingCode(forRegion: region)
-                                
-                                UserSerializer.shared.createUser(identifier,
-                                                                 callingCode: callingCode ?? "1",
-                                                                 languageCode: RuntimeStorage.languageCode!,
-                                                                 phoneNumber: phoneNumber,
-                                                                 region: region) { (exception) in
-                                    guard exception == nil else {
-                                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                                                   with: .errorAlert)
-                                        return
-                                    }
-                                    
-                                    AKAlert(message: "Account created successfully.",
-                                            cancelButtonTitle: "OK").present()
-                                }
-                            } else if let error = returnedError {
-                                Logger.log(error,
-                                           with: .errorAlert,
-                                           metadata: [#file, #function, #line])
-                                
-                            }
-                        }
+                        authenticateUser()
+                        pressedContinue = true
                     } label: {
-                        Text(translations["finish"]!.output)
+                        Text(translations["continue"]!.output)
                             .bold()
                     }
                     .padding(.top, 5)
                     .accentColor(.blue)
                     .disabled(verificationCode.lowercasedTrimmingWhitespace.count != 6)
+                    .disabled(pressedContinue)
                     
                     Button {
                         viewRouter.currentPage = .signUp_verifyNumber
@@ -111,9 +92,37 @@ public struct AuthCodePageView: View {
                 .padding(.bottom, 30)
                 
                 Spacer()
-            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
+            }
+            .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let exception):
             Text(exception.userFacingDescriptor)
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Private Methods */
+    
+    private func authenticateUser() {
+        viewModel.authenticateUser(identifier: verificationIdentifier,
+                                   verificationCode: verificationCode) { userID, returnedError in
+            self.pressedContinue = false
+            
+            guard let userID else {
+                if let returnedError {
+                    Logger.log(Exception(returnedError, metadata: [#file, #function, #line]),
+                               with: .errorAlert)
+                } else {
+                    Logger.log(Exception(metadata: [#file, #function, #line]),
+                               with: .errorAlert)
+                }
+                
+                return
+            }
+            
+            viewRouter.currentPage = .signUp_permissions(phoneNumber: phoneNumber,
+                                                         region: region,
+                                                         userID: userID)
         }
     }
 }

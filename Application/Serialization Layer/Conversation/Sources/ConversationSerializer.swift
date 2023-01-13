@@ -20,7 +20,7 @@ public struct ConversationSerializer {
     
     //==================================================//
     
-    /* MARK: - Creation Functions */
+    /* MARK: - Creation Methods */
     
     public func createConversation(initialMessageIdentifier: String,
                                    participants: [String],
@@ -31,9 +31,8 @@ public struct ConversationSerializer {
         var data: [String: Any] = [:]
         
         var serializedParticipants = [String]()
-        
         for identifier in participants {
-            serializedParticipants.append("\(identifier) | false")
+            serializedParticipants.append("\(identifier) | false | false")
         }
         
         let lastModifiedDate = Date()
@@ -48,7 +47,7 @@ public struct ConversationSerializer {
             return
         }
         
-        guard let generatedKey = Database.database().reference().child("/allConversations/").childByAutoId().key else {
+        guard let generatedKey = Database.database().reference().child(GeneralSerializer.environment.shortString).child("/conversations/").childByAutoId().key else {
             let exception = Exception("Unable to generate key for new conversation.",
                                       metadata: [#file, #function, #line])
             
@@ -58,7 +57,7 @@ public struct ConversationSerializer {
             return
         }
         
-#warning("Include call to getMessages() here.")
+        // #warning("Include call to getMessages() here.")
         let conversation = Conversation(identifier: ConversationID(key: generatedKey,
                                                                    hash: ""),
                                         messageIdentifiers: data["messages"] as! [String],
@@ -69,7 +68,8 @@ public struct ConversationSerializer {
         let hash = conversation.hash
         data["hash"] = hash
         
-        GeneralSerializer.updateValue(onKey: "/allConversations/\(generatedKey)",
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        GeneralSerializer.updateValue(onKey: "\(pathPrefix)\(generatedKey)",
                                       withData: data) { (returnedError) in
             if let error = returnedError {
                 completion(nil, Exception(error, metadata: [#file, #function, #line]))
@@ -81,7 +81,8 @@ public struct ConversationSerializer {
                 for userID in participants {
                     dispatchGroup.enter()
                     
-                    GeneralSerializer.getValues(atPath: "/allUsers/\(userID)/openConversations") { (returnedOpenConversations, exception) in
+                    let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
+                    GeneralSerializer.getValues(atPath: "\(pathPrefix)\(userID)/openConversations") { (returnedOpenConversations, exception) in
                         if let error = exception {
                             completion(nil, error)
                         } else {
@@ -95,7 +96,7 @@ public struct ConversationSerializer {
                             openConversations.append("\(generatedKey) | \(hash)")
                             openConversations = openConversations.filter({ $0 != "!" })
                             
-                            GeneralSerializer.updateValue(onKey: "/allUsers/\(userID)",
+                            GeneralSerializer.updateValue(onKey: "\(pathPrefix)\(userID)",
                                                           withData: ["openConversations": openConversations]) { (returnedError) in
                                 if let error = returnedError {
                                     finalErrorDescriptor += "\(error.localizedDescription)\n"
@@ -122,7 +123,7 @@ public struct ConversationSerializer {
                                                          _ exception: Exception?) -> Void) {
         guard users.count == 2 else {
             completion(nil, Exception("Invalid number of users.",
-                                      extraParams: ["WithUsers.Count": users.count],
+                                      extraParams: ["Users.Count": users.count],
                                       metadata: [#file, #function, #line]))
             return
         }
@@ -171,12 +172,44 @@ public struct ConversationSerializer {
     
     //==================================================//
     
-    /* MARK: - Deletion Functions */
+    /* MARK: - Deletion Methods */
+    
+    private func setConversationHidden(withIdentifier: String,
+                                       newParticipants: [Participant],
+                                       completion: @escaping(_ exception: Exception?) -> Void) {
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(withIdentifier)/participants",
+                                   withData: newParticipants.serialized) { error in
+            guard error == nil else {
+                completion(Exception(error!, metadata: [#file, #function, #line]))
+                return
+            }
+            
+            ConversationSerializer.shared.getConversation(withIdentifier: withIdentifier) { returnedConversation, exception in
+                guard let returnedConversation else {
+                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                returnedConversation.participants = newParticipants
+                returnedConversation.updateHash { exception in
+                    guard exception == nil else {
+                        completion(exception!)
+                        return
+                    }
+                    
+                    ConversationArchiver.removeFromArchive(withKey: returnedConversation.identifier.key)
+                    completion(nil)
+                }
+            }
+        }
+    }
     
     public func deleteConversation(withIdentifier: String,
                                    completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         let database = Database.database().reference()
-        let conversationKey = "/allConversations/\(withIdentifier)"
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        let conversationKey = "\(pathPrefix)\(withIdentifier)"
         
         database.child("\(conversationKey)/participants").observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let participantStrings = returnedSnapshot.value as? [String],
@@ -184,6 +217,36 @@ public struct ConversationSerializer {
                 completion(Exception("Unable to get participants from this conversation.",
                                      extraParams: ["ConversationID": withIdentifier],
                                      metadata: [#file, #function, #line]))
+                return
+            }
+            
+            // #warning("Bad for group chats.")
+            guard participants.contains(where: { $0.hasDeleted }) else {
+                var newParticipants = [Participant]()
+                for participant in participants {
+                    var newParticipant: Participant?
+                    if participant.userID == RuntimeStorage.currentUserID {
+                        newParticipant = Participant(userID: participant.userID,
+                                                     hasDeleted: true,
+                                                     isTyping: participant.isTyping)
+                    }
+                    
+                    newParticipants.append(newParticipant ?? participant)
+                }
+                
+                self.setConversationHidden(withIdentifier: withIdentifier,
+                                           newParticipants: newParticipants) { exception in
+                    guard exception == nil else {
+                        completion(exception!)
+                        return
+                    }
+                    
+                    Logger.log("Set conversation hidden instead of deleted.",
+                               metadata: [#file, #function, #line])
+                    
+                    completion(nil)
+                }
+                
                 return
             }
             
@@ -217,12 +280,12 @@ public struct ConversationSerializer {
     
     //==================================================//
     
-    /* MARK: - Retrieval Functions */
+    /* MARK: - Retrieval Methods */
     
     public func getConversation(withIdentifier: String,
                                 completion: @escaping (_ returnedConversation: Conversation?,
                                                        _ exception: Exception?) -> Void) {
-        Database.database().reference().child("allConversations").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
+        Database.database().reference().child(GeneralSerializer.environment.shortString).child("conversations").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   var data = snapshot as? [String: Any] else {
                 let exception = Exception("No conversation exists with the provided identifier.",
@@ -285,13 +348,14 @@ public struct ConversationSerializer {
     
     //==================================================//
     
-    /* MARK: - Updating Functions */
+    /* MARK: - Updating Methods */
     
     public func updateConversation(_ conversation: Conversation,
                                    completion: @escaping (_ returnedConversation: Conversation?,
                                                           _ exception: Exception?) -> Void) {
         //Want to get messages from current conversation and update it with messages we don't have.
-        Database.database().reference().child("/allConversations/\(conversation.identifier.key!)").observeSingleEvent(of: .value, with: { (returnedSnapshot) in
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        Database.database().reference().child("\(pathPrefix)\(conversation.identifier.key!)").observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   let data = snapshot as? [String: Any] else {
                 completion(nil, Exception("Couldn't convert snapshot to data.",
@@ -376,7 +440,7 @@ public struct ConversationSerializer {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func deSerializeConversation(fromData: [String: Any],
                                          completion: @escaping(_ deSerializedConversation: Conversation?,
@@ -406,7 +470,7 @@ public struct ConversationSerializer {
             return
         }
         
-        //#warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
+        // #warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
         formatter.locale = Locale(identifier: "en_GB")
@@ -449,7 +513,8 @@ public struct ConversationSerializer {
         let database = Database.database().reference()
         
         for (index, participant) in forUsers.enumerated() {
-            let key = "/allUsers/\(participant.userID!)/openConversations"
+            let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
+            let key = "\(pathPrefix)\(participant.userID!)/openConversations"
             
             database.child(key).observeSingleEvent(of: .value) { returnedSnapshot, error  in
                 guard var conversationIdStrings = returnedSnapshot.value as? [String] else {
@@ -483,7 +548,8 @@ public struct ConversationSerializer {
                                 completion: @escaping (_ exception: Exception?) -> Void) {
         let database = Database.database().reference()
         
-        database.child("/allConversations/\(withID)/messages").observeSingleEvent(of: .value, with: { (returnedSnapshot) in
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        database.child("\(pathPrefix)\(withID)/messages").observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let messageIdentifiers = returnedSnapshot.value as? [String] else {
                 completion(Exception("Unable to get participants from this conversation.",
                                      extraParams: ["ConversationID": withID],
@@ -492,7 +558,8 @@ public struct ConversationSerializer {
             }
             
             for (index, identifier) in messageIdentifiers.enumerated() {
-                GeneralSerializer.setValue(onKey: "/allMessages/\(identifier)",
+                let pathPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
+                GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier)",
                                            withData: NSNull()) { (returnedError) in
                     if let error = returnedError {
                         completion(Exception(error, metadata: [#file, #function, #line]))

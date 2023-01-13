@@ -21,7 +21,7 @@ public struct ConversationID: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Function */
+    /* MARK: - Constructor Method */
     
     public init(key: String, hash: String) {
         self.key = key
@@ -53,9 +53,7 @@ public extension Array where Element == String {
         var conversationIDs = [ConversationID]()
         
         for item in self {
-            guard let asConversationID = item.asConversationID else {
-                return nil
-            }
+            guard let asConversationID = item.asConversationID else { return nil }
             
             conversationIDs.append(asConversationID)
         }

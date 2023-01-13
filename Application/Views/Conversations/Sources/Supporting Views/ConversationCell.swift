@@ -11,6 +11,7 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import AlertKit
+import Translator
 
 public struct ConversationCell: View {
     
@@ -21,6 +22,7 @@ public struct ConversationCell: View {
     public var conversation: Conversation
     
     @Environment(\.colorScheme) private var colorScheme
+    @State private var presentingAlert = false
     
     //==================================================//
     
@@ -45,7 +47,7 @@ public struct ConversationCell: View {
         let lastMessage = conversation.sortedFilteredMessages().last
         let lastMessageFromOtherUser = conversation.sortedFilteredMessages().filter({ $0.fromAccountIdentifier != RuntimeStorage.currentUserID! }).last
         
-        let contactImage = ContactService.fetchContactThumbnail(forNumber: conversation.otherUser!.phoneNumber) ?? nil
+        let contactImage = cellTitle.hasPrefix("+") ? nil : (ContactService.fetchContactThumbnail(forUser: conversation.otherUser!) ?? nil)
         
         return NavigationLink(destination: chatPageView(conversation: conversationBinding,
                                                         title: cellTitle)) {
@@ -96,12 +98,11 @@ public struct ConversationCell: View {
                              title: String) -> some View {
         ChatPageView(conversation: conversation)
             .onAppear {
-                // #warning("This is buggy and doesn't seem to always work.")
-                var conversations = [Conversation]()
-                conversations.append(contentsOf: RuntimeStorage.currentUser!.openConversations ?? [])
+                guard let conversations = RuntimeStorage.currentUser?.openConversations else { return }
+                UserDefaults.standard.set(conversations.hashes(), forKey: "previousHashes")
                 
-                RuntimeStorage.store(conversations,
-                                     as: .previousConversations)
+                AnalyticsService.logEvent(.accessChat,
+                                          with: ["conversationIdKey": conversation.wrappedValue.identifier.key!])
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
@@ -115,10 +116,38 @@ public struct ConversationCell: View {
             let otherUser = conversation.otherUser!
             let message = getLanguageAndRegionString(languageCode: otherUser.languageCode!,
                                                      regionCode: otherUser.region!)
-            AKAlert(title: otherUser.cellTitle,
+            
+            guard Build.developerModeEnabled else {
+                presentingAlert = true
+                AKAlert(title: otherUser.cellTitle,
+                        message: message,
+                        cancelButtonTitle: "OK",
+                        shouldTranslate: [.message]).present { _ in
+                    presentingAlert = false
+                }
+                return
+            }
+            
+            let userID = otherUser.identifier!
+            presentingAlert = true
+            AKAlert(title: "\(otherUser.cellTitle)\n(\(otherUser.compiledPhoneNumber.phoneNumberFormatted))",
                     message: message,
-                    cancelButtonTitle: "OK",
-                    shouldTranslate: [.message, .cancelButtonTitle]).present()
+                    actions: [AKAction(title: "Set to Current User", style: .preferred)],
+                    shouldTranslate: [.message]).present { actionID in
+                presentingAlert = false
+                guard actionID != -1 else { return }
+                
+                ContactArchiver.clearArchive()
+                ContactService.clearCache()
+                ConversationArchiver.clearArchive()
+                TranslationArchiver.clearArchive()
+                
+                UserDefaults.standard.set(userID, forKey: "currentUserID")
+                RuntimeStorage.remove(.currentUser)
+                RuntimeStorage.store(userID, as: .currentUserID)
+                
+                RuntimeStorage.conversationsPageViewModel?.load()
+            }
         } label: {
             HStack(alignment: .center, spacing: 2) {
                 Text(conversation.otherUser!.languageCode.uppercased())
@@ -139,11 +168,12 @@ public struct ConversationCell: View {
             }
         }
         .buttonStyle(HighPriorityButtonStyle())
+        .disabled(presentingAlert)
     }
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func getCellSubtitle(forMessage: Message) -> String {
         var textToUse = ""
@@ -159,15 +189,17 @@ public struct ConversationCell: View {
     
     private func getLanguageAndRegionString(languageCode: String,
                                             regionCode: String) -> String {
-        guard let languageCodeDictionary = RuntimeStorage.languageCodeDictionary else { return "" }
-        
         let localizedRegionName = RegionDetailServer.getLocalizedRegionString(forRegionCode: regionCode)
         
         let code = languageCode == "ua" ? "uk" : languageCode
-        guard var localizedLanguageName = languageCodeDictionary[code] else { return "" }
-        localizedLanguageName = localizedLanguageName.components(separatedBy: " (")[0].trimmingTrailingWhitespace
+        let languageName = "\(code.languageName ?? code.uppercased()) *(\(code.uppercased()))*"
         
-        return "Region*:* \(localizedRegionName)\nLanguage*:* \(localizedLanguageName)"
+        var compiledString = "Language*:* \(languageName)\nRegion*:* \(localizedRegionName)"
+        if RuntimeStorage.languageCode == "en" {
+            compiledString = compiledString.removingOccurrences(of: ["*"])
+        }
+        
+        return compiledString
     }
     
     private func getRegionImage() -> UIImage {
@@ -215,7 +247,7 @@ private struct HighPriorityButtonStyle: PrimitiveButtonStyle {
     
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     func makeBody(configuration: PrimitiveButtonStyle.Configuration) -> some View {
         ButtonView(configuration: configuration)
@@ -233,7 +265,7 @@ private struct RoundedCorner: Shape {
     
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     public func path(in rect: CGRect) -> Path {
         let path = UIBezierPath(roundedRect: rect, byRoundingCorners: corners,

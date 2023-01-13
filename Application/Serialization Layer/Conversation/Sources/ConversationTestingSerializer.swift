@@ -10,15 +10,17 @@
 import Foundation
 
 /* Third-party Frameworks */
+import AlertKit
+import FirebaseDatabase
 import Translator
 
 public enum ConversationTestingSerializer {
     
     //==================================================//
     
-    /* MARK: - Public Functions */
+    /* MARK: - Conversation Creation */
     
-#warning("LanguagePair generation is messed up.")
+    // #warning("LanguagePair generation is messed up.")
     public static func createRandomConversation(completion: @escaping (_ exception: Exception?) -> Void) {
         var mockMessages = ["Hello there!",
                             "Hi, how are you?",
@@ -62,7 +64,77 @@ public enum ConversationTestingSerializer {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Conversation Deletion */
+    
+    public static func deleteAllConversations(completion: @escaping(_ exception: Exception?) -> Void) {
+        removeConversationsForAllUsers { exception in
+            guard exception == nil else {
+                completion(exception!)
+                return
+            }
+            
+            let keys = ["conversations", "messages"]
+            
+            var exceptions = [Exception]()
+            for (index, key) in keys.enumerated() {
+                GeneralSerializer.setValue(onKey: "/\(GeneralSerializer.environment.shortString)/\(key)",
+                                           withData: NSNull()) { returnedError in
+                    if let error = returnedError {
+                        exceptions.append(Exception(error, metadata: [#file, #function, #line]))
+                    }
+                }
+                
+                if index == keys.count - 1 {
+                    guard exceptions.count == 0 else {
+                        completion(exceptions.compiledException!)
+                        return
+                    }
+                    
+                    RuntimeStorage.currentUser?.openConversations = nil
+                    ConversationArchiver.clearArchive()
+                }
+            }
+        }
+    }
+    
+    private static func removeConversationsForAllUsers(completion: @escaping(_ exception: Exception?) -> Void) {
+        
+        Database.database().reference().child(GeneralSerializer.environment.shortString).child("/users").observeSingleEvent(of: .value) { (returnedSnapshot) in
+            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+                  let data = snapshot as? [String: Any] else {
+                let exception = Exception("Couldn't get user list.",
+                                          metadata: [#file, #function, #line])
+                
+                Logger.log(exception,
+                           with: .errorAlert)
+                completion(exception)
+                
+                return
+            }
+            
+            var exceptions = [Exception]()
+            for (index, identifier) in Array(data.keys).enumerated() {
+                let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
+                GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier)/openConversations",
+                                           withData: ["!"]) { returnedError in
+                    if let error = returnedError {
+                        let exception = Exception(error, metadata: [#file, #function, #line])
+                        
+                        Logger.log(exception)
+                        exceptions.append(exception)
+                    }
+                }
+                
+                if index == Array(data.keys).count - 1 {
+                    completion(exceptions.compiledException)
+                }
+            }
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Other Methods */
     
     private static func createConversation(with users: [User],
                                            messages: [String],
@@ -96,7 +168,7 @@ public enum ConversationTestingSerializer {
     
     private static func createMockMessages(inConversationWithID: String,
                                            userIDs: [String],
-                                           translations: [Translation],
+                                           translations: [Translator.Translation],
                                            completion: @escaping(_ exception: Exception?) -> Void) {
         var exceptions = [Exception]()
         
@@ -117,18 +189,18 @@ public enum ConversationTestingSerializer {
     
     private static func translateMockMessages(_ messages: [String],
                                               languages: [String],
-                                              completion: @escaping (_ returnedTranslations: [Translation]?,
+                                              completion: @escaping (_ returnedTranslations: [Translator.Translation]?,
                                                                      _ exception: Exception?) -> Void) {
-        var inputs = [TranslationInput]()
+        var inputs = [Translator.TranslationInput]()
         messages.forEach { message in
-            inputs.append(TranslationInput(message))
+            inputs.append(Translator.TranslationInput(message))
         }
         
-        var translations = [Translation]()
+        var translations = [Translator.Translation]()
         for (index, input) in inputs.enumerated() {
             let languagesToUse = index % 2 == 0 ? languages : languages.reversed()
-            let languagePair = LanguagePair(from: languagesToUse[0],
-                                            to: languagesToUse[1])
+            let languagePair = Translator.LanguagePair(from: languagesToUse[0],
+                                                       to: languagesToUse[1])
             
             print("using «\(languagePair.asString())» for index [\(index)]")
             

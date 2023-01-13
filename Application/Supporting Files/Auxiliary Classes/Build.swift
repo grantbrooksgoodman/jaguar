@@ -17,6 +17,8 @@ public enum Build {
     // Booleans
     public static var isOnline: Bool { get { return getNetworkStatus() } }
     
+    private(set) static var developerModeEnabled = Bool()
+    private(set) static var loggingEnabled = Bool()
     private(set) static var timebombActive = Bool()
     
     // Integers
@@ -55,8 +57,10 @@ public enum Build {
     public enum Metadatum {
         case appStoreReleaseVersion
         case codeName
+        case developerModeEnabled
         case dmyFirstCompileDateString
         case finalName
+        case loggingEnabled
         case stage
         case timebombActive
     }
@@ -86,7 +90,7 @@ public enum Build {
     
     //==================================================//
     
-    /* MARK: - Setter Functions */
+    /* MARK: - Setter Methods */
     
     public static func set(_ metadata: [Metadatum: Any]) {
         for key in Array(metadata.keys) {
@@ -102,24 +106,30 @@ public enum Build {
         case .codeName:
             guard let value = to as? String else { fatalError("Wrong type passed") }
             codeName = value
+        case .developerModeEnabled:
+            guard let value = to as? Bool else { fatalError("Wrong type passed") }
+            developerModeEnabled = value
         case .dmyFirstCompileDateString:
             guard let value = to as? String else { fatalError("Wrong type passed") }
             dmyFirstCompileDateString = value
         case .finalName:
             guard let value = to as? String else { fatalError("Wrong type passed") }
             finalName = value
-        case .timebombActive:
+        case .loggingEnabled:
             guard let value = to as? Bool else { fatalError("Wrong type passed") }
-            timebombActive = value
+            loggingEnabled = value
         case .stage:
             guard let value = to as? Stage else { fatalError("Wrong type passed") }
             stage = value
+        case .timebombActive:
+            guard let value = to as? Bool else { fatalError("Wrong type passed") }
+            timebombActive = value
         }
     }
     
     //==================================================//
     
-    /* MARK: - Getter Functions */
+    /* MARK: - Getter Methods */
     
     private static func getBuildNumber() -> Int {
         return Int(Bundle.main.infoDictionary!["CFBundleVersion"] as! String)!

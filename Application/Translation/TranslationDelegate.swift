@@ -1,5 +1,5 @@
 //
-//  TranslationProvider.swift
+//  TranslationDelegate.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 01/08/2022.
@@ -10,11 +10,11 @@
 import AlertKit
 import Translator
 
-public struct TranslationProvider: AKTranslationProvider {
+public struct TranslationDelegate: AKTranslationDelegate {
     
     //==================================================//
     
-    /* MARK: - Protocol Compliance Function */
+    /* MARK: - Protocol Compliance */
     
     public func getTranslations(for inputs: [AlertKit.TranslationInput],
                                 languagePair: AlertKit.LanguagePair,

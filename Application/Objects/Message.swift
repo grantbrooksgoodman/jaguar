@@ -33,7 +33,7 @@ public class Message: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Function */
+    /* MARK: - Constructor Method */
     
     public init(identifier: String,
                 fromAccountIdentifier: String,
@@ -51,7 +51,7 @@ public class Message: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Equatable Compliance Function */
+    /* MARK: - Equatable Compliance Method */
     
     public static func == (left: Message, right: Message) -> Bool {
         let identifiersMatch = left.identifier == right.identifier
@@ -67,7 +67,22 @@ public class Message: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Other Functions */
+    /* MARK: - Serialization */
+    
+    public func hashSerialized() -> [String] {
+        var hashFactors = [String]()
+        
+        if let readDate {
+            hashFactors.append(Core.secondaryDateFormatter.string(from: readDate))
+        }
+        
+        hashFactors.append(Core.secondaryDateFormatter.string(from: sentDate))
+        hashFactors.append(identifier)
+        hashFactors.append(fromAccountIdentifier)
+        hashFactors.append(languagePair.asString())
+        
+        return hashFactors
+    }
     
     /// Serializes the **Message's** metadata.
     public func serialize() -> [String: Any] {
@@ -82,10 +97,29 @@ public class Message: Codable, Equatable {
         return data
     }
     
+    //==================================================//
+    
+    /* MARK: - Updating Methods */
+    
+    public func updateLanguagePair(_ newPair: LanguagePair,
+                                   completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
+        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/languagePair",
+                                   withData: newPair.asString()) { returnedError in
+            guard let error = returnedError else {
+                completion(nil)
+                return
+            }
+            
+            completion(Exception(error, metadata: [#file, #function, #line]))
+        }
+    }
+    
     public func updateReadDate(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         readDate = Date()
         
-        GeneralSerializer.setValue(onKey: "/allMessages/\(identifier!)/readDate",
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
+        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/readDate",
                                    withData: Core.secondaryDateFormatter!.string(from: readDate!)) { returnedError in
             guard let error = returnedError else {
                 completion(nil)
@@ -93,6 +127,50 @@ public class Message: Codable, Equatable {
             }
             
             completion(Exception(error, metadata: [#file, #function, #line]))
+        }
+    }
+}
+
+//==================================================//
+
+/* MARK: - Extensions */
+
+/**/
+
+/* MARK: Array */
+public extension Array where Element == Message {
+    var messageHashes: [String] {
+        var hashArray = [String]()
+        
+        for message in self {
+            hashArray.append(message.hash)
+        }
+        
+        return hashArray
+    }
+}
+
+/* MARK: Message */
+public extension Message {
+    static func empty() -> Message {
+        return Message(identifier: "",
+                       fromAccountIdentifier: "",
+                       languagePair: LanguagePair(from: "",
+                                                  to: ""),
+                       translation: Translation(input: TranslationInput(""),
+                                                output: "",
+                                                languagePair: LanguagePair(from: "",
+                                                                           to: "")),
+                       readDate: nil,
+                       sentDate: Date(timeIntervalSince1970: 0))
+    }
+    
+    var hash: String {
+        do {
+            let encoder = JSONEncoder()
+            let encodedMessage = try! encoder.encode(self.hashSerialized())
+            
+            return encodedMessage.compressedHash
         }
     }
 }

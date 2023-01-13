@@ -20,7 +20,7 @@ public struct DeviceShakeViewModifier: ViewModifier {
     
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     public func body(content: Content) -> some View {
         content

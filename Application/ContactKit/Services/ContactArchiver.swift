@@ -19,11 +19,9 @@ public enum ContactArchiver {
     
     //==================================================//
     
-    /* MARK: - Addition/Retrieval Functions */
+    /* MARK: - Addition/Retrieval Methods */
     
     public static func addToArchive(_ contactPair: ContactPair) {
-        initializeArchive()
-        
         contactArchive.removeAll(where: { $0.contact.hash == contactPair.contact.hash })
         contactArchive.append(contactPair)
         
@@ -33,8 +31,6 @@ public enum ContactArchiver {
     }
     
     public static func addToArchive(_ contactPairs: [ContactPair]) {
-        initializeArchive()
-        
         contactArchive.removeAll(where: { $0.contact.hash.isAny(in: contactPairs.contacts.hashes()) })
         contactArchive.append(contentsOf: contactPairs)
         
@@ -44,24 +40,18 @@ public enum ContactArchiver {
     }
     
     public static func getFromArchive(_ hash: String) -> ContactPair? {
-        initializeArchive()
-        
         let contacts = contactArchive.filter { $0.contact.hash == hash }
         
         return contacts.first
     }
     
     public static func getFromArchive(withUserHash: String) -> ContactPair? {
-        initializeArchive()
-        
-        let contacts = contactArchive.filter({ PhoneNumberService.possibleHashes(forNumbers: $0.contact.phoneNumbers.digits).contains(withUserHash) })
+        let contacts = contactArchive.filter({ PhoneNumberService.possibleHashes(for: $0.contact.phoneNumbers.digits).contains(withUserHash) })
         
         return contacts.first
     }
     
     public static func getFromArchive(withPhoneNumbers: [String]) -> ContactPair? {
-        initializeArchive()
-        
         let contacts = contactArchive.filter({ $0.contact.phoneNumbers.digits.containsAny(in: withPhoneNumbers) })
         
         return contacts.first
@@ -69,11 +59,13 @@ public enum ContactArchiver {
     
     //==================================================//
     
-    /* MARK: - Getter/Setter Functions */
+    /* MARK: - Getter/Setter Methods */
     
     public static func clearArchive() {
         contactArchive = []
         UserDefaults.standard.setValue(nil, forKey: "contactArchive")
+        UserDefaults(suiteName: "group.us.neotechnica.notificationextension")?.setValue(nil,
+                                                                                        forKey: "contactArchive")
     }
     
     public static func getArchive(completion: @escaping (_ returnedContactPairs: [ContactPair]?,
@@ -106,6 +98,9 @@ public enum ContactArchiver {
             let encodedContacts = try encoder.encode(contactArchive)
             
             UserDefaults.standard.setValue(encodedContacts, forKey: "contactArchive")
+            if let defaults = UserDefaults(suiteName: "group.us.neotechnica.notificationextension") {
+                defaults.setValue(encodedContacts, forKey: "contactArchive")
+            }
             completion(nil)
         } catch {
             Logger.log(Exception(error,
@@ -117,14 +112,12 @@ public enum ContactArchiver {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private static func initializeArchive() {
         getArchive { returnedContactPairs,
             _ in
-            guard let contacts = returnedContactPairs else {
-                return
-            }
+            guard let contacts = returnedContactPairs else { return }
             
             contactArchive = contacts
         }

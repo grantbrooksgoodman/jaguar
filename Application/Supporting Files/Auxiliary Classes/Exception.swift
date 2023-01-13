@@ -32,7 +32,7 @@ public struct Exception: Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Functions */
+    /* MARK: - Constructor Methods */
     
     public init(_ descriptor: String? = nil,
                 isReportable: Bool? = nil,
@@ -98,7 +98,7 @@ public struct Exception: Equatable {
     
     //==================================================//
     
-    /* MARK: - Appending Functions */
+    /* MARK: - Appending Methods */
     
     public func appending(extraParams: [String: Any]) -> Exception {
         guard let currentParams = self.extraParams,
@@ -142,7 +142,7 @@ public struct Exception: Equatable {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func getHashlet(for descriptor: String) -> String {
         var hashlet = ""
@@ -207,7 +207,7 @@ public struct Exception: Equatable {
     
     //==================================================//
     
-    /* MARK: - Equatable Compliance Function */
+    /* MARK: - Equatable Compliance Method */
     
     public static func == (lhs: Exception, rhs: Exception) -> Bool {
         let leftMetaID = lhs.metaID
@@ -262,8 +262,7 @@ public struct Exception: Equatable {
 
 /* MARK: - Array */
 public extension Array where Element == Exception {
-    
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     func unique() -> [Exception] {
         var uniqueValues = [Exception]()
@@ -276,6 +275,8 @@ public extension Array where Element == Exception {
         
         return uniqueValues
     }
+    
+    //--------------------------------------------------//
     
     /* MARK: - Variables */
     
@@ -332,7 +333,7 @@ public extension Dictionary where Key == String, Value == Any {
 
 /* MARK: - Exception */
 public extension Exception {
-    //#warning("This is better, but might still be wonky. Think about the recursion...")
+    // #warning("This is better, but might still be wonky. Think about the recursion...")
     func allUnderlyingExceptions(_ with: [Exception]? = nil) -> [Exception] {
         var allExceptions = [Exception]()
         
@@ -369,5 +370,9 @@ public extension Exception {
                        isReportable: self.isReportable,
                        extraParams: params.withCapitalizedKeys,
                        metadata: self.metadata)
+    }
+    
+    func isEqual(to cataloggedException: JRException) -> Bool {
+        return hashlet == cataloggedException.description
     }
 }

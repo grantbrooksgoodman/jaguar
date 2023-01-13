@@ -13,9 +13,7 @@ public extension Dictionary where Key == String, Value == String {
         for key in keys {
             guard let original = self[key]!.decoded(getInput: true),
                   let translated = self[key]!.decoded(getInput: false)
-            else {
-                return nil
-            }
+            else { return nil }
             
             newDictionary[original] = translated
         }

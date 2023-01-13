@@ -20,6 +20,7 @@ public struct ContactSelectorView: View {
     
     @State public var contactPairs: [ContactPair]
     
+    @Environment(\.colorScheme) private var colorScheme
     @State private var query = ""
     
     //==================================================//
@@ -28,8 +29,10 @@ public struct ContactSelectorView: View {
     
     public var body: some View {
         NavigationView {
-            VStack {
+            VStack(spacing: 0) {
                 SearchBar(query: $query)
+                    .padding(.bottom, 14)
+                    .background(Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x2A2A2C) : UIColor(hex: 0xF8F8F8)))
                 
                 ScrollViewReader { scrollView in
                     HStack {
@@ -51,6 +54,7 @@ public struct ContactSelectorView: View {
                         }
                     }
                 }
+                .padding(.top, -5)
             }
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -79,7 +83,7 @@ public struct ContactSelectorView: View {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func sectionTitles(for contactPairs: [ContactPair]) -> [String] {
         let contacts = contactPairs.contacts.filter({ !($0.firstName == "" && $0.lastName == "") }).sorted(by: { $0.lastName < $1.lastName })

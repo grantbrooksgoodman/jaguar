@@ -28,9 +28,7 @@ public struct InitialPageView: View {
     public var body: some View {
         switch viewModel.state {
         case .idle:
-            Color.clear.onAppear {
-                viewModel.load()
-            }
+            Color.clear.onAppear(perform: viewModel.load)
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
@@ -39,6 +37,7 @@ public struct InitialPageView: View {
                     .resizable()
                     .frame(width: 150, height: 70)
                     .padding(.bottom, 5)
+                    .foregroundColor(Color.blue)
                 
                 Text(translations["instruction"]!.output)
                     .padding(.vertical, 5)
@@ -63,23 +62,10 @@ public struct InitialPageView: View {
                 .padding(.vertical, 5)
                 .foregroundColor(.blue)
             }
-            .onShake {
-                let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line])
-                
-                UserTestingSerializer.shared.getRandomUserID { (returnedIdentifier,
-                                                                exception) in
-                    timeout.cancel()
-                    
-                    guard let identifier = returnedIdentifier else {
-                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                        return
-                    }
-                    
-                    RuntimeStorage.store(identifier, as: .currentUserID)
-                    viewRouter.currentPage = .conversations
-                }
+            .onAppear {
+                RuntimeStorage.store(#file, as: .currentFile)
+                RuntimeStorage.remove(.numberFromSignIn)
             }
-            .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let exception):
             Text(exception.userFacingDescriptor)
         }

@@ -11,7 +11,9 @@ import UIKit
 
 /* Third-party Frameworks */
 import AlertKit
-import PKHUD
+#if !EXTENSION
+import ProgressHUD
+#endif
 
 public enum Core {
     
@@ -29,7 +31,7 @@ public enum Core {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private static func getCurrentCalendar() -> Calendar {
         var currentCalendar = Calendar(identifier: .gregorian)
@@ -67,7 +69,7 @@ public enum Core {
         
         //==================================================//
         
-        /* MARK: - Public Functions */
+        /* MARK: - Public Methods */
         
         public func after(milliseconds: Int, do: @escaping () -> Void = {}) {
             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(milliseconds)) {
@@ -95,44 +97,45 @@ public enum Core {
         
         //==================================================//
         
-        /* MARK: - Public Functions */
+        /* MARK: - Public Methods */
         
         public func hide(delay: Double? = nil) {
+#if !EXTENSION
             guard let delay = delay else {
-                if PKHUD.sharedHUD.isVisible {
-                    PKHUD.sharedHUD.hide(true)
-                }
-                
+                ProgressHUD.dismiss()
+                Core.gcd.after(milliseconds: 500) { ProgressHUD.remove() }
                 return
             }
             
             let millisecondDelay = Int(delay * 1000)
-            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(millisecondDelay)) {
-                if PKHUD.sharedHUD.isVisible {
-                    PKHUD.sharedHUD.hide(true)
-                }
+            Core.gcd.after(milliseconds: millisecondDelay) {
+                ProgressHUD.dismiss()
+                Core.gcd.after(milliseconds: 500) { ProgressHUD.remove() }
             }
+#endif
         }
         
         public func showProgress(delay: Double? = nil, text: String? = nil) {
+#if !EXTENSION
             guard let delay = delay else {
                 DispatchQueue.main.async {
-                    if !PKHUD.sharedHUD.isVisible {
-                        PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text ?? nil)
-                        PKHUD.sharedHUD.show(onView: AKCore.shared.getFrontmostVC().view)
-                    }
+                    ProgressHUD.show(text ?? nil)
                 }
                 
                 return
             }
             
             let millisecondDelay = Int(delay * 1000)
-            DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(millisecondDelay)) {
-                if !PKHUD.sharedHUD.isVisible {
-                    PKHUD.sharedHUD.contentView = PKHUDProgressView(title: nil, subtitle: text ?? nil)
-                    PKHUD.sharedHUD.show(onView: AKCore.shared.getFrontmostVC().view)
-                }
+            Core.gcd.after(milliseconds: millisecondDelay) {
+                ProgressHUD.show(text ?? nil)
             }
+#endif
+        }
+        
+        public func showSuccess(text: String? = nil) {
+#if !EXTENSION
+            ProgressHUD.showSucceed(text)
+#endif
         }
     }
     
@@ -148,6 +151,7 @@ public enum Core {
         public static let shared = UICore()
         private var topmostVC: UIViewController? {
             get {
+#if !EXTENSION
                 // Use connectedScenes to find the .foregroundActive rootViewController
                 var rootViewController: UIViewController?
                 
@@ -166,12 +170,15 @@ public enum Core {
                 
                 guard let presented = presentedViewController else { return nil }
                 return presented
+#else
+                return nil
+#endif
             }
         }
         
         //==================================================//
         
-        /* MARK: - Public Functions */
+        /* MARK: - First Responder Methods */
         
         public func findAndResignFirstResponder() {
             DispatchQueue.main.async {
@@ -195,15 +202,35 @@ public enum Core {
             return nil
         }
         
-        public func nameTag(for viewNamed: String) -> Int {
-            var finalValue: Float = 1.0
+        //==================================================//
+        
+        /* MARK: - Navigation Bar Appearance */
+        
+        public func resetNavigationBarAppearance() {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundColor = UITraitCollection.current.userInterfaceStyle == .dark ? .black : .white
             
-            for character in String(viewNamed.unicodeScalars.filter(CharacterSet.letters.contains)).characterArray {
-                finalValue += (finalValue / Float(character.alphabeticalPosition))
-            }
-            
-            return Int(String(finalValue).replacingOccurrences(of: ".", with: "")) ?? Int().random(min: 5, max: 10)
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
         }
+        
+        public func setNavigationBarAppearance(backgroundColor: UIColor,
+                                               titleColor: UIColor) {
+            let appearance = UINavigationBarAppearance()
+            appearance.configureWithTransparentBackground()
+            appearance.backgroundColor = backgroundColor
+            
+            appearance.largeTitleTextAttributes = [.foregroundColor: titleColor]
+            appearance.titleTextAttributes = [.foregroundColor: titleColor]
+            
+            UINavigationBar.appearance().standardAppearance = appearance
+            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+        }
+        
+        //==================================================//
+        
+        /* MARK: - View Controller Presentation */
         
         public func present(viewController: UIViewController) {
             Core.hud.hide()
@@ -217,6 +244,7 @@ public enum Core {
         }
         
         public func politelyPresent(viewController: UIViewController) {
+#if !EXTENSION
             Core.hud.hide()
             
             let keyWindow = UIApplication.shared.windows.filter { $0.isKeyWindow }.first
@@ -242,29 +270,21 @@ public enum Core {
                     }
                 }
             }
+#endif
         }
         
-        public func resetNavigationBarAppearance() {
-            if let standardAppearance = RuntimeStorage.navigationBarStandardAppearance {
-                UINavigationBar.appearance().standardAppearance = standardAppearance
-            }
-            
-            if let scrollEdgeAppearance = RuntimeStorage.navgationBarScrollEdgeAppearance {
-                UINavigationBar.appearance().scrollEdgeAppearance = scrollEdgeAppearance
-            }
-        }
+        //==================================================//
         
-        public func setNavigationBarAppearance(backgroundColor: UIColor,
-                                               titleColor: UIColor) {
-            let appearance = UINavigationBarAppearance()
-            appearance.configureWithTransparentBackground()
-            appearance.backgroundColor = backgroundColor
+        /* MARK: - Other Methods */
+        
+        public func nameTag(for viewNamed: String) -> Int {
+            var finalValue: Float = 1.0
             
-            appearance.largeTitleTextAttributes = [.foregroundColor: titleColor]
-            appearance.titleTextAttributes = [.foregroundColor: titleColor]
+            for character in String(viewNamed.unicodeScalars.filter(CharacterSet.letters.contains)).characterArray {
+                finalValue += (finalValue / Float(character.alphabeticalPosition))
+            }
             
-            UINavigationBar.appearance().standardAppearance = appearance
-            UINavigationBar.appearance().scrollEdgeAppearance = appearance
+            return Int(String(finalValue).replacingOccurrences(of: ".", with: "")) ?? Int().random(min: 5, max: 10)
         }
     }
 }

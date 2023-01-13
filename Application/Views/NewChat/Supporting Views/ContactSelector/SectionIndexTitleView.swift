@@ -46,7 +46,7 @@ public struct SectionIndexTitleView: View {
     
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     private func scrollTo(location: CGPoint) {
         guard indexState.titleSize.height > 0 else { return }
@@ -68,7 +68,6 @@ public struct SectionIndexTitleView: View {
 }
 
 private class IndexTitleState: ObservableObject {
-    
     /* MARK: - Properties */
     
     public var currentTitleIndex = 0
@@ -106,7 +105,7 @@ private struct SizePreferenceKey: PreferenceKey {
     
     //==================================================//
     
-    /* MARK: - Functions */
+    /* MARK: - Methods */
     
     public static func reduce(value: inout CGSize,
                               nextValue: () -> CGSize) {

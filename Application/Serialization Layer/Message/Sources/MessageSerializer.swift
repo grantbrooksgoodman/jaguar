@@ -21,7 +21,7 @@ public struct MessageSerializer {
     
     //==================================================//
     
-    /* MARK: - Creation Functions */
+    /* MARK: - Creation Methods */
     
     public func createMessage(fromAccountWithIdentifier: String,
                               inConversationWithIdentifier: String?,
@@ -38,7 +38,7 @@ public struct MessageSerializer {
         data["readDate"] = "!"
         data["sentDate"] = Core.secondaryDateFormatter!.string(from: Date())
         
-        guard let generatedKey = Database.database().reference().child("/allMessages/").childByAutoId().key else {
+        guard let generatedKey = Database.database().reference().child(GeneralSerializer.environment.shortString).child("/messages/").childByAutoId().key else {
             Logger.log("Unable to generate key for new message.",
                        metadata: [#file, #function, #line])
             
@@ -47,7 +47,8 @@ public struct MessageSerializer {
             return
         }
         
-        GeneralSerializer.updateValue(onKey: "/allMessages/\(generatedKey)",
+        let messagesPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
+        GeneralSerializer.updateValue(onKey: "\(messagesPrefix)\(generatedKey)",
                                       withData: data) { (returnedError) in
             if let error = returnedError {
                 completion(nil, Exception(error, metadata: [#file, #function, #line]))
@@ -66,12 +67,13 @@ public struct MessageSerializer {
             return
         }
         
-#warning("Fix this for ConversationTestingSerializer.")
-        GeneralSerializer.getValues(atPath: "/allConversations/\(conversationIdentifier)/messages") { (returnedMessages, exception) in
+        // #warning("Fix this for ConversationTestingSerializer.")
+        let conversationsPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        GeneralSerializer.getValues(atPath: "\(conversationsPrefix)\(conversationIdentifier)/messages") { (returnedMessages, exception) in
             if var messages = returnedMessages as? [String] {
                 messages.append(generatedKey)
                 
-                GeneralSerializer.updateValue(onKey: "/allConversations/\(conversationIdentifier)",
+                GeneralSerializer.updateValue(onKey: "\(conversationsPrefix)\(conversationIdentifier)",
                                               withData: ["messages": messages.filter({$0 != "!"})]) { (returnedError) in
                     guard let error = returnedError else {
                         let message = Message(identifier: generatedKey,
@@ -96,7 +98,7 @@ public struct MessageSerializer {
     
     //==================================================//
     
-    /* MARK: - Retrieval Functions */
+    /* MARK: - Retrieval Methods */
     
     public func getMessage(withIdentifier: String,
                            completion: @escaping(_ returnedMessage: Message?,
@@ -107,7 +109,7 @@ public struct MessageSerializer {
             return
         }
         
-        Database.database().reference().child("allMessages").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
+        Database.database().reference().child(GeneralSerializer.environment.shortString).child("messages").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   var data = snapshot as? [String: Any] else {
                 completion(nil, Exception("No message exists with the provided identifier.",
@@ -174,7 +176,7 @@ public struct MessageSerializer {
     
     //==================================================//
     
-    /* MARK: - Private Functions */
+    /* MARK: - Private Methods */
     
     private func deSerializeMessage(fromData: [String: Any],
                                     completion: @escaping(_ deSerializedMessage: Message?,
@@ -221,7 +223,7 @@ public struct MessageSerializer {
             return
         }
         
-        //#warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
+        // #warning("Why does «secondaryDateFormatter» not work in testing, but this does?")
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd HH:mm:ss zzz"
         formatter.locale = Locale(identifier: "en_GB")
