@@ -45,17 +45,16 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
                 self.connectScene(scene)
             }
             
-            UserTestingSerializer.shared.getRandomUserID { (returnedIdentifier,
-                                                            exception) in
+            UserTestingSerializer.shared.getRandomUserID { returnedIdentifier, exception in
                 timeout.cancel()
                 
-                guard let identifier = returnedIdentifier else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                    self.connectScene(scene)
+                guard let returnedIdentifier else {
+                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                               with: .errorAlert)
                     return
                 }
                 
-                RuntimeStorage.store(identifier, as: .currentUserID)
+                RuntimeStorage.store(returnedIdentifier, as: .currentUserID)
                 self.connectScene(scene)
             }
             

@@ -6,17 +6,14 @@
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
-/* First-party Frameworks */
-import AVFoundation
-
 /* Third-party Frameworks */
-import Firebase
 import FirebaseDatabase
-import InputBarAccessoryView
 import MessageKit
-import Translator
 
-public final class ChatPageViewController: MessagesViewController, AVSpeechSynthesizerDelegate {
+public final class ChatPageViewController: MessagesViewController,
+                                           AudioMessageDelegate,
+                                           MenuControllerDelegate,
+                                           RetranslationDelegate {
     
     //==================================================//
     
@@ -25,14 +22,8 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
     // Booleans
     public var viewHasLaidOutSubviewsAtLeastOnce = false
     
-    private var delegatesHaveBeenSet: Bool {
-        get {
-            return messagesCollectionView.messagesDataSource != nil &&
-            messagesCollectionView.messagesDisplayDelegate != nil &&
-            messagesCollectionView.messagesLayoutDelegate != nil &&
-            messageInputBar.delegate != nil
-        }
-    }
+    private var delegatesHaveBeenSet: Bool { getDelegatesHaveBeenSet() }
+    private var isLastCellVisible: Bool { getIsLastCellVisible() }
     
     // Timers
     private var reloadTimer: Timer?
@@ -42,103 +33,40 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
     public var progressView: UIProgressView?
     public var recipientBar: RecipientBar?
     
-    private var loadedMore: Date! = Date().addingTimeInterval(-10)
-    private var selectedCell: TextMessageCell?
-    private var speechSynthesizer: AVSpeechSynthesizer!
-    
-    private var isLastCellVisible: Bool {
-        guard let messages = RuntimeStorage.currentMessageSlice,
-              !messages.isEmpty else { return true }
-        
-        let lastIndexPath = IndexPath(row: 0, section: messages.count - 1)
-        guard let layoutAttributes = messagesCollectionView.layoutAttributesForItem(at: lastIndexPath) else { return true }
-        var cellFrame = layoutAttributes.frame
-        
-        cellFrame.size.height = cellFrame.size.height
-        
-        var cellRect = messagesCollectionView.convert(cellFrame, to: messagesCollectionView.superview)
-        
-        cellRect.origin.y = cellRect.origin.y - cellFrame.size.height - 100
-        // substract 100 to make the "visible" area of a cell bigger
-        
-        var visibleRect = CGRectMake(
-            messagesCollectionView.bounds.origin.x,
-            messagesCollectionView.bounds.origin.y,
-            messagesCollectionView.bounds.size.width,
-            messagesCollectionView.bounds.size.height - messagesCollectionView.contentInset.bottom
-        )
-        
-        visibleRect = messagesCollectionView.convert(visibleRect, to: messagesCollectionView.superview)
-        
-        if CGRectContainsRect(visibleRect, cellRect) {
-            return true
-        }
-        
-        return false
-    }
+    private var lastLoadedMoreMessages: Date! = Date().addingTimeInterval(-10)
     
     //==================================================//
     
-    /* MARK: - Overridden Methods */
+    /* MARK: - View Lifecycle */
     
     public override func viewDidLoad() {
         super.viewDidLoad()
         
-        speechSynthesizer = AVSpeechSynthesizer()
-        speechSynthesizer.delegate = self
+        registerServices()
         
-        if let layout = messagesCollectionView.collectionViewLayout as? MessagesCollectionViewFlowLayout {
-            layout.textMessageSizeCalculator.outgoingAvatarSize = .zero
-            layout.setMessageOutgoingCellBottomLabelAlignment(.init(textAlignment: .right,
-                                                                    textInsets: .init(top: 2,
-                                                                                      left: 0,
-                                                                                      bottom: 0,
-                                                                                      right: 10)))
-        }
+        configureCollectionViewLayout()
+        configureInitialInputBar()
+        updateAppearance(forTraitCollectionChange: false)
+        configureMenuGestureRecognizer()
+        configureProgressView()
+        configureRecipientBar()
+    }
+    
+    private func registerServices() {
+        let audioMessageService = try? AudioMessageService(delegate: self)
+        if let audioMessageService { ChatServices.register(service: audioMessageService) }
         
-        messageInputBar.sendButton.setSize(CGSize(width: 25, height: 25), animated: false)
-        messageInputBar.setStackViewItems([.fixedSpace(15), messageInputBar.sendButton], forStack: .right, animated: false)
-        messageInputBar.rightStackView.alignment = .center
+        let chatUIService = ChatUIService(delegate: self)
+        ChatServices.register(service: chatUIService)
         
-        if traitCollection.userInterfaceStyle == .dark {
-            messageInputBar.backgroundView.backgroundColor = UIColor(hex: 0x1A1A1C)
-        } else {
-            Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF3F3F3),
-                                               titleColor: .black)
-            
-            navigationController?.isNavigationBarHidden = true
-            navigationController?.isNavigationBarHidden = false
-        }
+        let menuControllerService = try? MenuControllerService(delegate: self)
+        if let menuControllerService { ChatServices.register(service: menuControllerService) }
         
-        let longPressGestureRecognizer = UILongPressGestureRecognizer(target: self, action: #selector(displayCustomMenu(gestureRecognizer:)))
+        let observerService = try? ObserverService()
+        if let observerService { ChatServices.register(service: observerService) }
         
-        longPressGestureRecognizer.minimumPressDuration = 0.3
-        longPressGestureRecognizer.delaysTouchesBegan = true
-        
-        messagesCollectionView.addGestureRecognizer(longPressGestureRecognizer)
-        
-        messageInputBar.inputTextView.delegate = self
-        
-        progressView = UIProgressView(frame: CGRect(x: 0,
-                                                    y: 0,
-                                                    width: UIScreen.main.bounds.width,
-                                                    height: 2))
-        progressView!.progressViewStyle = .bar
-        progressView!.progress = 0
-        view.addSubview(progressView!)
-        
-        /* For new chats */
-        guard RuntimeStorage.globalConversation?.identifier.key == "EMPTY",
-              let contactPairs = RuntimeStorage.contactPairs else { return }
-        
-        messagesCollectionView.contentInset.top = 54
-        
-        recipientBar = RecipientBar(delegate: self,
-                                    contactPairs: contactPairs)
-        view.addSubview(recipientBar!)
-        
-        messageInputBar.inputTextView.placeholder = ""
-        messageInputBar.sendButton.isEnabled = false
+        let retranslationService = try? RetranslationService(delegate: self)
+        if let retranslationService { ChatServices.register(service: retranslationService) }
     }
     
     public override func viewDidAppear(_ animated: Bool) {
@@ -146,58 +74,16 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
         
         becomeFirstResponder()
         
-        Core.gcd.after(seconds: 3) {
-            self.reloadTimer = Timer.scheduledTimer(timeInterval: 1,
-                                                    target: self,
-                                                    selector: #selector(self.reloadData),
-                                                    userInfo: nil,
-                                                    repeats: true)
-            
-            self.typingIndicatorTimer = Timer.scheduledTimer(timeInterval: 1,
-                                                             target: self,
-                                                             selector: #selector(self.updateTypingIndicator),
-                                                             userInfo: nil,
-                                                             repeats: true)
-        }
+        Core.gcd.after(seconds: 3) { self.configureTimers() }
+        Core.gcd.after(milliseconds: 500) { self.messagesCollectionView.scrollToLastItem(animated: true) }
         
-        Core.gcd.after(milliseconds: 500) {
-            self.messagesCollectionView.scrollToLastItem(animated: true)
-        }
+        Database.database().reference().removeAllObservers()
+        
+        ChatServices.observerService?.setUpNewMessageObserver()
+        ChatServices.observerService?.setUpReadDateObserver()
+        ChatServices.observerService?.setUpTypingIndicatorObserver()
         
         RuntimeStorage.store(true, as: .isPresentingChat)
-        
-        //        guard let conversation = RuntimeStorage.globalConversation,
-        //              let otherUser = conversation.otherUser else { return }
-        //
-        //        if let image = ContactService.fetchContactThumbnail(forNumber: otherUser.phoneNumber) {
-        //            let avatarImageView = UIImageView(image: image)
-        //            avatarImageView.frame = CGRect(x: view.center.x,
-        //                                           y: 0,
-        //                                           width: 45,
-        //                                           height: 45)
-        //            avatarImageView.layer.cornerRadius = avatarImageView.frame.width / 2
-        //            avatarImageView.clipsToBounds = true
-        //
-        //            guard let parent,
-        //                  let navigationController = parent.navigationController else { return }
-        //
-        //            navigationController.navigationBar.addSubview(avatarImageView)
-        //            navigationController.navigationBar.bringSubviewToFront(avatarImageView)
-        //
-        //            let navBarFrame = navigationController.navigationBar.frame
-        //
-        //            navigationController.navigationBar.frame = CGRect(x: navBarFrame.origin.x,
-        //                                                              y: navBarFrame.origin.y - 3,
-        //                                                              width: navBarFrame.width,
-        //                                                              height: navBarFrame.height + 50)
-        //            navigationController.navigationItem.leftBarButtonItem = UIBarButtonItem(image: image.withRenderingMode(.alwaysOriginal),
-        //                                                                                    style: .plain,
-        //                                                                                    target: self,
-        //                                                                                    action: nil)
-        //            navigationController.navigationBar.isHidden = false
-        //        }
-        
-        //        print(messagesCollectionView.contentInset)
     }
     
     public override func viewDidLayoutSubviews() {
@@ -211,20 +97,39 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
         }
     }
     
+    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
+        super.traitCollectionDidChange(previousTraitCollection)
+        
+        guard previousTraitCollection?.userInterfaceStyle != traitCollection.userInterfaceStyle ||
+                RuntimeStorage.globalConversation?.identifier.key == "EMPTY" else { return }
+        
+        updateAppearance(forTraitCollectionChange: true)
+    }
+    
     public override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
         
-        reloadTimer?.invalidate()
-        reloadTimer = nil
-        
-        typingIndicatorTimer?.invalidate()
-        typingIndicatorTimer = nil
+        discardTimer(.both)
         
         Database.database().reference().removeAllObservers()
         
-        speechSynthesizer.stopSpeaking(at: .immediate)
+        ChatServices.menuControllerService?.stopSpeakingIfNeeded()
+        ChatServices.audioMessageService?.removeRecordingUI()
         
         RuntimeStorage.store(false, as: .isPresentingChat)
+        
+        SpeechService.shared.stopRecording { fileURL, exception in
+            guard let fileURL else {
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
+                Logger.log(error,
+                           verbose: error.isEqual(to: .noAudioRecorderToStop))
+                return
+            }
+            
+            do {
+                try FileManager.default.removeItem(at: fileURL)
+            } catch { Logger.log(Exception(error, metadata: [#file, #function, #line])) }
+        }
     }
     
     public override func viewDidDisappear(_ animated: Bool) {
@@ -236,10 +141,7 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
         }
         
         RuntimeStorage.store("ConversationsPageView.swift", as: .currentFile)
-        
-        Core.gcd.after(milliseconds: 250) {
-            StateProvider.shared.hasDisappeared = true
-        }
+        Core.gcd.after(milliseconds: 250) { StateProvider.shared.hasDisappeared = true }
         
         RuntimeStorage.remove(.messagesVC)
         RuntimeStorage.store(0, as: .messageOffset)
@@ -250,19 +152,276 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
         messageInputBar.alpha = 0
     }
     
-    public override func traitCollectionDidChange(_ previousTraitCollection: UITraitCollection?) {
-        super.traitCollectionDidChange(previousTraitCollection)
+    //==================================================//
+    
+    /* MARK: - Computed Property Getters */
+    
+    private func getDelegatesHaveBeenSet() -> Bool {
+        messagesCollectionView.messagesDataSource != nil &&
+        messagesCollectionView.messagesDisplayDelegate != nil &&
+        messagesCollectionView.messagesLayoutDelegate != nil &&
+        messageInputBar.delegate != nil
+    }
+    
+    private func getIsLastCellVisible() -> Bool {
+        guard let messages = RuntimeStorage.currentMessageSlice,
+              !messages.isEmpty else { return true }
         
+        let lastIndexPath = IndexPath(row: 0, section: messages.count - 1)
+        guard let layoutAttributes = messagesCollectionView.layoutAttributesForItem(at: lastIndexPath) else { return true }
+        
+        var cellFrame = layoutAttributes.frame
+        cellFrame.size.height = cellFrame.size.height // HUH??
+        
+        var cellRect = messagesCollectionView.convert(cellFrame, to: messagesCollectionView.superview)
+        cellRect.origin.y = cellRect.origin.y - cellFrame.size.height - 100
+        
+        let bounds = messagesCollectionView.bounds
+        var visibleRect = CGRect(x: bounds.origin.x,
+                                 y: bounds.origin.y,
+                                 width: bounds.size.width,
+                                 height: bounds.size.height - messagesCollectionView.contentInset.bottom)
+        visibleRect = messagesCollectionView.convert(visibleRect, to: messagesCollectionView.superview)
+        
+        guard CGRectContainsRect(visibleRect, cellRect) else { return false }
+        return true
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Menu Controller Gesture Recognizer Selector */
+    
+    @objc
+    private func showMenu(_ recognizer: UIGestureRecognizer) {
+        guard !messageInputBar.inputTextView.isFirstResponder else {
+            messageInputBar.inputTextView.resignFirstResponder()
+            ChatServices.menuControllerService?.hideMenuIfNeeded()
+            return
+        }
+        
+        let point = recognizer.location(in: messagesCollectionView)
+        
+        guard let indexPath = messagesCollectionView.indexPathForItem(at: point),
+              let selectedCell = messagesCollectionView.cellForItem(at: indexPath) as? MessageContentCell else { return }
+        
+        ChatServices.menuControllerService?.presentMenu(at: point, on: selectedCell)
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Timer Methods */
+    
+    /* Setup */
+    
+    private func configureTimers() {
+        guard reloadTimer == nil else {
+            discardTimer(.reload)
+            configureTimers()
+            return
+        }
+        
+        guard typingIndicatorTimer == nil else {
+            discardTimer(.typingIndicator)
+            configureTimers()
+            return
+        }
+        
+        reloadTimer = Timer.scheduledTimer(timeInterval: 1,
+                                           target: self,
+                                           selector: #selector(reloadData),
+                                           userInfo: nil,
+                                           repeats: true)
+        
+        typingIndicatorTimer = Timer.scheduledTimer(timeInterval: 1,
+                                                    target: self,
+                                                    selector: #selector(updateTypingIndicator),
+                                                    userInfo: nil,
+                                                    repeats: true)
+    }
+    
+    private enum TimerType { case both; case reload; case typingIndicator }
+    private func discardTimer(_ type: TimerType) {
+        func discardReloadTimer() {
+            reloadTimer?.invalidate()
+            reloadTimer = nil
+        }
+        
+        func discardTypingIndicatorTimer() {
+            typingIndicatorTimer?.invalidate()
+            typingIndicatorTimer = nil
+        }
+        
+        switch type {
+        case .both:
+            discardReloadTimer()
+            discardTypingIndicatorTimer()
+        case .reload:
+            discardReloadTimer()
+        case .typingIndicator:
+            discardTypingIndicatorTimer()
+        }
+    }
+    
+    /* Selectors */
+    
+    @objc
+    private func reloadData() {
+        guard RuntimeStorage.isPresentingChat!,
+              delegatesHaveBeenSet else {
+            discardTimer(.reload)
+            return
+        }
+        
+        guard RuntimeStorage.shouldReloadData! else { return }
+        messagesCollectionView.reloadData()
+        messagesCollectionView.scrollToLastItem(animated: true)
+        RuntimeStorage.store(false, as: .shouldReloadData)
+    }
+    
+    @objc
+    private func updateTypingIndicator() {
+        guard RuntimeStorage.isPresentingChat!,
+              delegatesHaveBeenSet else {
+            discardTimer(.typingIndicator)
+            return
+        }
+        
+        guard !RuntimeStorage.isSendingMessage!,
+              let messageSlice = RuntimeStorage.currentMessageSlice,
+              let shouldShowIndicator = RuntimeStorage.typingIndicator else { return }
+        
+        guard !messagesCollectionView.isDragging,
+              !messagesCollectionView.isTracking,
+              !messagesCollectionView.isDecelerating,
+              !AudioPlaybackController.isPlaying,
+              !UIMenuController.shared.isMenuVisible,
+              isLastCellVisible,
+              messageSlice.count <= 5 else { return }
+        
+        defer { RuntimeStorage.remove(.typingIndicator) }
+        
+        guard shouldShowIndicator && isTypingIndicatorHidden else {
+            guard !shouldShowIndicator && !isTypingIndicatorHidden else { return }
+            setTypingIndicatorViewHidden(true, animated: false)
+            
+            return
+        }
+        
+        setTypingIndicatorViewHidden(false, animated: false)
+        messagesCollectionView.scrollToLastItem(animated: true)
+    }
+    
+    //==================================================//
+    
+    /* MARK: - UI Configuration */
+    
+    private func configureCollectionViewLayout() {
+        guard let layout = messagesCollectionView.collectionViewLayout as? MessagesCollectionViewFlowLayout  else { return }
+        layout.textMessageSizeCalculator.outgoingAvatarSize = .zero
+        layout.audioMessageSizeCalculator.outgoingAvatarSize = .zero
+        layout.setMessageOutgoingCellBottomLabelAlignment(.init(textAlignment: .right,
+                                                                textInsets: .init(top: 2,
+                                                                                  left: 0,
+                                                                                  bottom: 0,
+                                                                                  right: 10)))
+    }
+    
+    private func configureInitialInputBar() {
+        messageInputBar.sendButton.setSize(CGSize(width: 30, height: 30), animated: false)
+        
+        messageInputBar.setStackViewItems([messageInputBar.sendButton],
+                                          forStack: .right,
+                                          animated: false)
+        
+        messageInputBar.rightStackView.alignment = .center
+        
+        messageInputBar.contentView.clipsToBounds = true
+        messageInputBar.contentView.layer.borderColor = UIColor.clear.cgColor
+        messageInputBar.contentView.layer.borderWidth = 0.5
+        messageInputBar.contentView.layer.cornerRadius = 15
+        
+        messageInputBar.inputTextView.clipsToBounds = true
+        messageInputBar.inputTextView.layer.borderColor = UIColor.systemGray.cgColor
+        messageInputBar.inputTextView.layer.borderWidth = 0.5
+        messageInputBar.inputTextView.layer.cornerRadius = 15
+        
+        messageInputBar.sendButton.setImage(UIImage(named: "Record"), for: .normal)
+        messageInputBar.sendButton.setImage(UIImage(named: "Record (Highlighted)"), for: .highlighted)
+        messageInputBar.sendButton.tintColor = .red
+        
+        messageInputBar.sendButton
+            .onSelected { item in
+                item.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
+            }
+            .onDeselected { item in item.transform = .identity }
+        
+        // #warning("Not sure if this is needed.")
+        messageInputBar.inputTextView.delegate = self
+    }
+    
+    private func configureMenuGestureRecognizer() {
+        let longPressGestureRecognizer = UILongPressGestureRecognizer(target: self,
+                                                                      action: #selector(showMenu(_:)))
+        longPressGestureRecognizer.minimumPressDuration = 0.3
+        longPressGestureRecognizer.delaysTouchesBegan = true
+        messagesCollectionView.addGestureRecognizer(longPressGestureRecognizer)
+    }
+    
+    private func configureProgressView() {
+        progressView = UIProgressView(frame: CGRect(x: 0,
+                                                    y: 0,
+                                                    width: UIScreen.main.bounds.width,
+                                                    height: 2))
+        progressView!.progressViewStyle = .bar
+        progressView!.progress = 0
+        view.addSubview(progressView!)
+    }
+    
+    private func configureRecipientBar() {
+        guard RuntimeStorage.globalConversation?.identifier.key == "EMPTY",
+              let contactPairs = RuntimeStorage.contactPairs else {
+            messageInputBar.sendButton.isEnabled = (RuntimeStorage.coordinator?.shouldEnableSendButton ?? true)
+            return
+        }
+        
+        messagesCollectionView.contentInset.top = 54
+        messageInputBar.inputTextView.placeholder = ""
+        messageInputBar.sendButton.isEnabled = false
+        
+        recipientBar = RecipientBar(delegate: self, contactPairs: contactPairs)
+        view.addSubview(recipientBar!)
+    }
+    
+    private func updateAppearance(forTraitCollectionChange: Bool) {
         if traitCollection.userInterfaceStyle == .dark {
             messageInputBar.backgroundView.backgroundColor = UIColor(hex: 0x1A1A1C)
+        }
+        
+        guard forTraitCollectionChange else {
+            switch traitCollection.userInterfaceStyle {
+            case .light:
+                Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF3F3F3),
+                                                   titleColor: .black)
+                navigationController?.isNavigationBarHidden = true
+                navigationController?.isNavigationBarHidden = false
+            default:
+                return
+            }
+            return
+        }
+        
+        switch traitCollection.userInterfaceStyle {
+        case .dark:
             Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0x2A2A2C),
                                                titleColor: .white)
-            RuntimeStorage.messagesVC?.recipientBar?.updateAppearance()
-        } else {
+            recipientBar?.updateAppearance()
+        case .light:
             messageInputBar.backgroundView.backgroundColor = .white
             Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF8F8F8),
                                                titleColor: .black)
-            RuntimeStorage.messagesVC?.recipientBar?.updateAppearance()
+            recipientBar?.updateAppearance()
+        default:
+            return
         }
         
         navigationController?.isNavigationBarHidden = true
@@ -271,413 +430,29 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
     
     //==================================================//
     
-    /* MARK: - Message Retranslation */
-    
-    private func displayRetranslation(_ translation: Translation,
-                                      message: Message,
-                                      indexPath: Int) {
-        Core.hud.hide()
-        
-        guard let messageSlice = RuntimeStorage.currentMessageSlice,
-              let conversation = RuntimeStorage.globalConversation,
-              let currentUser = RuntimeStorage.currentUser else { return }
-        
-        message.translation = translation
-        message.languagePair = translation.languagePair
-        
-        message.updateLanguagePair(translation.languagePair) { exception in
-            guard exception == nil else {
-                Core.hud.hide()
-                Logger.log(exception!,
-                           with: .errorAlert)
-                return
-            }
-            
-            let storedMessage = conversation.messages.filter({ $0.identifier == message.identifier }).first!
-            storedMessage.translation = translation
-            storedMessage.languagePair = translation.languagePair
-            
-            let sliceMessage = messageSlice.filter({ $0.identifier == message.identifier }).first!
-            sliceMessage.translation = translation
-            sliceMessage.languagePair = translation.languagePair
-            
-            ConversationArchiver.clearArchive()
-            ConversationArchiver.addToArchive(conversation)
-            
-            guard var conversations = currentUser.openConversations else {
-                Core.hud.hide()
-                Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
-                return
-            }
-            
-            conversations = conversations.filter({ $0.identifier.key != conversation.identifier.key })
-            conversations.append(conversation)
-            currentUser.openConversations = conversations
-            
-            //            let updatedMessageSlice = RuntimeStorage.globalConversation!.get(.last,
-            //                                                                             messages: 10,
-            //                                                                             offset: RuntimeStorage.messageOffset!)
-            
-            //            RuntimeStorage.store(updatedMessageSlice, as: .currentMessageSlice)
-            //            RuntimeStorage.store(true, as: .shouldReloadData)
-            
-            self.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: indexPath)])
-            self.selectedCell = nil
-        }
-    }
-    
-    @objc private func retryTranslationSelector() {
-        hideMenuIfVisible()
-        
-        guard let cell = selectedCell else { return }
-        
-        guard let conversation = RuntimeStorage.globalConversation,
-              let currentUser = RuntimeStorage.currentUser,
-              let currentUserID = RuntimeStorage.currentUserID,
-              let messageSlice = RuntimeStorage.currentMessageSlice,
-              let otherUser = conversation.otherUser else { return }
-        
-        let message = messageSlice[cell.tag]
-        
-        // delete the translation on the server and from archive
-        // retry with google, then with deepL
-        // if unable alert, if got it then reload with new translation
-        // the hashes will remain the same because it's the same input value.
-        
-        let translation = message.translation!
-        guard translation.input.value() == translation.output else { return }
-        
-        let pair = translation.languagePair
-        
-        var languagePair = pair
-        
-        if message.fromAccountIdentifier == currentUserID {
-            languagePair = pair.from == pair.to ? LanguagePair(from: currentUser.languageCode,
-                                                               to: pair.to) : pair
-            if languagePair.from == languagePair.to {
-                languagePair = LanguagePair(from: currentUser.languageCode,
-                                            to: otherUser.languageCode)
-            }
-        } else {
-            languagePair = pair.from == pair.to ? LanguagePair(from: pair.from,
-                                                               to: currentUser.languageCode) : pair
-            
-            if languagePair.from == languagePair.to {
-                languagePair = LanguagePair(from: otherUser.languageCode,
-                                            to: currentUser.languageCode)
-            }
-        }
-        
-        translation.languagePair = languagePair
-        
-        Logger.log("Wants to retry translation on message from \(languagePair.from) to \(languagePair.to).",
-                   metadata: [#file, #function, #line])
-        
-        Core.hud.showProgress()
-        
-        TranslationSerializer.removeTranslation(for: translation.input,
-                                                languagePair: translation.languagePair) { exception in
-            guard exception == nil else {
-                Core.hud.hide()
-                Logger.log(exception!,
-                           with: .errorAlert)
-                return
-            }
-            
-            TranslationArchiver.clearArchive()
-            
-            Logger.openStream(message: "Retrying translation using Google...",
-                              metadata: [#file, #function, #line])
-            
-            self.retryTranslation(translation,
-                                  using: .google) { returnedTranslation, exception in
-                guard let translation = returnedTranslation else {
-                    let error = exception ?? Exception(metadata: [#file, #function, #line])
-                    if error.descriptor == "Translation result is still the same." {
-                        Logger.logToStream("Same translation – trying DeepL...",
-                                           line: #line)
-                        
-                        TranslationSerializer.removeTranslation(for: translation.input,
-                                                                languagePair: translation.languagePair) { exception in
-                            guard exception == nil else {
-                                Core.hud.hide()
-                                Logger.log(exception!,
-                                           with: .errorAlert)
-                                return
-                            }
-                            
-                            TranslationArchiver.clearArchive()
-                            
-                            self.retryTranslation(translation,
-                                                  using: .deepL) { returnedTranslation, exception in
-                                guard let translation = returnedTranslation else {
-                                    let error = exception ?? Exception(metadata: [#file, #function, #line])
-                                    if error.descriptor == "Translation result is still the same." {
-                                        Logger.logToStream("Same translation – trying English method...",
-                                                           line: #line)
-                                        
-                                        self.retryToEnglishAndStop(translation,
-                                                                   message: message,
-                                                                   indexPath: cell.tag)
-                                    } else {
-                                        Core.hud.hide()
-                                        Logger.log(error,
-                                                   with: .errorAlert)
-                                    }
-                                    
-                                    return
-                                }
-                                
-                                Logger.closeStream(message: "Got proper translation from DeepL!",
-                                                   onLine: #line)
-                                
-                                self.displayRetranslation(translation,
-                                                          message: message,
-                                                          indexPath: cell.tag)
-                            }
-                        }
-                    } else {
-                        Core.hud.hide()
-                        Logger.log(error,
-                                   with: .errorAlert)
-                    }
-                    
-                    return
-                }
-                
-                Logger.closeStream(message: "Got proper translation from Google!",
-                                   onLine: #line)
-                
-                self.displayRetranslation(translation,
-                                          message: message,
-                                          indexPath: cell.tag)
-            }
-        }
-    }
-    
-    private func retryToEnglishAndStop(_ originalTranslation: Translation,
-                                       message: Message,
-                                       indexPath: Int) {
-        let originalLanguagePair = originalTranslation.languagePair
-        
-        TranslationSerializer.removeTranslation(for: originalTranslation.input,
-                                                languagePair: originalTranslation.languagePair) { exception in
-            guard exception == nil else {
-                Logger.closeStream()
-                Core.hud.hide()
-                Logger.log(exception!,
-                           with: .errorAlert)
-                return
-            }
-            
-            TranslationArchiver.clearArchive()
-            
-            FirebaseTranslator.shared.translate(originalTranslation.input,
-                                                with: LanguagePair(from: originalLanguagePair.from, to: "en")) { toEnglish, exception in
-                guard let toEnglish else {
-                    Logger.closeStream()
-                    Core.hud.hide()
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                               with: .errorAlert)
-                    return
-                }
-                
-                FirebaseTranslator.shared.translate(TranslationInput(toEnglish.output),
-                                                    with: LanguagePair(from: "en", to: originalLanguagePair.to)) { toDesired, exception in
-                    guard let toDesired else {
-                        Logger.closeStream()
-                        Core.hud.hide()
-                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                                   with: .errorAlert)
-                        return
-                    }
-                    
-                    if let language = RecognitionService.detectedLanguage(for: toDesired.output),
-                       language != originalLanguagePair.to {
-                        let desiredString = Locale.current.localizedString(forIdentifier: originalLanguagePair.to)
-                        let detectedString = Locale.current.localizedString(forIdentifier: language)
-                        
-                        Logger.closeStream(message: "English method yielded wrong language output.\nDesired: \(desiredString ?? "")\nGot: \(detectedString ?? "")\nOriginally From: \(originalLanguagePair.from)\nInput: \(originalTranslation.input.value())\nOutput: \(toDesired.output)",
-                                           onLine: #line)
-                        
-                        Core.hud.hide()
-                        Logger.log(Exception("Failed to retranslate.",
-                                             metadata: [#file, #function, #line]),
-                                   with: .errorAlert)
-                    } else {
-                        let desiredString = Locale.current.localizedString(forIdentifier: originalLanguagePair.to)
-                        
-                        Logger.logToStream("Desired: \(desiredString ?? "")\nOriginally From: \(originalLanguagePair.from)\nInput: \(originalTranslation.input.value())\nOutput: \(toDesired.output)",
-                                           line: #line)
-                        
-                        let mutantTranslation = Translation(input: originalTranslation.input,
-                                                            output: toDesired.output.matchingCapitalization(of: originalTranslation.input.value()),
-                                                            languagePair: originalLanguagePair)
-                        
-                        TranslationSerializer.uploadTranslation(mutantTranslation)
-                        TranslationArchiver.addToArchive(mutantTranslation)
-                        
-                        Logger.closeStream(message: "Got proper translation from English method!",
-                                           onLine: #line)
-                        
-                        self.displayRetranslation(mutantTranslation,
-                                                  message: message,
-                                                  indexPath: indexPath)
-                    }
-                }
-            }
-        }
-    }
-    
-    private func retryTranslation(_ translation: Translation,
-                                  using: TranslationPlatform,
-                                  completion: @escaping(_ returnedTranslation: Translation?,
-                                                        _ exception: Exception?) -> Void) {
-        TranslationArchiver.clearArchive()
-        
-        FirebaseTranslator.shared.translate(translation.input,
-                                            with: translation.languagePair,
-                                            using: using) { returnedTranslation, exception in
-            guard let translation = returnedTranslation else {
-                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                return
-            }
-            
-            guard translation.input.value() != translation.output else {
-                completion(nil, Exception("Translation result is still the same.",
-                                          metadata: [#file, #function, #line]))
-                return
-            }
-            
-            TranslationArchiver.addToArchive(translation)
-            TranslationSerializer.uploadTranslation(translation)
-            
-            completion(translation, nil)
-        }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Speech Synthesizer Methods */
-    
-    private func highestQualityVoice(for languageCode: String) -> AVSpeechSynthesisVoice? {
-        let voices = AVSpeechSynthesisVoice.speechVoices()
-        var applicableVoices = [AVSpeechSynthesisVoice]()
-        
-        for voice in voices {
-            guard voice.language.lowercased().hasPrefix(languageCode.lowercased()) else { continue }
-            applicableVoices.append(voice)
-        }
-        
-        var chosenVoice: AVSpeechSynthesisVoice?
-        for voice in applicableVoices {
-            guard voice.quality == .enhanced,
-                  chosenVoice == nil else { continue }
-            chosenVoice = voice
-        }
-        
-        return chosenVoice ?? AVSpeechSynthesisVoice(language: languageCode)
-    }
-    
-    public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
-                                  didCancel: AVSpeechUtterance) {
-        guard let cell = selectedCell else { return }
-        messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
-        
-        hideMenuIfVisible()
-    }
-    
-    public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
-                                  didFinish: AVSpeechUtterance) {
-        guard let cell = selectedCell else { return }
-        messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
-        
-        hideMenuIfVisible()
-    }
-    
-    public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
-                                  willSpeakRangeOfSpeechString characterRange: NSRange,
-                                  utterance: AVSpeechUtterance) {
-        guard let cell = selectedCell,
-              let messageSlice = RuntimeStorage.currentMessageSlice,
-              let currentUserID = RuntimeStorage.currentUserID else { return }
-        
-        let font = cell.messageLabel.font!
-        let useWhite = messageSlice[cell.tag].fromAccountIdentifier == currentUserID
-        
-        let attributed = NSMutableAttributedString(string: cell.messageLabel.text!)
-        attributed.addAttribute(.foregroundColor, value: useWhite ? UIColor.white : UIColor.black, range: NSMakeRange(0, attributed.length))
-        attributed.addAttribute(.foregroundColor, value: UIColor.red, range: characterRange)
-        attributed.addAttribute(.font, value: font, range: NSMakeRange(0, attributed.length))
-        cell.messageLabel.attributedText = attributed
-    }
-    
-    @objc private func toggleSpokenText() {
-        hideMenuIfVisible()
-        
-        guard !speechSynthesizer.isSpeaking else {
-            speechSynthesizer.stopSpeaking(at: .immediate)
-            return
-        }
-        
-        guard let cell = selectedCell,
-              let messageSlice = RuntimeStorage.currentMessageSlice,
-              let currentUserID = RuntimeStorage.currentUserID,
-              messageSlice.count > cell.tag else { return }
-        
-        let message = messageSlice[cell.tag]
-        let utterance = AVSpeechUtterance(string: cell.messageLabel.text!)
-        let utteranceLanguage: String!
-        
-        if message.isDisplayingAlternate {
-            if message.fromAccountIdentifier == currentUserID {
-                utteranceLanguage = message.translation!.languagePair.to
-            } else {
-                utteranceLanguage = message.translation!.languagePair.from
-            }
-        } else {
-            if message.fromAccountIdentifier == currentUserID {
-                utteranceLanguage = message.translation!.languagePair.from
-            } else {
-                utteranceLanguage = message.translation!.languagePair.to
-            }
-        }
-        
-        utterance.voice = highestQualityVoice(for: utteranceLanguage)
-        speechSynthesizer.speak(utterance)
-    }
-    
-    //==================================================//
-    
     /* MARK: - UICollectionView Methods */
     
-    public override func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let messageSlice = RuntimeStorage.currentMessageSlice else { return UICollectionViewCell() }
-        
+    public override func collectionView(_ collectionView: UICollectionView,
+                                        cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
         if let typingIndicatorCell = super.collectionView(collectionView, cellForItemAt: indexPath) as? TypingIndicatorCell {
             return typingIndicatorCell
         }
         
-        guard let currentCell = super.collectionView(collectionView, cellForItemAt: indexPath) as? MessageCollectionViewCell else { return UICollectionViewCell() }
-        currentCell.tag = indexPath.section
+        guard let genericCell = super.collectionView(collectionView, cellForItemAt: indexPath) as? MessageCollectionViewCell else { return UICollectionViewCell() }
+        genericCell.tag = indexPath.section
         
-        guard messageSlice.count > indexPath.section else {
-            return currentCell
-        }
+        guard let messageSlice = RuntimeStorage.currentMessageSlice,
+              messageSlice.count > indexPath.section,
+              messageSlice[indexPath.section].isDisplayingAlternate,
+              let textCell = genericCell as? TextMessageCell else { return genericCell }
         
-        if messageSlice[indexPath.section].isDisplayingAlternate,
-           let cell = currentCell as? TextMessageCell {
-            cell.messageLabel.font = cell.messageLabel.font.withTraits(traits: .traitItalic)
-            
-            if cell.messageContainerView.frame.size.height < 40 {
-                cell.messageContainerView.frame.size.width = cell.messageLabel.intrinsicContentSize.width
-                cell.messageLabel.frame.size.width = cell.messageLabel.intrinsicContentSize.width
-            }
-        }
+        textCell.messageLabel.font = textCell.messageLabel.font.withTraits(traits: .traitItalic)
         
-        return currentCell
+        guard textCell.messageContainerView.frame.size.height < 40 else { return textCell }
+        textCell.messageContainerView.frame.size.width = textCell.messageLabel.intrinsicContentSize.width
+        textCell.messageLabel.frame.size.width = textCell.messageLabel.intrinsicContentSize.width
+        
+        return textCell
     }
     
     //==================================================//
@@ -690,115 +465,8 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
         }
     }
     
-    public override func scrollViewDidEndDragging(_ scrollView: UIScrollView,
-                                                  willDecelerate decelerate: Bool) {
-        //        print("ended dragging")
-    }
-    
     public override func scrollViewDidScrollToTop(_ scrollView: UIScrollView) {
         loadMoreMessages(fromScrollToTop: true)
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Private Methods */
-    
-    @objc private func copyText() {
-        guard let cell = selectedCell else { return }
-        UIPasteboard.general.string = cell.messageLabel.text
-        
-        hideMenuIfVisible()
-    }
-    
-    @objc private func displayCustomMenu(gestureRecognizer: UIGestureRecognizer) {
-        messageInputBar.tag = 86
-        guard !messageInputBar.inputTextView.isFirstResponder else {
-            messageInputBar.inputTextView.resignFirstResponder()
-            hideMenuIfVisible()
-            return
-        }
-        
-        let point = gestureRecognizer.location(in: messagesCollectionView)
-        
-        guard let indexPath = messagesCollectionView.indexPathForItem(at: point),
-              let cell = messagesCollectionView.cellForItem(at: indexPath) as? TextMessageCell else {
-            return
-        }
-        
-        guard (!speechSynthesizer.isSpeaking || selectedCell == cell),
-              let messageSlice = RuntimeStorage.currentMessageSlice,
-              let currentUserID = RuntimeStorage.currentUserID else { return }
-        
-        let currentMessage = messageSlice[indexPath.section]
-        guard !UIMenuController.shared.isMenuVisible,
-              currentMessage.identifier != "NEW" else {
-            return
-        }
-        
-        //        messageInputBar.inputTextView.resignFirstResponder()
-        
-        let copyItem = UIMenuItem(title: LocalizedString.copy,
-                                  action: #selector(copyText))
-        let speakItem = UIMenuItem(title: speechSynthesizer.isSpeaking ? LocalizedString.stopSpeaking : LocalizedString.speak,
-                                   action: #selector(toggleSpokenText))
-        
-        //        var menuItems = [copyItem, speakItem]
-        
-        if currentMessage.translation!.input.value() == currentMessage.translation!.output,
-           RecognitionService.shouldMarkUntranslated(currentMessage.translation!.output,
-                                                     for: currentMessage.translation.languagePair) {
-            let retryTranslationItem = UIMenuItem(title: LocalizedString.retryTranslation,
-                                                  action: #selector(retryTranslationSelector))
-            UIMenuController.shared.menuItems = [retryTranslationItem, copyItem, speakItem]
-        } else {
-            var menuTitle: String!
-            
-            if currentMessage.isDisplayingAlternate {
-                menuTitle = currentMessage.fromAccountIdentifier == currentUserID ? LocalizedString.viewOriginal : LocalizedString.viewTranslation
-            } else {
-                menuTitle = currentMessage.fromAccountIdentifier == currentUserID ? LocalizedString.viewTranslation : LocalizedString.viewOriginal
-            }
-            
-            let viewAlternateItem = UIMenuItem(title: menuTitle,
-                                               action: #selector(viewAlternate))
-            if speechSynthesizer.isSpeaking {
-                UIMenuController.shared.menuItems = [copyItem, speakItem]
-            } else {
-                UIMenuController.shared.menuItems = [viewAlternateItem, copyItem, speakItem]
-            }
-        }
-        
-        selectedCell = cell
-        
-        let convertedPoint = messagesCollectionView.convert(point, to: cell.messageContainerView)
-        
-        if cell.messageContainerView.bounds.contains(convertedPoint) {
-            messagesCollectionView.becomeFirstResponder()
-            UIMenuController.shared.showMenu(from: messagesCollectionView,
-                                             rect: CGRect(x: point.x,
-                                                          y: (cell.frame.minY + 2) + (cell.cellTopLabel.frame.size.height),
-                                                          width: 20,
-                                                          height: 20))
-        }
-    }
-    
-    private func hideMenuIfVisible() {
-        if UIMenuController.shared.isMenuVisible {
-            UIMenuController.shared.hideMenu()
-        }
-    }
-    
-    private func indexPaths() -> [IndexPath] {
-        var indexPaths = [IndexPath]()
-        guard let messageSlice = RuntimeStorage.currentMessageSlice else { return indexPaths }
-        
-        for (index, message) in messageSlice.enumerated() {
-            if message.isDisplayingAlternate {
-                indexPaths.append(IndexPath(row: 0, section: index))
-            }
-        }
-        
-        return indexPaths
     }
     
     private func loadMoreMessages(fromScrollToTop: Bool) {
@@ -809,7 +477,7 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
               let conversation = RuntimeStorage.globalConversation,
               let messageSlice = RuntimeStorage.currentMessageSlice else { return }
         
-        if abs(loadedMore.amountOfSeconds(from: Date())) > 1 || fromScrollToTop {
+        if abs(lastLoadedMoreMessages.seconds(from: Date())) > 1 || fromScrollToTop {
             //Need to account for where conversation is short enough to be displayed fully on one page.
             guard offset + 10 < conversation.messages.count else { return }
             
@@ -828,7 +496,7 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
             RuntimeStorage.store(newMessageSlice, as: .currentMessageSlice)
             
             messagesCollectionView.reloadDataAndKeepOffset()
-            loadedMore = Date()
+            lastLoadedMoreMessages = Date()
         }
         
         if fromScrollToTop {
@@ -837,205 +505,128 @@ public final class ChatPageViewController: MessagesViewController, AVSpeechSynth
                                                 animated: true)
         }
     }
-    
-    @objc private func reloadData() {
-        guard RuntimeStorage.isPresentingChat!,
-              delegatesHaveBeenSet else {
-            reloadTimer?.invalidate()
-            reloadTimer = nil
-            return
-        }
-        
-        if RuntimeStorage.shouldReloadData! {
-            self.messagesCollectionView.reloadData()
-            self.messagesCollectionView.scrollToLastItem(animated: true)
-            RuntimeStorage.store(false, as: .shouldReloadData)
-        }
-    }
-    
-    @objc private func updateTypingIndicator() {
-        guard RuntimeStorage.isPresentingChat!,
-              delegatesHaveBeenSet else {
-            typingIndicatorTimer?.invalidate()
-            typingIndicatorTimer = nil
-            return
-        }
-        
-        guard !RuntimeStorage.isSendingMessage!,
-              let messageSlice = RuntimeStorage.currentMessageSlice else { return }
-        
-        if let indicator = RuntimeStorage.typingIndicator {
-            if !messagesCollectionView.isDragging &&
-                !messagesCollectionView.isTracking &&
-                !messagesCollectionView.isDecelerating {
-                guard isLastCellVisible || messageSlice.count <= 5 else {
-                    Logger.log("Last message isn't visible, so not showing update of typing indicator.",
-                               metadata: [#file, #function, #line])
-                    return
-                }
-                
-                Logger.log("Updating typing indicator status: \(indicator ? "Visible" : "Hidden")",
-                           metadata: [#file, #function, #line])
-                
-                setTypingIndicatorViewHidden(!indicator, animated: false)
-                if indicator {
-                    messagesCollectionView.scrollToLastItem(animated: true)
-                }
-                
-                RuntimeStorage.remove(.typingIndicator)
-            }
-        }
-    }
-    
-    @objc private func viewAlternate() {
-        hideMenuIfVisible()
-        
-        guard let cell = selectedCell,
-              let messageSlice = RuntimeStorage.currentMessageSlice,
-              messageSlice.count > cell.tag else { return }
-        
-        var paths = indexPaths()
-        paths.append(IndexPath(row: 0, section: cell.tag))
-        paths = paths.unique()
-        
-        let message = messageSlice[cell.tag]
-        
-        if let conversation = RuntimeStorage.globalConversation {
-            AnalyticsService.logEvent(.viewAlternate,
-                                      with: ["conversationIdKey": conversation.identifier.key!,
-                                             "messageId": message.identifier!])
-        }
-        
-        let input = message.translation.input
-        message.translation.input = TranslationInput(message.translation.output)
-        message.translation.output = input.value()
-        
-        message.isDisplayingAlternate = !message.isDisplayingAlternate
-        
-        messagesCollectionView.reloadItems(at: paths)
-        
-        selectedCell = nil
-    }
 }
 
 //==================================================//
 
-/* MARK: - Extensions */
+/* MARK: - Protocol Conformances */
 
-/**/
-
-/* MARK: Array */
-public extension Array where Element == Message {
-    func unique() -> [Message] {
-        var uniqueValues = [Message]()
-        
-        for message in self {
-            if !uniqueValues.contains(where: { $0.identifier == message.identifier }) {
-                uniqueValues.append(message)
-            }
-        }
-        
-        return uniqueValues
-    }
-}
-
-/* MARK: Date */
-public extension Date {
-    func amountOfSeconds(from date: Date) -> Int {
-        return Calendar.current.dateComponents([.second], from: date, to: self).second ?? 0
-    }
+/* MARK: - ChatUIDelegate */
+extension ChatPageViewController: ChatUIDelegate {
     
-    func dayOfWeek() -> String? {
-        switch Calendar.current.component(.weekday, from: self) {
-        case 1:
-            return LocalizedString.sunday
-        case 2:
-            return LocalizedString.monday
-        case 3:
-            return LocalizedString.tuesday
-        case 4:
-            return LocalizedString.wednesday
-        case 5:
-            return LocalizedString.thursday
-        case 6:
-            return LocalizedString.friday
-        case 7:
-            return LocalizedString.saturday
-        default:
-            return nil
+    // MARK: - Properties
+    
+    public var isUserCancellationEnabled: Bool {
+        get {
+            guard let parent,
+                  let navigationController = parent.navigationController else { return false }
+            
+            guard navigationController.navigationBar.isUserInteractionEnabled,
+                  let popGestureRecognizer = navigationController.interactivePopGestureRecognizer,
+                  popGestureRecognizer.isEnabled else { return false }
+            
+            return true
         }
     }
     
-    func separatorDateString() -> NSAttributedString {
-        let calendar = Core.currentCalendar!
-        let dateDifference = calendar.startOfDay(for: Date()).distance(to: calendar.startOfDay(for: self))
-        
-        let timeString = DateFormatter.localizedString(from: self,
-                                                       dateStyle: .none,
-                                                       timeStyle: .short)
-        
-        let overYearFormatter = DateFormatter()
-        overYearFormatter.locale = Locale(identifier: RuntimeStorage.languageCode!)
-        overYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "MMM dd yyyy, " : "dd MMM yyyy, "
-        
-        let overYearString = overYearFormatter.string(from: self)
-        
-        let regularFormatter = DateFormatter()
-        regularFormatter.locale = Locale(identifier: RuntimeStorage.languageCode!)
-        regularFormatter.dateFormat = "yyyy-MM-dd"
-        
-        let underYearFormatter = DateFormatter()
-        underYearFormatter.locale = Locale(identifier: RuntimeStorage.languageCode!)
-        underYearFormatter.dateFormat = Locale.preferredLanguages[0] == "en-US" ? "E MMM d, " : "E d MMM, "
-        
-        let underYearString = underYearFormatter.string(from: self)
-        
-        if dateDifference == 0 {
-            let separatorString = LocalizedString.today
-            return messagesAttributedString("\(separatorString) \(timeString)", separationIndex: separatorString.count)
-        } else if dateDifference == -86400 {
-            let separatorString = LocalizedString.yesterday
-            return messagesAttributedString("\(separatorString) \(timeString)", separationIndex: separatorString.count)
-        } else if dateDifference >= -604800 {
-            guard let selfWeekday = self.dayOfWeek(),
-                  let currentWeekday = Date().dayOfWeek() else {
-                return messagesAttributedString(overYearString + timeString,
-                                                separationIndex: overYearString.components(separatedBy: ",")[0].count + 1)
+    // MARK: - Methods
+    
+    public func configureInputBar(forRecord: Bool) {
+        guard forRecord else {
+            messageInputBar.sendButton.gestureRecognizers?.removeAll()
+            
+            guard messageInputBar.sendButton.isRecordButton else { return }
+            
+            UIView.transition(with: messageInputBar.sendButton,
+                              duration: 0.3,
+                              options: [.transitionCrossDissolve]) {
+                self.messageInputBar.inputTextView.layer.borderColor = UIColor.clear.cgColor
+                self.messageInputBar.contentView.layer.borderColor = UIColor.systemGray.cgColor
+                
+                self.messageInputBar.sendButton.setImage(UIImage(named: "Send"), for: .normal)
+                self.messageInputBar.sendButton.setImage(UIImage(named: "Send (Highlighted)"), for: .highlighted)
+                self.messageInputBar.sendButton.tintColor = .systemBlue
             }
             
-            if selfWeekday != currentWeekday {
-                return messagesAttributedString("\(selfWeekday) \(timeString)", separationIndex: selfWeekday.count)
-            } else {
-                return messagesAttributedString(underYearString + timeString, separationIndex: underYearString.components(separatedBy: ",")[0].count + 1)
-            }
-        } else if dateDifference < -604800 && dateDifference > -31540000 {
-            return messagesAttributedString(underYearString + timeString, separationIndex: underYearString.components(separatedBy: ",")[0].count + 1)
+            return
         }
         
-        return messagesAttributedString(overYearString + timeString, separationIndex: overYearString.components(separatedBy: ",")[0].count + 1)
-    }
-}
-
-/* MARK: InputBarAccessoryView */
-extension InputBarAccessoryView {
-    override open var canBecomeFirstResponder: Bool {
-        return RuntimeStorage.messagesVC?.viewHasLaidOutSubviewsAtLeastOnce ?? false
-    }
-}
-
-/* MARK: UIFont */
-public extension UIFont {
-    func bold() -> UIFont {
-        return withTraits(traits: .traitBold)
-    }
-    
-    func italic() -> UIFont {
-        return withTraits(traits: .traitItalic)
+        guard !messageInputBar.sendButton.isRecordButton else { return }
+        
+        UIView.transition(with: messageInputBar.sendButton,
+                          duration: 0.3,
+                          options: [.transitionCrossDissolve]) {
+            self.messageInputBar.contentView.layer.borderColor = UIColor.clear.cgColor
+            self.messageInputBar.inputTextView.layer.borderColor = UIColor.systemGray.cgColor
+            
+            self.messageInputBar.sendButton.setImage(UIImage(named: "Record"), for: .normal)
+            self.messageInputBar.sendButton.setImage(UIImage(named: "Record (Highlighted)"), for: .highlighted)
+            self.messageInputBar.sendButton.tintColor = .red
+            
+            ChatServices.audioMessageService?.addGestureRecognizers()
+        }
     }
     
-    func withTraits(traits: UIFontDescriptor.SymbolicTraits) -> UIFont {
-        let descriptor = fontDescriptor.withSymbolicTraits(traits)
-        return UIFont(descriptor: descriptor!, size: 0) //size 0 means keep the size as it is
+    public func hideNewChatControls() {
+        DispatchQueue.main.async {
+            // #warning("Do we want to couple these guard conditions?")
+            guard let pair = self.recipientBar?.selectedContactPair else { return }
+            
+            self.recipientBar?.removeFromSuperview()
+            self.messagesCollectionView.contentInset.top = 0
+            self.messagesCollectionView.isUserInteractionEnabled = true
+            
+            guard let parent = self.parent else { return }
+            
+            parent.navigationItem.title = "\(pair.contact.firstName) \(pair.contact.lastName)"
+            
+            let doneButton = UIBarButtonItem(title: LocalizedString.done,
+                                             style: .done,
+                                             target: self,
+                                             action: #selector(ChatServices.chatUIService?.toggleDoneButton))
+            doneButton.tag = Core.ui.nameTag(for: "doneButton")
+            doneButton.isEnabled = false
+            parent.navigationItem.rightBarButtonItems = [doneButton]
+        }
+    }
+    
+    public func setUserCancellation(enabled: Bool) {
+        guard let parent = parent else { return }
+        
+        parent.navigationController?.navigationBar.isUserInteractionEnabled = enabled
+        parent.navigationController?.interactivePopGestureRecognizer?.isEnabled = enabled
+        
+        guard recipientBar != nil else { return }
+        
+        let barButton: UIBarButtonItem!
+        
+        defer {
+            barButton.isEnabled = enabled
+            parent.navigationItem.rightBarButtonItems = [barButton]
+        }
+        
+        guard let buttons = parent.navigationItem.rightBarButtonItems,
+              !buttons.isEmpty,
+              buttons[0].tag == Core.ui.nameTag(for: "doneButton") else {
+            barButton = UIBarButtonItem(title: LocalizedString.cancel,
+                                        style: .plain,
+                                        target: self,
+                                        action: #selector(self.toggleDoneButton))
+            barButton.tag = Core.ui.nameTag(for: "cancelButton")
+            return
+        }
+        
+        barButton = UIBarButtonItem(title: LocalizedString.done,
+                                    style: .done,
+                                    target: self,
+                                    action: #selector(self.toggleDoneButton))
+        barButton.tag = Core.ui.nameTag(for: "doneButton")
+    }
+    
+    @objc
+    public func toggleDoneButton() {
+        messageInputBar.inputTextView.resignFirstResponder()
+        StateProvider.shared.tappedDone = true
     }
 }
 

@@ -93,17 +93,17 @@ public class Conversation: Codable, Equatable {
                     offset: Int? = 0) -> [Message] {
         let offset = offset ?? 0
         
-        Logger.openStream(message: "Requesting \(slice == .first ? "first" : "last") *\(count)* messages from conversation with *\(messages.count)* messages.",
-                          metadata: [#file, #function, #line])
-        Logger.logToStream("Wants to start at index *\(offset).*", line: #line)
-        Logger.logToStream("messages[0...\(offset)] we have.", line: #line)
-        Logger.logToStream("Requesting messages[\(offset)...\(offset + count)].", line: #line)
-        Logger.logToStream("messages[0...\(messages.count - 1) are available.", line: #line)
+        //        Logger.openStream(message: "Requesting \(slice == .first ? "first" : "last") *\(count)* messages from conversation with *\(messages.count)* messages.",
+        //                          metadata: [#file, #function, #line])
+        //        Logger.logToStream("Wants to start at index *\(offset).*", line: #line)
+        //        Logger.logToStream("messages[0...\(offset)] we have.", line: #line)
+        //        Logger.logToStream("Requesting messages[\(offset)...\(offset + count)].", line: #line)
+        //        Logger.logToStream("messages[0...\(messages.count - 1) are available.", line: #line)
         
         guard messages.count > offset else {
-            Logger.log("Count of messages is less than offset + amount to get.",
-                       verbose: true,
-                       metadata: [#file, #function, #line])
+            //            Logger.log("Count of messages is less than offset + amount to get.",
+            //                       verbose: true,
+            //                       metadata: [#file, #function, #line])
             return []
         }
         
@@ -116,13 +116,13 @@ public class Conversation: Codable, Equatable {
                 amountToGet -= 1
             }
             
-            Logger.closeStream(message: "Getting \(slice == .first ? "first" : "last") *\(amountToGet + 1)* messages.",
-                               onLine: #line)
+            //            Logger.closeStream(message: "Getting \(slice == .first ? "first" : "last") *\(amountToGet + 1)* messages.",
+            //                               onLine: #line)
             return slice == .first ? Array(offsetMessages[0 ... amountToGet]) : Array(offsetMessages.reversed()[0 ... amountToGet].reversed())
         }
         
-        Logger.closeStream(message: "Getting \(slice == .first ? "first" : "last") *\(amountToGet + 1)* messages!!!",
-                           onLine: #line)
+        //        Logger.closeStream(message: "Getting \(slice == .first ? "first" : "last") *\(amountToGet + 1)* messages!!!",
+        //                           onLine: #line)
         
         return slice == .first ? Array(offsetMessages[0 ... amountToGet]) : Array(offsetMessages.reversed()[0 ... amountToGet].reversed())
     }

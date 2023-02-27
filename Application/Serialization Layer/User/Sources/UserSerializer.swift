@@ -93,7 +93,17 @@ public struct UserSerializer {
             dispatchGroup.enter()
             findUsers(for: contact) { numberPairs, exception in
                 guard let numberPairs else {
-                    exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
+                    
+                    if !error.isEqual(toAny: [.mismatchedHashAndCallingCode,
+                                              .noCallingCodesForNumber,
+                                              .noHashesForNumber,
+                                              .noUserWithHashes,
+                                              .noUserWithCallingCode,
+                                              .noUserWithPhoneNumber]) {
+                        exceptions.append(error)
+                    }
+                    
                     dispatchGroup.leave()
                     return
                 }

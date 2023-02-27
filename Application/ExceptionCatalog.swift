@@ -37,10 +37,17 @@ public enum JRException {
     case noUserWithCallingCode
     case noUserWithHashes
     case noUserWithPhoneNumber
+    case noUsersForContacts
     
     case numberInvalidFormat
     case numberTooLong
     case numberTooShort
+    
+    case cannotOpenFile
+    case noSpeechDetected
+    case noAudioRecorderToStop
+    
+    case noReadDate
     
     var description: String {
         switch self {
@@ -86,6 +93,8 @@ public enum JRException {
             return "BD49"
         case .noUserWithPhoneNumber:
             return "C2F1"
+        case .noUsersForContacts:
+            return "6544"
             
         case .numberInvalidFormat:
             return "470A"
@@ -93,9 +102,19 @@ public enum JRException {
             return "B5B4"
         case .numberTooShort:
             return "3E46"
+            
+        case .cannotOpenFile:
+            return "3C14"
+        case .noSpeechDetected:
+            return "11B6"
+        case .noAudioRecorderToStop:
+            return "A92A"
+            
+        case .noReadDate:
+            return "947F"
         }
     }
-} 
+}
 
 /**
  Use this extension to add simplified error descriptors and create **Exception** builders for commonly encountered errors.

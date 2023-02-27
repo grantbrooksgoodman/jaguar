@@ -19,14 +19,14 @@ public enum GeneralSerializer {
     /* MARK: - Properties */
     
     public enum Environment: String {
-        case developer
+        case development
         case staging
         case production
         
         var description: String { rawValue.firstUppercase }
         var shortString: String {
             switch self {
-            case .developer:
+            case .development:
                 return "dev"
             case .staging:
                 return "stage"
@@ -36,7 +36,7 @@ public enum GeneralSerializer {
         }
     }
     
-    public static var environment: Environment = .developer
+    public static var environment: Environment = .development
     
     //==================================================//
     

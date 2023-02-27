@@ -148,8 +148,7 @@ public struct SignInPageView: View {
             
             guard let identifier = userID else {
                 let error = returnedError == nil ? Exception(metadata: [#file, #function, #line]) : Exception(returnedError!, metadata: [#file, #function, #line])
-                Logger.log(error,
-                           with: .errorAlert)
+                Logger.log(error, with: .errorAlert)
                 return
             }
             

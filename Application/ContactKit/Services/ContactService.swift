@@ -21,11 +21,9 @@ public enum ContactService {
     
     /* MARK: - CNContactStore Fetching */
     
-    public static func fetchAllContacts(forceUpdate: Bool? = nil,
+    public static func fetchAllContacts(forceUpdate: Bool,
                                         completion: @escaping(_ contacts: [Contact]?,
                                                               _ exception: Exception?) -> Void) {
-        let forceUpdate = forceUpdate ?? false
-        
         if !forceUpdate,
            let cachedContacts {
             completion(cachedContacts, nil)
@@ -243,7 +241,7 @@ public enum ContactService {
     
     private static func updateContacts(completion: @escaping(_ contactPairs: [ContactPair]?,
                                                              _ exception: Exception?) -> Void) {
-        fetchAllContacts(forceUpdate: true) { contacts, exception in
+        fetchAllContacts(forceUpdate: false) { contacts, exception in
             guard let contacts else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
@@ -273,11 +271,10 @@ public enum ContactService {
             
             UserSerializer.shared.findUsers(for: contactsToFetch) { pairs, exception in
                 guard let pairs else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                    
                     let isEmpty = contactsToReturn.isEmpty
                     completion(isEmpty ? nil : contactsToReturn,
-                               isEmpty ? exception ?? Exception(metadata: [#file, #function, #line]) : nil)
+                               isEmpty ? exception ?? Exception("No users found for contacts.",
+                                                                metadata: [#file, #function, #line]) : nil)
                     
                     return
                 }

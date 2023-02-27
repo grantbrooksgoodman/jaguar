@@ -189,10 +189,7 @@ public class User: Codable {
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
         GeneralSerializer.getValues(atPath: "\(pathPrefix)\(inConversationWithID)") { returnedValues, exception in
             guard let values = returnedValues as? [String: Any] else {
-                let error = exception ?? Exception(metadata: [#file, #function, #line])
-                
-                Logger.log(error)
-                completion(error)
+                completion(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             

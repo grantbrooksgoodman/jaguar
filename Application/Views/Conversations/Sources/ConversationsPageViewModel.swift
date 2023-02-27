@@ -65,8 +65,8 @@ public class ConversationsPageViewModel: ObservableObject {
         //        ContactService.clearCache()
         
         if RuntimeStorage.shouldUpdateReadState! ||
-        /*RuntimeStorage.receivedNotification! ||*/
-        (RuntimeStorage.becameActive ?? false) {
+            /*RuntimeStorage.receivedNotification! ||*/
+            (RuntimeStorage.becameActive ?? false) {
             if (RuntimeStorage.becameActive ?? false) {
                 print("reloading because became active")
             }
@@ -128,30 +128,30 @@ public class ConversationsPageViewModel: ObservableObject {
                     }
                 }
                 
-                guard !ContactArchiver.contactArchive.isEmpty else {
-                    guard !silent else {
-                        self.translateAndLoad(conversations: conversations) { completion() }
-                        return
-                    }
-                    
-                    ContactService.loadContacts { contactPairs, exception in
-                        guard contactPairs != nil else {
-                            self.translateAndLoad(conversations: conversations) {
-                                Core.gcd.after(seconds: 2) {
-                                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                                }
-                                
-                                completion()
-                            }
-                            
-                            return
-                        }
-                        
-                        self.translateAndLoad(conversations: conversations) { completion() }
-                    }
-                    
-                    return
-                }
+                //                guard !ContactArchiver.contactArchive.isEmpty else {
+                //                    guard !silent else {
+                //                        self.translateAndLoad(conversations: conversations) { completion() }
+                //                        return
+                //                    }
+                //
+                //                    ContactService.loadContacts { contactPairs, exception in
+                //                        guard contactPairs != nil else {
+                //                            self.translateAndLoad(conversations: conversations) {
+                //                                Core.gcd.after(seconds: 2) {
+                //                                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                //                                }
+                //
+                //                                completion()
+                //                            }
+                //
+                //                            return
+                //                        }
+                //
+                //                        self.translateAndLoad(conversations: conversations) { completion() }
+                //                    }
+                //
+                //                    return
+                //                }
                 
                 self.translateAndLoad(conversations: conversations) { completion() }
             }
@@ -265,7 +265,10 @@ public class ConversationsPageViewModel: ObservableObject {
     
     private func clearCaches() {
         ContactArchiver.clearArchive()
+        ContactService.clearCache()
         ConversationArchiver.clearArchive()
+        RecognitionService.clearCache()
+        RegionDetailServer.clearCache()
         TranslationArchiver.clearArchive()
         
         AnalyticsService.logEvent(.clearCaches)

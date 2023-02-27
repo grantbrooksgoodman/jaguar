@@ -45,6 +45,36 @@ public extension Array where Element == ContactPair {
         
         return contactArray
     }
+    
+    var uniquePairs: [ContactPair] {
+        var uniquePairs = [ContactPair]()
+        
+        for pair in self {
+            if !uniquePairs.contains(where: { ($0.contact.firstName == pair.contact.firstName) &&
+                ($0.contact.lastName == pair.contact.lastName) }) {
+                uniquePairs.append(pair)
+            }
+        }
+        
+        return uniquePairs
+    }
+}
+
+/* MARK: ContactPair */
+public extension ContactPair {
+    /* MARK: - Functions */
+    
+    //    static func == (left: ContactPair, right: ContactPair) -> Bool {
+    //        let contactsMatch = left.contact == right.contact
+    //        var usersMatch = left.users == nil && right.users == nil
+    //
+    //        if let leftUsers = left.users,
+    //           let rightUsers = right.users {
+    //            usersMatch = leftUsers.identifiers() == rightUsers.identifiers()
+    //        }
+    //
+    //        return contactsMatch && usersMatch
+    //    }
 }
 
 /* MARK: ContactPair */

@@ -36,7 +36,6 @@ public enum Core {
     private static func getCurrentCalendar() -> Calendar {
         var currentCalendar = Calendar(identifier: .gregorian)
         currentCalendar.timeZone = TimeZone(abbreviation: "GMT")!
-        
         return currentCalendar
     }
     
@@ -71,13 +70,13 @@ public enum Core {
         
         /* MARK: - Public Methods */
         
-        public func after(milliseconds: Int, do: @escaping () -> Void = {}) {
+        public func after(milliseconds: Int, do: @escaping () -> Void) {
             DispatchQueue.main.asyncAfter(deadline: .now() + .milliseconds(milliseconds)) {
                 `do`()
             }
         }
         
-        public func after(seconds: Int, do: @escaping () -> Void = {}) {
+        public func after(seconds: Int, do: @escaping () -> Void) {
             DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(seconds)) {
                 `do`()
             }
@@ -99,18 +98,46 @@ public enum Core {
         
         /* MARK: - Public Methods */
         
+        public enum HUDImage {
+            case exclamation
+            case mic
+            case micSlash
+        }
+        
+        public func flash(_ text: String, image: HUDImage) {
+#if !EXTENSION
+            let alertIcon: AlertIcon
+            
+            switch image {
+            case .exclamation:
+                alertIcon = .exclamation
+            case .mic:
+                alertIcon = .mic
+            case .micSlash:
+                alertIcon = .micSlash
+            }
+            
+            var text = text
+            if text.hasSuffix(".") {
+                text = text.dropSuffix()
+            }
+            
+            ProgressHUD.show(text, icon: alertIcon, interaction: true)
+#endif
+        }
+        
         public func hide(delay: Double? = nil) {
 #if !EXTENSION
             guard let delay = delay else {
                 ProgressHUD.dismiss()
-                Core.gcd.after(milliseconds: 500) { ProgressHUD.remove() }
+                Core.gcd.after(milliseconds: 250) { ProgressHUD.remove() }
                 return
             }
             
             let millisecondDelay = Int(delay * 1000)
             Core.gcd.after(milliseconds: millisecondDelay) {
                 ProgressHUD.dismiss()
-                Core.gcd.after(milliseconds: 500) { ProgressHUD.remove() }
+                Core.gcd.after(milliseconds: 250) { ProgressHUD.remove() }
             }
 #endif
         }

@@ -69,8 +69,6 @@ public struct NewChatPageView: View {
                 }
                 .navigationBarTitle(LocalizedString.newMessage,
                                     displayMode: .inline)
-                //                .navigationBar(backgroundColor: Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x2A2A2C) : UIColor(hex: 0xF8F8F8)),
-                //                               titleColor: colorScheme == .dark ? .white : .black)
                 .interactiveDismissDisabled(true)
                 .toolbar {
                     ToolbarItem(placement: .destructiveAction) {
@@ -96,7 +94,7 @@ public struct NewChatPageView: View {
             .sheet(isPresented: $showingContactSelector) {
                 ContactSelectorView(isPresenting: $showingContactSelector,
                                     selectedContactPair: $selectedContactPair,
-                                    contactPairs: contactPairs)
+                                    contactPairs: contactPairs.uniquePairs)
                 .onAppear {
                     selectedContactPair = nil
                     RuntimeStorage.store(false, as: .isSendingMessage)
@@ -129,7 +127,7 @@ public struct NewChatPageView: View {
         } else if RuntimeStorage.wantsToInvite! {
             isPresenting = false
             Core.gcd.after(seconds: 2) {
-                viewModel.inviteUsers()
+                viewModel.presentInvitation()
                 RuntimeStorage.store(false, as: .wantsToInvite)
             }
         } else {

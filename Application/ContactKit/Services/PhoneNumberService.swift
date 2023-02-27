@@ -37,10 +37,12 @@ public struct PhoneNumberService {
     /* THIS FUNCTION WILL ONLY WORK WHEN THE NUMBER HAS A CALLING CODE */
     /// Determines if the provided number's prefix matches any country codes.
     private static func matchingCountryCodes(for number: String) -> [String]? {
-        guard let callingCodes = RuntimeStorage.callingCodeDictionary?.values,
+        guard let dictionary = RuntimeStorage.callingCodeDictionary,
               let lookupTables = RuntimeStorage.lookupTableDictionary else { return nil }
         
+        let callingCodes = dictionary.values
         var matches = [String]()
+        
         for code in Array(callingCodes).unique() {
             guard number.hasPrefix(code) else { continue }
             

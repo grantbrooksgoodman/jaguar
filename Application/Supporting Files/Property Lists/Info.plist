@@ -7,7 +7,7 @@
 		<string>synchronizeContacts</string>
 	</array>
 	<key>CFBuildDate</key>
-	<string>1673586809</string>
+	<string>1677475728</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -23,9 +23,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleReleaseVersion</key>
-	<string>7597</string>
+	<string>8776</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.50.151</string>
+	<string>0.58.175</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -46,7 +46,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>7597</string>
+	<string>8776</string>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
 	<false/>
 	<key>LSApplicationQueriesSchemes</key>
@@ -56,10 +56,16 @@
 	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAllowsArbitraryLoads</key>
+	<true/>
 	<key>NSContactsUsageDescription</key>
 	<string>Hello needs access to your contacts.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Hello needs access to your microphone for speech recognition.</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>Hello needs access to your photos.</string>
+	<key>NSSpeechRecognitionUsageDescription</key>
+	<string>Hello needs access to your microphone for speech recognition.</string>
 	<key>UIAppFonts</key>
 	<array>
 		<string>San Francisco (Bold Italic).otf</string>

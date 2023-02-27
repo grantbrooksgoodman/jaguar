@@ -32,6 +32,7 @@ public struct Logger {
     public enum AlertType {
         case errorAlert
         case fatalAlert
+        case toast(icon: Core.HUDCore.HUDImage)
         
         case normalAlert
     }
@@ -46,7 +47,7 @@ public struct Logger {
     /* MARK: - Logging Methods */
     
     public static func log(_ error: Error,
-                           with: AlertType? = nil,
+                           with: AlertType? = .none,
                            verbose: Bool? = nil,
                            metadata: [Any]) {
         log(Exception(error, metadata: metadata),
@@ -55,7 +56,7 @@ public struct Logger {
     }
     
     public static func log(_ error: NSError,
-                           with: AlertType? = nil,
+                           with: AlertType? = .none,
                            verbose: Bool? = nil,
                            metadata: [Any]) {
         log(Exception(error, metadata: metadata),
@@ -64,7 +65,7 @@ public struct Logger {
     }
     
     public static func log(_ exception: Exception,
-                           with: AlertType? = nil,
+                           with: AlertType? = .none,
                            verbose: Bool? = nil) {
         guard Build.loggingEnabled else { return }
         
@@ -112,6 +113,10 @@ public struct Logger {
                                   with: [exception.descriptor!,
                                          Build.stage != .generalRelease,
                                          exception.metadata!])
+            
+        case let .toast(icon):
+            Core.gcd.after(seconds: 1) { Core.hud.flash(exception.userFacingDescriptor, image: icon) }
+            
         case .normalAlert:
             AKAlert(message: exception.userFacingDescriptor,
                     cancelButtonTitle: "OK",
@@ -120,7 +125,7 @@ public struct Logger {
     }
     
     public static func log(_ text: String,
-                           with: AlertType? = nil,
+                           with: AlertType? = .none,
                            verbose: Bool? = nil,
                            metadata: [Any]) {
         guard Build.loggingEnabled else { return }
@@ -171,6 +176,10 @@ public struct Logger {
                                   with: [text,
                                          Build.stage != .generalRelease,
                                          [fileName, functionName, lineNumber]])
+            
+        case let .toast(icon):
+            Core.gcd.after(seconds: 1) { Core.hud.flash(text, image: icon) }
+            
         case .normalAlert:
             AKAlert(message: Exception(text,
                                        metadata: [fileName, functionName, lineNumber]).userFacingDescriptor,
@@ -213,30 +222,29 @@ public struct Logger {
     
     public static func logToStream(_ message: String,
                                    line: Int) {
-        guard Build.loggingEnabled else { return }
+        guard Build.loggingEnabled,
+              streamOpen,
+              exposureLevel == .verbose else { return }
         
-        if exposureLevel == .verbose {
-            print("[\(line)]: \(message)\(elapsedTime)")
-        }
+        print("[\(line)]: \(message)\(elapsedTime)")
     }
     
     public static func closeStream(message: String? = nil,
                                    onLine: Int? = nil) {
-        guard Build.loggingEnabled else { return }
+        guard Build.loggingEnabled,
+              streamOpen,
+              exposureLevel == .verbose else { return }
+        streamOpen = false
         
-        if exposureLevel == .verbose {
-            streamOpen = false
-            
-            currentTimeLastCalled = Date()
-            
-            guard let closingMessage = message,
-                  let line = onLine else {
-                print("*------------------------STREAM CLOSED------------------------*\n")
-                return
-            }
-            
-            print("[\(line)]: \(closingMessage)\(elapsedTime)\n*------------------------STREAM CLOSED------------------------*\n")
+        currentTimeLastCalled = Date()
+        
+        guard let closingMessage = message,
+              let line = onLine else {
+            print("*------------------------STREAM CLOSED------------------------*\n")
+            return
         }
+        
+        print("[\(line)]: \(closingMessage)\(elapsedTime)\n*------------------------STREAM CLOSED------------------------*\n")
     }
     
     //==================================================//
@@ -244,7 +252,7 @@ public struct Logger {
     /* MARK: - Private Methods */
     
     private static func fallbackLog(_ text: String,
-                                    with: AlertType? = nil) {
+                                    with: AlertType? = .none) {
         guard Build.loggingEnabled else { return }
         
         print("\n--------------------------------------------------\n[IMPROPERLY FORMATTED METADATA]\n\(text)\n--------------------------------------------------\n")
@@ -269,6 +277,10 @@ public struct Logger {
                                   with: [text,
                                          Build.stage != .generalRelease,
                                          [#file, #function, #line]])
+            
+        case let .toast(icon):
+            Core.gcd.after(seconds: 1) { Core.hud.flash(text, image: icon) }
+            
         case .normalAlert:
             AKAlert(message: text,
                     cancelButtonTitle: "OK",

@@ -31,7 +31,8 @@ public final class QuickViewer: NSObject, QLPreviewControllerDataSource {
     
     public func previewController(_ controller: QLPreviewController,
                                   previewItemAt index: Int) -> QLPreviewItem {
-        return URL(fileURLWithPath: fileName) as QLPreviewItem
+        let name = fileName.removingOccurrences(of: ["file:///", "file://", "file:/"])
+        return URL(fileURLWithPath: name) as QLPreviewItem
     }
     
     //==================================================//

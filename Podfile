@@ -23,6 +23,7 @@ def shared_dependencies
     pod 'Firebase/Storage' 
     pod 'MessageKit'
     pod 'PhoneNumberKit', '~> 3.1'
+    pod 'Introspect'
 end
 
 def app_dependencies

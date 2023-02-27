@@ -7,7 +7,6 @@
 //
 
 /* First-party Frameworks */
-import NaturalLanguage
 import SwiftUI
 
 /* Third-party Frameworks */
@@ -23,31 +22,6 @@ public final class ChatPageViewCoordinator {
     /* MARK: - Properties */
     
     public var conversation: Binding<Conversation>
-    private var deliveryProgress: Float = 0.0 {
-        didSet {
-            guard deliveryProgress < 1 else {
-                RuntimeStorage.messagesVC?.progressView?.setProgress(1, animated: true)
-                
-                UIView.animate(withDuration: 0.2,
-                               delay: 0.5,
-                               options: []) {
-                    RuntimeStorage.messagesVC?.progressView?.alpha = 0
-                } completion: { _ in
-                    Core.gcd.after(seconds: 1) {
-                        RuntimeStorage.messagesVC?.progressView?.progress = 0
-                        self.deliveryProgress = 0
-                    }
-                }
-                
-                return
-            }
-            
-            RuntimeStorage.messagesVC?.progressView?.alpha = 1
-            RuntimeStorage.messagesVC?.progressView?.setProgress(self.deliveryProgress, animated: true)
-        }
-    }
-    
-    private var deliveryTimer: Timer?
     
     //==================================================//
     
@@ -55,9 +29,24 @@ public final class ChatPageViewCoordinator {
     
     public init(conversation: Binding<Conversation>) {
         self.conversation = conversation
+        
+        if ChatServices.deliveryService == nil,
+           let deliveryService = try? DeliveryService(delegate: self) {
+            ChatServices.register(service: deliveryService)
+        }
+        
         RuntimeStorage.store(self, as: .coordinator)
     }
-    
+}
+
+//==================================================//
+
+/* MARK: - Protocol Conformances */
+
+/**/
+
+/* MARK: DeliveryDelegate */
+extension ChatPageViewCoordinator: DeliveryDelegate {
     public func setConversation(_ conversation: Conversation) {
         var mutableConversation = conversation
         mutableConversation.messages = mutableConversation.sortedFilteredMessages()
@@ -69,76 +58,33 @@ public final class ChatPageViewCoordinator {
         RuntimeStorage.store(RuntimeStorage.globalConversation!.get(.last, messages: 10),
                              as: .currentMessageSlice)
     }
-    
-    //==================================================//
-    
-    /* MARK: - Private Methods */
-    
-    private func presentOfflineAlert() {
-        AKCore.shared.setLanguageCode("en")
-        
-        let exception = Exception("The internet connection is offline.",
-                                  isReportable: false,
-                                  extraParams: ["IsConnected": Build.isOnline],
-                                  metadata: [#file, #function, #line])
-        
-        AKErrorAlert(message: Localizer.preLocalizedString(for: .noInternetMessage,
-                                                           language: RuntimeStorage.languageCode!) ?? "The internet connection appears to be offline.\nPlease connect to the internet and try again.",
-                     error: exception.asAkError(),
-                     cancelButtonTitle: "OK",
-                     shouldTranslate: [.title, .message]).present { _ in
-            AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
-        }
-    }
-    
-    private func rollBackProgressForTimeout(text: String) {
-        let wrappedConversation = conversation.wrappedValue
-        
-        RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-        
-        wrappedConversation.messages.removeAll(where: { $0.identifier == "NEW" })
-        wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
-        
-        RuntimeStorage.store(wrappedConversation, as: .globalConversation)
-        
-        guard var currentMessageSlice = RuntimeStorage.currentMessageSlice else {
-            Logger.log("Couldn't retrieve current message slice from RuntimeStorage.",
-                       with: .errorAlert,
-                       metadata: [#file, #function, #line])
-            return
-        }
-        
-        currentMessageSlice.removeAll(where: { $0.identifier == "NEW" })
-        RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
-        
-        ConversationArchiver.addToArchive(wrappedConversation)
-        
-        guard var conversations = RuntimeStorage.currentUser?.openConversations else {
-            Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
-                       with: .errorAlert,
-                       metadata: [#file, #function, #line])
-            return
-        }
-        
-        conversations.removeLast()
-        conversations.append(wrappedConversation)
-        
-        RuntimeStorage.store(true, as: .shouldReloadData)
-        RuntimeStorage.store(false, as: .isSendingMessage)
-        
-        guard let currentUser = RuntimeStorage.currentUser else { return }
-        currentUser.openConversations = conversations
-    }
 }
-
-//==================================================//
-
-/* MARK: - Extensions */
-
-/**/
 
 /* MARK: InputBarAccessoryViewDelegate */
 extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
+    
+    //==================================================//
+    
+    /* MARK: - Properties */
+    
+    public var shouldEnableSendButton: Bool {
+        guard let messagesVC = RuntimeStorage.messagesVC else { return false }
+        
+        let conversationNotEmpty = conversation.wrappedValue.identifier.key != "EMPTY"
+        let hasSelectedContactPair = messagesVC.recipientBar?.selectedContactPair != nil
+        let selectedContactPairNotEmpty = !(messagesVC.recipientBar?.selectedContactPair?.isEmpty ?? false)
+        let isTextSendButton = !messagesVC.messageInputBar.sendButton.isRecordButton
+        let textFieldIsEmpty = messagesVC.messageInputBar.inputTextView.text.lowercasedTrimmingWhitespace == ""
+        
+        if isTextSendButton {
+            guard !textFieldIsEmpty else { return false }
+            guard conversationNotEmpty || (hasSelectedContactPair && selectedContactPairNotEmpty) else { return false }
+            return true
+        } else {
+            guard conversationNotEmpty || (hasSelectedContactPair && selectedContactPairNotEmpty) else { return false }
+            return true
+        }
+    }
     
     //==================================================//
     
@@ -147,38 +93,39 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          didPressSendButtonWith text: String) {
         guard Build.isOnline else {
-            self.presentOfflineAlert()
+            AKCore.presentOfflineAlert()
             return
         }
         
-        RuntimeStorage.store(true, as: .isSendingMessage)
+        guard !inputBar.sendButton.isRecordButton else {
+            switch text {
+            case "START_RECORDING":
+                handleRecordButtonTapped(inputBar, command: .startRecording)
+            case "STOP_RECORDING":
+                handleRecordButtonTapped(inputBar, command: .stopRecording)
+            case "CANCEL_RECORDING":
+                handleRecordButtonTapped(inputBar, command: .cancelRecording)
+            default:
+                return
+            }
+            return
+        }
         
-        let wrappedConversation = conversation.wrappedValue
+        ChatServices.defaultChatUIService?.setUserCancellation(enabled: false)
         
         inputBar.inputTextView.text = ""
         inputBar.sendButton.isEnabled = false
         inputBar.sendButton.startAnimating()
         
-        deliveryProgress += 0.1
-        deliveryTimer = Timer.scheduledTimer(timeInterval: 0.01,
-                                             target: self,
-                                             selector: #selector(incrementProgress),
-                                             userInfo: nil,
-                                             repeats: true)
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        RuntimeStorage.store(true, as: .isSendingMessage)
         
-        Logger.openStream(metadata: [#file, #function, #line])
-        
-        guard wrappedConversation.identifier.key != "EMPTY" else {
-            self.createConversationForNewMessage(text: text)
-            return
-        }
-        
-        sendMessage(conversation: wrappedConversation,
-                    text: text)
-    }
-    
-    public func inputBar(_ inputBar: InputBarAccessoryView, didSwipeTextViewWith gesture: UISwipeGestureRecognizer) {
-        print("detected swipe")
+        ChatServices.defaultDeliveryService?.sendTextMessage(text: text, completion: { exception in
+            RuntimeStorage.store(false, as: .isSendingMessage)
+            
+            guard let exception else { return }
+            Logger.log(exception)
+        })
     }
     
     public func inputBar(_ inputBar: InputBarAccessoryView,
@@ -195,371 +142,150 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         let currentText = inputBar.inputTextView.text!
         
         if (lines > 1 || currentText.contains("\n")) && currentText != "" {
-            inputBar.rightStackView.layoutMargins = UIEdgeInsets(top: 0, left: 0, bottom: 3.5, right: 0)
+            inputBar.rightStackView.layoutMargins = UIEdgeInsets(top: 0, left: 0, bottom: 5.5, right: 5)
             inputBar.rightStackView.isLayoutMarginsRelativeArrangement = true
+            
+            inputBar.sendButton.setSize(CGSize(width: 30, height: 30), animated: false)
+            inputBar.setStackViewItems([.fixedSpace(5),
+                                        inputBar.sendButton],
+                                       forStack: .right,
+                                       animated: false)
             
             inputBar.rightStackView.alignment = .bottom
         } else {
             inputBar.rightStackView.layoutMargins = UIEdgeInsets(top: 0, left: 0, bottom: 0, right: 0)
             inputBar.rightStackView.isLayoutMarginsRelativeArrangement = true
             
+            inputBar.sendButton.setSize(CGSize(width: 30, height: 30), animated: false)
+            inputBar.setStackViewItems([inputBar.sendButton],
+                                       forStack: .right,
+                                       animated: false)
+            
             inputBar.rightStackView.alignment = .center
         }
         
-        inputBar.sendButton.isEnabled = (conversation.wrappedValue.identifier.key != "EMPTY" || RuntimeStorage.messagesVC?.recipientBar?.selectedContactPair != nil) && isTyping && !(RuntimeStorage.messagesVC?.recipientBar?.selectedContactPair?.isEmpty ?? false)
+        if currentText != "" && inputBar.sendButton.isRecordButton {
+            ChatServices.defaultChatUIService?.configureInputBar(forRecord: false)
+            ChatServices.defaultAudioMessageService?.removeGestureRecognizers()
+        } else if currentText == "" && !inputBar.sendButton.isRecordButton {
+            ChatServices.defaultChatUIService?.configureInputBar(forRecord: true)
+            ChatServices.defaultAudioMessageService?.addGestureRecognizers()
+        }
+        
+        inputBar.sendButton.isEnabled = shouldEnableSendButton
     }
     
     //==================================================//
     
-    /* MARK: - Selector Methods */
+    /* MARK: - Recording Methods */
     
-    @objc public func incrementProgress() {
-        guard deliveryProgress + 0.001 < 1 else { return }
-        deliveryProgress += 0.001
-    }
-    
-    @objc private func toggleDoneButton() {
-        if let messagesVC = RuntimeStorage.messagesVC {
-            messagesVC.messageInputBar.inputTextView.resignFirstResponder()
-        }
-        
-        StateProvider.shared.tappedDone = true
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Private Methods */
-    
-    private func appendMockMessage(text: String) {
-        guard let currentUser = RuntimeStorage.currentUser,
-              let currentUserID = RuntimeStorage.currentUserID else { return }
-        
-        if let messagesVC = RuntimeStorage.messagesVC,
-           messagesVC.recipientBar?.selectedContactPair != nil,
-           !conversation.wrappedValue.messages.isEmpty {
-            hideNewChatControls()
-        }
-        
-        let wrappedConversation = conversation.wrappedValue
-        let otherUser = wrappedConversation.otherUser!
-        
-        let mockLanguagePair = Translator.LanguagePair(from: currentUser.languageCode,
-                                                       to: otherUser.languageCode)
-        
-        let mockTranslation = Translator.Translation(input: TranslationInput(text),
-                                                     output: "",
-                                                     languagePair: mockLanguagePair)
-        
-        let mockMessage = Message(identifier: "NEW",
-                                  fromAccountIdentifier: currentUserID,
-                                  languagePair: mockLanguagePair,
-                                  translation: mockTranslation,
-                                  readDate: nil,
-                                  sentDate: Date())
-        
-        wrappedConversation.messages.append(mockMessage)
-        wrappedConversation.messages = wrappedConversation.sortedFilteredMessages()
-        
-        RuntimeStorage.store(wrappedConversation, as: .globalConversation)
-        print("wrapped convo has \(wrappedConversation.messages.count)")
-        print("global convo has \(RuntimeStorage.globalConversation!.messages.count)")
-        
-        guard var currentMessageSlice = RuntimeStorage.currentMessageSlice else {
-            Logger.log("Couldn't retrieve current message slice from RuntimeStorage.",
-                       with: .errorAlert,
-                       metadata: [#file, #function, #line])
-            return
-        }
-        
-        currentMessageSlice.append(mockMessage)
-        RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
-        
-        guard var conversations = currentUser.openConversations else {
-            Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
-                       with: .errorAlert,
-                       metadata: [#file, #function, #line])
-            return
-        }
-        
-        conversations.append(wrappedConversation)
-        currentUser.openConversations = conversations
-        
-        RuntimeStorage.store(true, as: .shouldReloadData)
-    }
-    
-    private func createConversationForNewMessage(text: String) {
-        guard let user = ContactNavigationRouter.currentlySelectedUser else {
-            Logger.log(Exception("No selected user!",
-                                 metadata: [#file, #function, #line]))
-            RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-            return
-        }
-        
-        ConversationSerializer.shared.createConversation(between: [RuntimeStorage.currentUser!,
-                                                                   user]) { conversation, exception in
-            guard var createdConversation = conversation else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                return
+    private enum RecordButtonCommand { case startRecording; case stopRecording; case cancelRecording }
+    private func handleRecordButtonTapped(_ inputBar: InputBarAccessoryView,
+                                          command: RecordButtonCommand) {
+        switch command {
+        case .startRecording:
+            startRecording { exception in
+                UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+                guard let exception else { return }
+                Logger.log(exception)
             }
-            
-            self.deliveryProgress += 0.2
-            
-            self.conversation = Binding(get: { createdConversation },
-                                        set: { createdConversation = $0 })
-            
-            self.sendMessage(conversation: self.conversation.wrappedValue,
-                             text: text)
-            
-            AnalyticsService.logEvent(.createNewConversation,
-                                      with: ["conversationIdKey": createdConversation.identifier.key!,
-                                             "participants": createdConversation.participants.userIdPair])
-            
-            ContactNavigationRouter.currentlySelectedUser = nil
-        }
-    }
-    
-    private func createMessage(withTranslation: Translator.Translation,
-                               completion: @escaping (_ returnedMessage: Message?,
-                                                      _ exception: Exception?) -> Void) {
-        guard let currentUserID = RuntimeStorage.currentUserID else { return }
-        
-        let wrappedConversation = conversation.wrappedValue
-        MessageSerializer.shared.createMessage(fromAccountWithIdentifier: currentUserID,
-                                               inConversationWithIdentifier: wrappedConversation.identifier!.key!,
-                                               translation: withTranslation) { (returnedMessage,
-                                                                                exception) in
-            guard let message = returnedMessage else {
-                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                return
-            }
-            
-            completion(message, nil)
-        }
-    }
-    
-    private func debugTranslate(_ text: String,
-                                completion: @escaping (_ returnedTranslation: Translator.Translation?,
-                                                       _ exception: Exception?) -> Void) {
-        guard let currentUser = RuntimeStorage.currentUser else { return }
-        
-        let debugLanguagePair = Translator.LanguagePair(from: "en",
-                                                        to: currentUser.languageCode)
-        FirebaseTranslator.shared.translate(TranslationInput(text),
-                                            with: debugLanguagePair) { (returnedTranslation, exception) in
-            guard let translation = returnedTranslation else {
-                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                return
-            }
-            
-            completion(translation, nil)
-        }
-    }
-    
-    private func finishSendingMessage(conversation: Conversation,
-                                      text: String) {
-        let timeout = Timeout(alertingAfter: 20, metadata: [#file, #function, #line]) {
-            self.rollBackProgressForTimeout(text: text)
-        }
-        
-        translateMessage(text,
-                         otherUser: conversation.otherUser!) { translation, exception in
-            self.deliveryProgress += 0.2
-            
-            guard let translation else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                RuntimeStorage.store(false, as: .isSendingMessage)
-                return
-            }
-            
-            self.createMessage(withTranslation: translation) { (returnedMessage,
-                                                                exception) in
-                guard let message = returnedMessage else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                               with: .errorAlert)
-                    RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                    RuntimeStorage.store(false, as: .isSendingMessage)
+        case .stopRecording:
+            stopRecording {
+                inputBar.sendButton.startAnimating()
+                ChatServices.defaultChatUIService?.setUserCancellation(enabled: false)
+                inputBar.sendButton.isEnabled = false
+            } completion: { inputFile, outputFile, translation, exception in
+                guard let inputFile, let outputFile, let translation else {
+                    self.handleStopRecordingException(exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
                 
-                self.deliveryProgress += 0.2
-                
-                AnalyticsService.logEvent(.sendMessage,
-                                          with: ["conversationIdKey": conversation.identifier.key!,
-                                                 "languagePair": translation.languagePair.asString(),
-                                                 "messageId": message.identifier!])
-                
-                self.updateConversationData(conversation,
-                                            for: message,
-                                            timeout: timeout)
+                RuntimeStorage.store(true, as: .isSendingMessage)
+                ChatServices.defaultDeliveryService?.sendAudioMessage(inputFile: inputFile,
+                                                                      outputFile: outputFile,
+                                                                      translation: translation,
+                                                                      completion: { exception in
+                    RuntimeStorage.store(false, as: .isSendingMessage)
+                    
+                    guard let exception else { return }
+                    Logger.log(exception)
+                })
+            }
+        case .cancelRecording:
+            cancelRecording { exception in
+                guard let exception else { return }
+                Logger.log(exception, verbose: exception.isEqual(to: .noAudioRecorderToStop))
             }
         }
     }
     
-    private func hideNewChatControls() {
-        // #warning("Do we want to couple these guard conditions?")
-        guard let messagesVC = RuntimeStorage.messagesVC,
-              let pair = messagesVC.recipientBar?.selectedContactPair else { return }
+    private func handleStopRecordingException(_ exception: Exception) {
+        if exception.isEqual(to: .noSpeechDetected) {
+            ChatServices.defaultAudioMessageService?.playVibration()
+            Core.hud.flash(LocalizedString.noSpeechDetected, image: .micSlash)
+        }
         
-        messagesVC.recipientBar?.removeFromSuperview()
-        messagesVC.messagesCollectionView.contentInset.top = 0
-        messagesVC.messagesCollectionView.isUserInteractionEnabled = true
+        if !exception.isEqual(to: .noAudioRecorderToStop) {
+            ChatServices.defaultChatUIService?.setUserCancellation(enabled: true)
+            guard let inputBar = RuntimeStorage.messagesVC?.messageInputBar else { return }
+            inputBar.sendButton.stopAnimating()
+            Core.gcd.after(seconds: 2) { inputBar.sendButton.isEnabled = self.shouldEnableSendButton }
+        }
         
-        messagesVC.parent!.navigationItem.title = "\(pair.contact.firstName) \(pair.contact.lastName)"
-        
-        let doneButton = UIBarButtonItem(title: LocalizedString.done,
-                                         style: .done,
-                                         target: self,
-                                         action: #selector(self.toggleDoneButton))
-        messagesVC.parent!.navigationItem.rightBarButtonItems = [doneButton]
-    }
-    
-    private func sendMessage(conversation: Conversation,
-                             text: String) {
-        appendMockMessage(text: text)
-        
-        guard Build.developerModeEnabled else {
-            finishSendingMessage(conversation: conversation,
-                                 text: text)
-            
+        let filterParams: [JRException] = [.cannotOpenFile, .noAudioRecorderToStop, .noSpeechDetected]
+        guard !exception.isEqual(toAny: filterParams) else {
+            Logger.log(exception, verbose: exception.isEqual(to: .noAudioRecorderToStop))
             return
         }
         
-        debugTranslate(text) { (returnedDebugTranslation,
-                                exception) in
-            guard let debugTranslation = returnedDebugTranslation else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                RuntimeStorage.store(false, as: .isSendingMessage)
+        Core.gcd.after(seconds: 2) { Logger.log(exception,
+                                                with: .errorAlert,
+                                                verbose: exception.isEqual(to: .noSpeechDetected)) }
+    }
+    
+    private func startRecording(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        ChatServices.defaultAudioMessageService?.removeRecordingUI { exception in
+            guard let exception,
+                  !exception.isEqual(to: .noAudioRecorderToStop) else {
+                ChatServices.defaultAudioMessageService?.initiateRecording()
+                
+                completion(nil)
                 return
             }
             
-            self.deliveryProgress += 0.2
-            self.finishSendingMessage(conversation: conversation,
-                                      text: debugTranslation.output)
+            completion(exception)
         }
     }
     
-    private func translateMessage(_ text: String,
-                                  otherUser: User,
-                                  completion: @escaping (_ returnedTranslation: Translator.Translation?,
-                                                         _ exception: Exception?) -> Void) {
-        guard let currentUser = RuntimeStorage.currentUser else { return }
-        let languagePair = Translator.LanguagePair(from: currentUser.languageCode,
-                                                   to: otherUser.languageCode)
-        
-        FirebaseTranslator.shared.translate(TranslationInput(text),
-                                            with: languagePair,
-                                            using: .google) { (returnedTranslation, exception) in
-            guard let translation = returnedTranslation else {
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+    private func stopRecording(progressHandler: @escaping() -> Void?,
+                               completion: @escaping(_ inputFile: AudioFile?,
+                                                     _ outputFile: AudioFile?,
+                                                     _ translation: Translator.Translation?,
+                                                     _ exception: Exception?) -> Void) {
+        ChatServices.defaultAudioMessageService?.finishRecording {
+            progressHandler()
+        } completion: { inputFile, outputFile, translation, exception in
+            guard let inputFile, let outputFile, let translation else {
+                completion(nil, nil, nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
-            completion(translation, nil)
+            completion(inputFile, outputFile, translation, nil)
         }
     }
     
-    private func updateConversationData(_ conversation: Conversation,
-                                        for newMessage: Message,
-                                        timeout: Timeout) {
-        conversation.updateLastModified()
-        
-        conversation.messages.removeAll(where: { $0.identifier == "NEW" })
-        conversation.messages.append(newMessage)
-        
-        conversation.messages = conversation.sortedFilteredMessages()
-        
-        deliveryProgress += 0.2
-        deliveryTimer?.invalidate()
-        deliveryTimer = nil
-        
-        conversation.updateHash { (exception) in
-            timeout.cancel()
-            
-            if let error = exception {
-                Logger.log(error,
-                           with: .errorAlert)
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-            }
-            
-            if let otherUser = conversation.otherUser {
-                otherUser.notifyOfNewMessage(newMessage.translation.output)
-            }
-            
-            RuntimeStorage.store(conversation, as: .globalConversation)
-            
-            guard var currentMessageSlice = RuntimeStorage.currentMessageSlice else {
-                Logger.log("Couldn't retrieve current message slice from RuntimeStorage.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                RuntimeStorage.store(false, as: .isSendingMessage)
-                return
-            }
-            
-            currentMessageSlice.removeAll(where: { $0.identifier == "NEW" })
-            currentMessageSlice.append(newMessage)
-            RuntimeStorage.store(currentMessageSlice, as: .currentMessageSlice)
-            
-            print("Adding to archive \(conversation.identifier.key!) | \(conversation.identifier.hash!)")
-            ConversationArchiver.addToArchive(conversation)
-            
-            guard var conversations = RuntimeStorage.currentUser?.openConversations else {
-                Logger.log("Couldn't retrieve conversations from RuntimeStorage.",
-                           with: .errorAlert,
-                           metadata: [#file, #function, #line])
-                RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-                RuntimeStorage.store(false, as: .isSendingMessage)
-                return
-            }
-            
-            conversations.removeLast()
-            //            conversations.removeAll(where: { $0.identifier.key == conversation.identifier.key })
-            conversations.append(conversation)
-            RuntimeStorage.currentUser!.openConversations = conversations
-            
-            RuntimeStorage.store(true, as: .shouldReloadData)
-            RuntimeStorage.store(false, as: .isSendingMessage)
-            
-            Logger.closeStream()
-            
-            if self.deliveryProgress < 1 {
-                self.deliveryProgress += 1 - self.deliveryProgress
-            }
-            
-            RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
-            
-            guard let messagesVC = RuntimeStorage.messagesVC,
-                  messagesVC.recipientBar?.selectedContactPair != nil else { return }
-            self.hideNewChatControls()
-        }
+    private func cancelRecording(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        ChatServices.defaultAudioMessageService?.playVibration()
+        ChatServices.defaultAudioMessageService?.removeRecordingUI(completion: { exception in
+            completion(exception)
+        })
     }
 }
 
-/* MARK: MessageType */
-extension Message: MessageType {
-    public struct Sender: SenderType {
-        public let senderId: String
-        public let displayName: String
-    }
-    
-    public var kind: MessageKind {
-        return .text(fromAccountIdentifier != RuntimeStorage.currentUserID! ? translation.output : translation.input.value())
-    }
-    
-    public var messageId: String {
-        return identifier
-    }
-    
-    public var sender: SenderType {
-        return Sender(senderId: fromAccountIdentifier, displayName: "??")
+/* MARK: MessageCellDelegate */
+extension ChatPageViewCoordinator: MessageCellDelegate {
+    public func didTapPlayButton(in cell: AudioMessageCell) {
+        AudioPlaybackController.startPlayback(for: cell)
     }
 }
 
@@ -586,28 +312,18 @@ extension ChatPageViewCoordinator: MessagesDataSource {
         } else if indexPath.section == lastMessageIndex &&
                     messageSlice[lastMessageIndex].fromAccountIdentifier == currentUser.identifier &&
                     messageSlice[lastMessageIndex].identifier != "NEW" {
-            let boldAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 12), .foregroundColor: UIColor.gray]
+            let boldAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 12),
+                                                                 .foregroundColor: UIColor.gray]
             
             guard let readDate = messageSlice[lastMessageIndex].readDate else {
-                let deliveredString = Localizer.preLocalizedString(for: .delivered) ?? "Delivered"
-                
-                return NSAttributedString(string: deliveredString, attributes: boldAttributes)
+                return NSAttributedString(string: LocalizedString.delivered, attributes: boldAttributes)
             }
             
-            let localizedReadString = Localizer.preLocalizedString(for: .read) ?? "Read"
-            
-            let readString = "\(localizedReadString) \(readDate.formattedString())"
-            let attributedReadString = NSMutableAttributedString(string: readString)
-            
-            let readLength = localizedReadString.count
-            
-            let regularAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12), .foregroundColor: UIColor.lightGray]
-            
-            attributedReadString.addAttributes(boldAttributes, range: NSRange(location: 0, length: readLength))
-            
-            attributedReadString.addAttributes(regularAttributes, range: NSRange(location: readLength, length: attributedReadString.length - readLength))
-            
-            return attributedReadString
+            let readString = "\(LocalizedString.read) \(readDate.formattedString())"
+            return readString.attributed(mainAttributes: [.font: UIFont.systemFont(ofSize: 12),
+                                                          .foregroundColor: UIColor.lightGray],
+                                         alternateAttributes: boldAttributes,
+                                         alternateAttributeRange: [LocalizedString.read])
         }
         
         return nil
@@ -618,14 +334,19 @@ extension ChatPageViewCoordinator: MessagesDataSource {
         return messages[indexPath.section].sentDate.separatorDateString()
     }
     
+    public func configureAudioCell(_ cell: AudioMessageCell, message: MessageType) {
+        guard let message = message as? Message else { return }
+        cell.playButton.isEnabled = message.identifier != "NEW"
+    }
+    
     public func currentSender() -> SenderType {
-        return Sender(senderId: RuntimeStorage.currentUserID!, displayName: "??")
+        return Sender(senderId: RuntimeStorage.currentUserID ?? "", displayName: "??")
     }
     
     public func messageBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
         let dateString = Core.secondaryDateFormatter!.string(from: message.sentDate)
-        
-        return NSAttributedString(string: dateString, attributes: [NSAttributedString.Key.font: UIFont.preferredFont(forTextStyle: .caption2)])
+        return NSAttributedString(string: dateString,
+                                  attributes: [NSAttributedString.Key.font: UIFont.preferredFont(forTextStyle: .caption2)])
     }
     
     public func messageForItem(at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageType {
@@ -656,28 +377,26 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     }
 }
 
-/* MARK: MessagesLayoutDelegate */
+/* MARK: MessagesDisplayDelegate */
 extension ChatPageViewCoordinator: MessagesDisplayDelegate {
     public func backgroundColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
-        var color = UIColor(hex: 0xE5E5EA)
+        guard let currentUserID = RuntimeStorage.currentUserID else { return .systemBlue }
         
+        var color = UIColor(hex: 0xE5E5EA)
         if UITraitCollection.current.userInterfaceStyle == .dark {
             color = UIColor(hex: 0x27252A)
         }
         
-        guard let messages = RuntimeStorage.currentMessageSlice else {
-            return message.sender.senderId == RuntimeStorage.currentUserID! ? .systemBlue : color
+        let index = indexPath.section
+        guard let messages = RuntimeStorage.currentMessageSlice,
+              messages[index].translation.input.value() == messages[index].translation.output,
+              message.sender.senderId == currentUserID,
+              RecognitionService.shouldMarkUntranslated(messages[index].translation.output,
+                                                        for: messages[index].translation.languagePair) else {
+            return message.sender.senderId == currentUserID ? .systemBlue : color
         }
         
-        let translation = messages[indexPath.section].translation!
-        if translation.input.value() == translation.output,
-           message.sender.senderId == RuntimeStorage.currentUserID!,
-           RecognitionService.shouldMarkUntranslated(translation.output,
-                                                     for: translation.languagePair) {
-            return UIColor(hex: 0x65C466)
-        }
-        
-        return message.sender.senderId == RuntimeStorage.currentUserID! ? .systemBlue : color
+        return UIColor(hex: 0x65C466)
     }
     
     public func configureAvatarView(_ avatarView: AvatarView,
@@ -685,27 +404,31 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
                                     at indexPath: IndexPath,
                                     in messagesCollectionView: MessagesCollectionView) {
         guard let currentUserID = RuntimeStorage.currentUserID,
-              let otherUser = conversation.wrappedValue.otherUser else { return }
+              let otherUser = conversation.wrappedValue.otherUser,
+              message.sender.senderId != currentUserID else { return }
         
-        if message.sender.senderId != currentUserID {
-            if let contactThumbnail = ContactService.fetchContactThumbnail(forUser: otherUser),
-               contactThumbnail != UIImage() {
-                avatarView.image = contactThumbnail
-            } else if let name = ContactService.fetchContactName(forUser: otherUser),
-                      name != ("", "") {
-                
-                avatarView.set(avatar: Avatar(image: nil,
-                                              initials: "\(name.givenName.characterArray[0].uppercased())\(name.familyName.characterArray[0].uppercased())"))
-            } else {
-                avatarView.image = UIImage(named: "Contact.png")
-                avatarView.tintColor = .gray
-                avatarView.backgroundColor = .clear
-            }
+        func showGenericAvatar() {
+            avatarView.image = UIImage(named: "Contact.png")
+            avatarView.tintColor = .gray
+            avatarView.backgroundColor = .clear
+        }
+        
+        if let contactThumbnail = ContactService.fetchContactThumbnail(forUser: otherUser),
+           contactThumbnail != UIImage() {
+            avatarView.image = contactThumbnail
+        } else if let name = ContactService.fetchContactName(forUser: otherUser),
+                  name != ("", ""),
+                  let firstInitial = name.givenName.first?.uppercased(),
+                  let lastInitial = name.familyName.first?.uppercased() {
+            avatarView.set(avatar: Avatar(image: nil, initials: "\(firstInitial)\(lastInitial)"))
+        } else {
+            showGenericAvatar()
         }
     }
     
     public func messageStyle(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageStyle {
-        return message.sender.senderId == RuntimeStorage.currentUserID! ? .bubbleTail(.bottomRight, .curved) : .bubbleTail(.bottomLeft, .curved)
+        guard let currentUserID = RuntimeStorage.currentUserID else { return .none }
+        return message.sender.senderId == currentUserID ? .bubbleTail(.bottomRight, .curved) : .bubbleTail(.bottomLeft, .curved)
     }
 }
 
@@ -736,17 +459,15 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
     
     public func cellTopLabelHeight(for message: MessageType, at indexPath: IndexPath,
                                    in messagesCollectionView: MessagesCollectionView) -> CGFloat {
-        guard indexPath.section != 0 else { return 15 }
+        let index = indexPath.section
+        guard index != 0 else { return 15 }
         
-        guard let messageSlice = RuntimeStorage.currentMessageSlice,
-              messageSlice.count > indexPath.section else { return 0 }
+        guard let messages = RuntimeStorage.currentMessageSlice,
+              messages.count > index,
+              (index - 1) > -1,
+              messages[index].sentDate.seconds(from: messages[index - 1].sentDate) > 5400 else { return 0 }
         
-        if (indexPath.section - 1) > -1,
-           messageSlice[indexPath.section].sentDate.amountOfSeconds(from: messageSlice[indexPath.section - 1].sentDate) > 5400 {
-            return 25
-        }
-        
-        return 0
+        return 25
     }
     
     public func messageTopLabelHeight(for message: MessageType,
@@ -754,4 +475,28 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
                                       in messagesCollectionView: MessagesCollectionView) -> CGFloat {
         return indexPath.section == 0 ? 10 : 0
     }
+}
+
+/* MARK: MessageType */
+extension Message: MessageType {
+    public struct Sender: SenderType {
+        public let senderId: String
+        public let displayName: String
+    }
+    
+    public var kind: MessageKind {
+        let isFromCurrentUser = fromAccountIdentifier == RuntimeStorage.currentUserID
+        let textMessageKind: MessageKind = .text(!isFromCurrentUser ? translation.output : translation.input.value())
+        
+        guard hasAudioComponent,
+              let audioComponent,
+              let fileToUse = isFromCurrentUser ? audioComponent.original : audioComponent.translated else {
+            return textMessageKind
+        }
+        
+        return .audio(fileToUse)
+    }
+    
+    public var messageId: String { identifier }
+    public var sender: SenderType { Sender(senderId: fromAccountIdentifier, displayName: "??") }
 }

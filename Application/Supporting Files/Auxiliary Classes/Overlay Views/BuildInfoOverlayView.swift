@@ -142,7 +142,10 @@ public struct BuildInfoOverlayView: View {
             switch actionID {
             case developerModeActions[0].identifier:
                 ContactArchiver.clearArchive()
+                ContactService.clearCache()
                 ConversationArchiver.clearArchive()
+                RecognitionService.clearCache()
+                RegionDetailServer.clearCache()
                 TranslationArchiver.clearArchive()
                 Core.hud.showSuccess(text: "Cleared Caches")
             case developerModeActions[1].identifier:
@@ -169,7 +172,7 @@ public struct BuildInfoOverlayView: View {
         
         var messageToDisplay = "This is a\(typeString == "alpha" ? "n" : "") \(typeString) version of *project code name \(Build.codeName)*.\(expiryString)"
         
-        if typeString == "general" {
+        if Build.appStoreReleaseVersion > 0 {
             messageToDisplay = "This is a pre-release update to \(Build.finalName).\(Build.expiryInfoString)"
         }
         
@@ -286,7 +289,7 @@ public struct BuildInfoOverlayView: View {
         } else if firebaseEnvironment == .staging {
             actions = [AKAction(title: "Switch to Production", style: .destructive),
                        AKAction(title: "Switch to Development", style: .default)]
-        } else if firebaseEnvironment == .production {
+        } else if firebaseEnvironment == .development {
             actions = [AKAction(title: "Switch to Production", style: .destructive),
                        AKAction(title: "Switch to Staging", style: .default)]
         }
@@ -303,22 +306,20 @@ public struct BuildInfoOverlayView: View {
                 if actionID == actions[0].identifier {
                     GeneralSerializer.environment = .staging
                 } else if actionID == actions[1].identifier {
-                    GeneralSerializer.environment = .developer
+                    GeneralSerializer.environment = .development
                 }
             case .staging:
                 if actionID == actions[0].identifier {
                     GeneralSerializer.environment = .production
                 } else if actionID == actions[1].identifier {
-                    GeneralSerializer.environment = .developer
+                    GeneralSerializer.environment = .development
                 }
-            case .developer:
+            case .development:
                 if actionID == actions[0].identifier {
                     GeneralSerializer.environment = .production
                 } else if actionID == actions[1].identifier {
                     GeneralSerializer.environment = .staging
                 }
-            default:
-                break
             }
             
             guard actionID != -1 else { return }

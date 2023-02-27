@@ -23,6 +23,10 @@ public struct RecognitionService {
     
     /* MARK: - Public Methods */
     
+    public static func clearCache() {
+        translationCache = [:]
+    }
+    
     public static func detectedLanguage(for string: String) -> String? {
         let recognizer = NLLanguageRecognizer()
         recognizer.processString(string)
@@ -36,7 +40,8 @@ public struct RecognitionService {
                                               for pair: LanguagePair) -> Bool {
         guard !translationCache.contains(where: { $0.key == string && $0.value.pair.asString() == pair.asString() }) else { return translationCache[string]!.untranslated }
         
-        guard string.rangeOfCharacter(from: CharacterSet.letters) != nil else { return false }
+        guard string.rangeOfCharacter(from: CharacterSet.letters) != nil,
+              string.lowercasedTrimmingWhitespace.count > 1 else { return false }
         
         let fromPossibleWords = percentOfPossibleWords(in: string, language: pair.from)
         let toPossibleWords = percentOfPossibleWords(in: string, language: pair.to)

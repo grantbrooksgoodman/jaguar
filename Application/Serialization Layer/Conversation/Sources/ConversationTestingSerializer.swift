@@ -175,7 +175,8 @@ public enum ConversationTestingSerializer {
         for (index, translation) in translations.enumerated() {
             MessageSerializer.shared.createMessage(fromAccountWithIdentifier: userIDs[index % 2],
                                                    inConversationWithIdentifier: inConversationWithID,
-                                                   translation: translation) { _, exception in
+                                                   translation: translation,
+                                                   audioComponent: nil) { _, exception in
                 if let exception = exception {
                     exceptions.append(exception)
                 }

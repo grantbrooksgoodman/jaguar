@@ -17,7 +17,8 @@ import FirebaseAnalytics
 public enum AnalyticsEvent: String {
     case accessChat
     case deleteConversation
-    case sendMessage
+    case sendAudioMessage
+    case sendTextMessage
     case viewAlternate
     
     case accessNewChatPage

@@ -90,7 +90,8 @@ public struct ContactSelectorView: View {
         
         var titles = [String]()
         for contact in contacts {
-            guard !contact.lastName.starts(with: titles.last!) else { continue }
+            guard let last = titles.last,
+                  contact.lastName.starts(with: last) else { continue }
             titles.append(String(contact.lastName.first!))
         }
         

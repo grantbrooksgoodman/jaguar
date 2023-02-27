@@ -2,54 +2,53 @@
 //  NotificationService.swift
 //  NotificationService
 //
-//  Created by Grant Goodman on 12/26/22.
+//  Created by Grant Brooks Goodman on 26/12/2022.
+//  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
 //
 
+/* First-party Frameworks */
 import UserNotifications
 
 class NotificationService: UNNotificationServiceExtension {
     
+    //==================================================//
+    
+    /* MARK: - Properties */
+    
     var contentHandler: ((UNNotificationContent) -> Void)?
     var bestAttemptContent: UNMutableNotificationContent?
     
-    override func didReceive(_ request: UNNotificationRequest, withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
+    //==================================================//
+    
+    /* MARK: - Overridden Methods */
+    
+    override func didReceive(_ request: UNNotificationRequest,
+                             withContentHandler contentHandler: @escaping (UNNotificationContent) -> Void) {
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
         
-        if let bestAttemptContent = bestAttemptContent {
-            // Modify the notification content here...
+        guard let bestAttemptContent,
+              let defaults = UserDefaults(suiteName: "group.us.neotechnica.notificationextension"),
+              let contactData = defaults.object(forKey: "contactArchive") as? Data else { return }
+        
+        var contactArchive = [ContactPair]()
+        do {
+            let decoder = JSONDecoder()
+            let decodedContacts = try decoder.decode([ContactPair].self,
+                                                     from: contactData)
             
-            let defaults = UserDefaults(suiteName: "group.us.neotechnica.notificationextension")
-            var contactArchive = [ContactPair]()
-            
-            if let defaults {
-                guard let contactData = defaults.object(forKey: "contactArchive") as? Data else {
-                    print("No contact archive.")
-                    return
-                }
-                
-                do {
-                    let decoder = JSONDecoder()
-                    let decodedContacts = try decoder.decode([ContactPair].self,
-                                                             from: contactData)
-                    
-                    contactArchive = decodedContacts
-                } catch {
-                    print(error.localizedDescription)
-                }
-            }
-            
-            if let userHash = bestAttemptContent.userInfo["userHash"] as? String,
-               let match = contactArchive.filter({ PhoneNumberService.possibleHashes(for: $0.contact.phoneNumbers.digits).contains(userHash) }).first {
-                bestAttemptContent.title = "\(match.contact.firstName) \(match.contact.lastName)"
-                
-            } else {
-                bestAttemptContent.title = "\(bestAttemptContent.title)"
-            }
-            
-            defaults?.set(bestAttemptContent.userInfo, forKey: "NOTIF_DATA")
-            contentHandler(bestAttemptContent)
+            contactArchive = decodedContacts
+        } catch { print(error.localizedDescription) }
+        
+        if let userHash = bestAttemptContent.userInfo["userHash"] as? String,
+           let match = contactArchive.filter({ PhoneNumberService.possibleHashes(for: $0.contact.phoneNumbers.digits).contains(userHash) }).first {
+            bestAttemptContent.title = "\(match.contact.firstName) \(match.contact.lastName)"
+        } else {
+            bestAttemptContent.title = "\(bestAttemptContent.title)"
         }
+        
+        defaults.set(bestAttemptContent.userInfo, forKey: "NOTIF_DATA")
+        contentHandler(bestAttemptContent)
     }
     
     override func serviceExtensionTimeWillExpire() {
@@ -59,5 +58,4 @@ class NotificationService: UNNotificationServiceExtension {
             contentHandler(bestAttemptContent)
         }
     }
-    
 }

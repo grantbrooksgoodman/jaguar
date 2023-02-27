@@ -62,7 +62,8 @@ public class NewChatPageViewModel: ObservableObject {
                             error.isEqual(to: .emptyContactList) ||
                             error.isEqual(to: .noUserWithCallingCode) ||
                             error.isEqual(to: .noUserWithHashes) ||
-                            error.isEqual(to: .noUserWithPhoneNumber) else {
+                            error.isEqual(to: .noUserWithPhoneNumber) ||
+                            error.isEqual(to: .noUsersForContacts) else {
                         Logger.log(error)
                         self.state = .failed(error)
                         
@@ -87,7 +88,7 @@ public class NewChatPageViewModel: ObservableObject {
     
     /* MARK: - User Invitation */
     
-    public func inviteUsers() {
+    public func presentInvitation() {
         setAppShareLink { exception in
             guard exception == nil,
                   let appShareLink = RuntimeStorage.appShareLink else {

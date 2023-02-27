@@ -284,6 +284,8 @@ public extension Array where Element == Exception {
      Returns a single **Exception** from an array of **Exceptions** by appending each as underlying **Exceptions** to the final item in the array.
      */
     var compiledException: Exception? {
+        //        return nil
+        
         guard !isEmpty else { return nil }
         
         var finalException = last!
@@ -374,5 +376,14 @@ public extension Exception {
     
     func isEqual(to cataloggedException: JRException) -> Bool {
         return hashlet == cataloggedException.description
+    }
+    
+    func isEqual(toAny in: [JRException]) -> Bool {
+        for exception in `in` {
+            guard hashlet == exception.description else { continue }
+            return true
+        }
+        
+        return false
     }
 }

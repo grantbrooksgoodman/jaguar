@@ -215,8 +215,8 @@ public extension Date {
         } else if differenceBetweenDates == -86400 {
             return "Yesterday"
         } else if differenceBetweenDates >= -604_800 {
-            if Core.masterDateFormatter!.string(from: self).dayOfWeek() != Core.masterDateFormatter!.string(from: Date()).dayOfWeek() {
-                return Core.masterDateFormatter!.string(from: self).dayOfWeek()
+            if self.dayOfWeek != Date().dayOfWeek {
+                return self.dayOfWeek ?? ""
             } else {
                 return stylizedDateFormatter.string(from: self)
             }
@@ -237,6 +237,27 @@ public extension Date {
         let calendar = Core.currentCalendar!
         return calendar.date(bySettingHour: 12, minute: 00, second: 00, of: calendar.startOfDay(for: self))!
     }
+    
+    var dayOfWeek: String? {
+        switch Calendar.current.component(.weekday, from: self) {
+        case 1:
+            return LocalizedString.sunday
+        case 2:
+            return LocalizedString.monday
+        case 3:
+            return LocalizedString.tuesday
+        case 4:
+            return LocalizedString.wednesday
+        case 5:
+            return LocalizedString.thursday
+        case 6:
+            return LocalizedString.friday
+        case 7:
+            return LocalizedString.saturday
+        default:
+            return nil
+        }
+    }
 }
 
 //==================================================//
@@ -254,6 +275,32 @@ public extension Dictionary {
 public extension Dictionary where Value: Equatable {
     func allKeys(forValue: Value) -> [Key] {
         return filter { $1 == forValue }.map { $0.0 }
+    }
+}
+
+//==================================================//
+
+/* MARK: - Float Extensions */
+
+public extension Float {
+    var durationString: String {
+        var returnValue = "0:00"
+        
+        if self < 60 {
+            returnValue = String(format: "0:%.02d", Int(self.rounded(.up)))
+        } else if self < 3600 {
+            returnValue = String(format: "%.02d:%.02d", Int(self / 60), Int(self) % 60)
+        } else {
+            let hours = Int(self / 3600)
+            let remainingMinutesInSeconds = Int(self) - hours * 3600
+            
+            returnValue = String(format: "%.02d:%.02d:%.02d",
+                                 hours,
+                                 Int(remainingMinutesInSeconds / 60),
+                                 Int(remainingMinutesInSeconds) % 60)
+        }
+        
+        return returnValue
     }
 }
 
@@ -360,35 +407,6 @@ public extension String {
         return count != 0
     }
     
-    ///Function that returns a day of the week for a given date string.
-    func dayOfWeek() -> String {
-        guard let fromDate = Core.masterDateFormatter!.date(from: self) else {
-            Logger.log("String is not a valid date.",
-                       with: .fatalAlert,
-                       metadata: [#file, #function, #line])
-            return "NULL"
-        }
-        
-        switch Core.currentCalendar!.component(.weekday, from: fromDate) {
-        case 1:
-            return "Sunday"
-        case 2:
-            return "Monday"
-        case 3:
-            return "Tuesday"
-        case 4:
-            return "Wednesday"
-        case 5:
-            return "Thursday"
-        case 6:
-            return "Friday"
-        case 7:
-            return "Saturday"
-        default:
-            return "NULL"
-        }
-    }
-    
     func dropPrefix(_ dropping: Int = 1) -> String {
         guard count > dropping else { return "" }
         return String(suffix(from: index(startIndex, offsetBy: dropping)))
@@ -483,7 +501,7 @@ public extension String {
         case "stage":
             return .staging
         case "dev":
-            return .developer
+            return .development
         default:
             return nil
         }

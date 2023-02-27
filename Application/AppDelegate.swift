@@ -32,12 +32,12 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     /* MARK: - UIApplication Methods */
     
     public func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // resetIfNeeded()
+        //        resetIfNeeded()
         
         preInitialize()
         
         setUpRuntimeStorage()
-        setEnvironment(to: .developer)
+        setEnvironment(to: .development)
         
         setUpCallingCodes()
         
@@ -77,7 +77,10 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
             ContactArchiver.clearArchive()
             ContactService.clearCache()
             ConversationArchiver.clearArchive()
+            RecognitionService.clearCache()
             TranslationArchiver.clearArchive()
+            
+            setEnvironment(to: .development)
             
             UserDefaults.standard.set(Build.buildNumber, forKey: "buildNumber")
         }
@@ -307,30 +310,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
 
 //==================================================//
 
-/* MARK: - Miscellaneous Methods */
-
-public func messagesAttributedString(_ forString: String,
-                                     separationIndex: Int) -> NSAttributedString {
-    let attributedString = NSMutableAttributedString(string: forString)
-    
-    let boldAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.boldSystemFont(ofSize: 12),
-                                                         .foregroundColor: UIColor.gray]
-    
-    let regularAttributes: [NSAttributedString.Key: Any] = [.font: UIFont.systemFont(ofSize: 12),
-                                                            .foregroundColor: UIColor.lightGray]
-    
-    attributedString.addAttributes(boldAttributes, range: NSRange(location: 0,
-                                                                  length: separationIndex))
-    
-    attributedString.addAttributes(regularAttributes, range: NSRange(location: separationIndex,
-                                                                     length: attributedString.length - separationIndex))
-    
-    return attributedString
-}
-
-//==================================================//
-
-/* MARK: - Extensions */
+/* MARK: - Protocol Conformances */
 
 /**/
 

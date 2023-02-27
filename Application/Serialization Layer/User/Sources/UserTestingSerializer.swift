@@ -228,6 +228,38 @@ public struct UserTestingSerializer {
         }
     }
     
+    public func resetPushTokensForAllUsers(completion: @escaping(_ exception: Exception?) -> Void) {
+        getAllUserIDs { identifiers, exception in
+            guard let identifiers else {
+                completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            let dispatchGroup = DispatchGroup()
+            var exceptions = [Exception]()
+            
+            for identifier in identifiers {
+                dispatchGroup.enter()
+                
+                let path = "\(GeneralSerializer.environment.shortString)/users/\(identifier)/pushTokens"
+                GeneralSerializer.setValue(onKey: path,
+                                           withData: ["!"]) { error in
+                    guard error == nil else {
+                        exceptions.append(Exception(error!, metadata: [#file, #function, #line]))
+                        dispatchGroup.leave()
+                        return
+                    }
+                    
+                    dispatchGroup.leave()
+                }
+            }
+            
+            dispatchGroup.notify(queue: .main) {
+                completion(exceptions.compiledException)
+            }
+        }
+    }
+    
     //==================================================//
     
     /* MARK: - Private Methods */

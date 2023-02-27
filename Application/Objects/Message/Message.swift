@@ -31,6 +31,9 @@ public class Message: Codable, Equatable {
     public var languagePair: LanguagePair!
     public var translation: Translation!
     
+    public var hasAudioComponent: Bool!
+    public var audioComponent: AudioMessageReference?
+    
     //==================================================//
     
     /* MARK: - Constructor Method */
@@ -40,13 +43,17 @@ public class Message: Codable, Equatable {
                 languagePair: LanguagePair,
                 translation: Translation,
                 readDate: Date?,
-                sentDate: Date) {
+                sentDate: Date,
+                hasAudioComponent: Bool,
+                audioComponent: AudioMessageReference? = nil) {
         self.identifier = identifier
         self.fromAccountIdentifier = fromAccountIdentifier
         self.languagePair = languagePair
         self.translation = translation
         self.readDate = readDate
         self.sentDate = sentDate
+        self.hasAudioComponent = hasAudioComponent
+        self.audioComponent = audioComponent
     }
     
     //==================================================//
@@ -61,8 +68,9 @@ public class Message: Codable, Equatable {
         let readDatesMatch = left.readDate == right.readDate
         let sentDatesMatch = left.sentDate == right.sentDate
         let displayingAlternatesMatch = left.isDisplayingAlternate == right.isDisplayingAlternate
+        let audioComponentsMatch = left.hasAudioComponent == right.hasAudioComponent
         
-        return identifiersMatch && fromAccountIdsMatch && languagePairsMatch && translationsMatch && readDatesMatch && sentDatesMatch && displayingAlternatesMatch
+        return identifiersMatch && fromAccountIdsMatch && languagePairsMatch && translationsMatch && readDatesMatch && sentDatesMatch && displayingAlternatesMatch && audioComponentsMatch
     }
     
     //==================================================//
@@ -80,6 +88,7 @@ public class Message: Codable, Equatable {
         hashFactors.append(identifier)
         hashFactors.append(fromAccountIdentifier)
         hashFactors.append(languagePair.asString())
+        hashFactors.append(hasAudioComponent.description)
         
         return hashFactors
     }
@@ -93,6 +102,7 @@ public class Message: Codable, Equatable {
         data["translationReference"] = translation.serialize().key
         data["readDate"] = (readDate == nil ? "!" : Core.masterDateFormatter!.string(from: readDate!))
         data["sentDate"] = Core.secondaryDateFormatter!.string(from: sentDate)
+        data["hasAudioComponent"] = hasAudioComponent ? "true" : "false"
         
         return data
     }
@@ -131,46 +141,3 @@ public class Message: Codable, Equatable {
     }
 }
 
-//==================================================//
-
-/* MARK: - Extensions */
-
-/**/
-
-/* MARK: Array */
-public extension Array where Element == Message {
-    var messageHashes: [String] {
-        var hashArray = [String]()
-        
-        for message in self {
-            hashArray.append(message.hash)
-        }
-        
-        return hashArray
-    }
-}
-
-/* MARK: Message */
-public extension Message {
-    static func empty() -> Message {
-        return Message(identifier: "",
-                       fromAccountIdentifier: "",
-                       languagePair: LanguagePair(from: "",
-                                                  to: ""),
-                       translation: Translation(input: TranslationInput(""),
-                                                output: "",
-                                                languagePair: LanguagePair(from: "",
-                                                                           to: "")),
-                       readDate: nil,
-                       sentDate: Date(timeIntervalSince1970: 0))
-    }
-    
-    var hash: String {
-        do {
-            let encoder = JSONEncoder()
-            let encodedMessage = try! encoder.encode(self.hashSerialized())
-            
-            return encodedMessage.compressedHash
-        }
-    }
-}

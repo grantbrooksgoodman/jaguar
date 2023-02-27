@@ -26,6 +26,7 @@ public struct MessageSerializer {
     public func createMessage(fromAccountWithIdentifier: String,
                               inConversationWithIdentifier: String?,
                               translation: Translation,
+                              audioComponent: (input: AudioFile, output: AudioFile)?,
                               completion: @escaping(_ returnedMessage: Message?,
                                                     _ exception: Exception?) -> Void) {
         RuntimeStorage.currentUser?.updateLastActiveDate()
@@ -37,6 +38,7 @@ public struct MessageSerializer {
         data["translationReference"] = translation.serialize().key
         data["readDate"] = "!"
         data["sentDate"] = Core.secondaryDateFormatter!.string(from: Date())
+        data["hasAudioComponent"] = audioComponent == nil ? "false" : "true"
         
         guard let generatedKey = Database.database().reference().child(GeneralSerializer.environment.shortString).child("/messages/").childByAutoId().key else {
             Logger.log("Unable to generate key for new message.",
@@ -61,9 +63,25 @@ public struct MessageSerializer {
                                   languagePair: translation.languagePair,
                                   translation: translation,
                                   readDate: nil,
-                                  sentDate: Date())
+                                  sentDate: Date(),
+                                  hasAudioComponent: audioComponent != nil)
             
-            completion(message, nil)
+            guard message.hasAudioComponent,
+                  let audioComponent else {
+                completion(message, nil)
+                return
+            }
+            
+            AudioMessageSerializer.shared.uploadAudioReference(for: message,
+                                                               audioComponent: audioComponent) { newMessage, exception in
+                guard exception == nil else {
+                    completion(newMessage, exception!)
+                    return
+                }
+                
+                completion(newMessage, nil)
+            }
+            
             return
         }
         
@@ -81,9 +99,24 @@ public struct MessageSerializer {
                                               languagePair: translation.languagePair,
                                               translation: translation,
                                               readDate: nil,
-                                              sentDate: Date())
+                                              sentDate: Date(),
+                                              hasAudioComponent: audioComponent != nil)
                         
-                        completion(message, nil)
+                        guard message.hasAudioComponent,
+                              let audioComponent else {
+                            completion(message, nil)
+                            return
+                        }
+                        
+                        AudioMessageSerializer.shared.uploadAudioReference(for: message,
+                                                                           audioComponent: audioComponent) { newMessage, exception in
+                            guard exception == nil else {
+                                completion(newMessage, exception!)
+                                return
+                            }
+                            
+                            completion(newMessage, nil)
+                        }
                         
                         return
                     }
@@ -234,6 +267,17 @@ public struct MessageSerializer {
             return
         }
         
+        let readDate = Core.secondaryDateFormatter!.date(from: readDateString) ?? nil
+        
+        guard let hasAudioComponentString = fromData["hasAudioComponent"] as? String,
+              hasAudioComponentString == "true" || hasAudioComponentString == "false" else {
+            completion(nil, Exception("Unable to deserialize «hasAudioComponent».",
+                                      metadata: [#file, #function, #line]))
+            return
+        }
+        
+        let hasAudioComponent = hasAudioComponentString == "true" ? true : false
+        
         guard let archivedTranslation = TranslationArchiver.getFromArchive(withReference: translationReference, languagePair: languagePair) else {
             TranslationSerializer.findTranslation(withReference: translationReference,
                                                   languagePair: languagePair) { (returnedTranslation,
@@ -246,30 +290,52 @@ public struct MessageSerializer {
                     return
                 }
                 
-                let readDate = Core.secondaryDateFormatter!.date(from: readDateString) ?? nil
-                
                 let deSerializedMessage = Message(identifier: identifier,
                                                   fromAccountIdentifier: fromAccountIdentifier,
                                                   languagePair: languagePair,
                                                   translation: translation,
                                                   readDate: readDate,
-                                                  sentDate: sentDate)
+                                                  sentDate: sentDate,
+                                                  hasAudioComponent: hasAudioComponent)
                 
-                completion(deSerializedMessage, nil)
+                guard deSerializedMessage.hasAudioComponent else {
+                    completion(deSerializedMessage, nil)
+                    return
+                }
+                
+                AudioMessageSerializer.shared.retrieveAudioReference(for: deSerializedMessage) { newMessage, exception in
+                    guard exception == nil else {
+                        completion(nil, exception!)
+                        return
+                    }
+                    
+                    completion(newMessage, nil)
+                }
             }
             
             return
         }
-        
-        let readDate = Core.secondaryDateFormatter!.date(from: readDateString) ?? nil
         
         let deSerializedMessage = Message(identifier: identifier,
                                           fromAccountIdentifier: fromAccountIdentifier,
                                           languagePair: languagePair,
                                           translation: archivedTranslation,
                                           readDate: readDate,
-                                          sentDate: sentDate)
+                                          sentDate: sentDate,
+                                          hasAudioComponent: hasAudioComponent)
         
-        completion(deSerializedMessage, nil)
+        guard deSerializedMessage.hasAudioComponent else {
+            completion(deSerializedMessage, nil)
+            return
+        }
+        
+        AudioMessageSerializer.shared.retrieveAudioReference(for: deSerializedMessage) { newMessage, exception in
+            guard exception == nil else {
+                completion(nil, exception!)
+                return
+            }
+            
+            completion(newMessage, nil)
+        }
     }
 }

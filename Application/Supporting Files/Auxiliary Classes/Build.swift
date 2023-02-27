@@ -24,7 +24,7 @@ public enum Build {
     // Integers
     public static var buildNumber: Int { get { return getBuildNumber() } }
     
-    private static var appStoreReleaseVersion = Int()
+    private(set) static var appStoreReleaseVersion = Int()
     
     // Strings
     public static var buildSKU: String { get { return getBuildSKU() } }

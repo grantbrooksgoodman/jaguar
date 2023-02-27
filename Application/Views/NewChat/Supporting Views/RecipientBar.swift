@@ -32,7 +32,11 @@ public class RecipientBar: UIView {
     
     // Other
     public let delegate: ChatPageViewController!
-    public var selectedContactPair: ContactPair?
+    public var selectedContactPair: ContactPair? {
+        didSet {
+            RuntimeStorage.messagesVC?.messageInputBar.sendButton.isEnabled = RuntimeStorage.coordinator?.shouldEnableSendButton ?? true
+        }
+    }
     
     private var contactTableView: UITableView!
     private var isAnimating = false
@@ -265,7 +269,7 @@ public class RecipientBar: UIView {
                                       y: contactLabel.superview!.bounds.midY)
         
         let inputBar = delegate.messageInputBar
-        inputBar.sendButton.isEnabled = inputBar.inputTextView.text.lowercasedTrimmingWhitespace != "" && !useRedColor
+        inputBar.sendButton.isEnabled = (RuntimeStorage.coordinator?.shouldEnableSendButton ?? true) && !useRedColor
         
         if scrollsToBottom {
             Core.gcd.after(milliseconds: 150) {
@@ -307,8 +311,6 @@ public class RecipientBar: UIView {
         selectedContactPair = nil
         ContactNavigationRouter.currentlySelectedUser = nil
         
-        delegate.messageInputBar.sendButton.isEnabled = false
-        
         guard let recognizer = toggleContactSelectedGesture else { return }
         removeGestureRecognizer(recognizer)
         
@@ -330,6 +332,8 @@ public class RecipientBar: UIView {
             delegate.messagesCollectionView.reloadData()
         }
         
+        delegate.messageInputBar.sendButton.isEnabled = (RuntimeStorage.coordinator?.shouldEnableSendButton ?? false)
+        
         guard subviews(for: "selectContactButton").isEmpty else {
             if let button = subview(for: "selectContactButton") as? UIButton {
                 button.alpha = 1
@@ -348,27 +352,71 @@ public class RecipientBar: UIView {
         addSubview(selectContactButton)
     }
     
+    public func requestContactPermission(completion: @escaping(_ granted: Bool?,
+                                                               _ exception: Exception?) -> Void) {
+        CNContactStore().requestAccess(for: .contacts) { granted, error in
+            guard error == nil else {
+                let exception = Exception(error!, metadata: [#file, #function, #line])
+                if exception.isEqual(to: .cnContactStoreAccessDenied) {
+                    completion(false, nil)
+                } else {
+                    completion(nil, Exception(error!, metadata: [#file, #function, #line]))
+                }
+                
+                return
+            }
+            
+            if granted {
+                if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
+                    RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
+                } else {
+                    ContactService.getLocalUserHashes { hashes, exception in
+                        guard let hashes else {
+                            completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                            return
+                        }
+                        
+                        UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
+                        RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
+                    }
+                }
+            }
+            
+            completion(granted, nil)
+        }
+    }
+    
     @objc public func selectContactButtonAction() {
         guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
-            var message = "*Hello* has not been granted permission to access your contact list.\n\nYou can change this in Settings."
-            message = RuntimeStorage.languageCode == "en" ? message.removingOccurrences(of: ["*"]) : message
-            
-            AKAlert(message: message,
-                    actions: [AKAction(title: "Go to Settings", style: .preferred)],
-                    cancelButtonTitle: "Dismiss").present { actionID in
-                guard actionID != -1,
-                      let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
+            requestContactPermission { granted, exception in
+                guard exception == nil else {
+                    Logger.log(exception!,
+                               with: .errorAlert)
+                    return
+                }
+                
+#warning("GUARD GRANTED")
+                
+                var message = "*Hello* has not been granted permission to access your contact list.\n\nYou can change this in Settings."
+                message = RuntimeStorage.languageCode == "en" ? message.removingOccurrences(of: ["*"]) : message
+                
+                AKAlert(message: message,
+                        actions: [AKAction(title: "Go to Settings", style: .preferred)],
+                        cancelButtonTitle: "Dismiss").present { actionID in
+                    guard actionID != -1,
+                          let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
 #if !EXTENSION
-                UIApplication.shared.open(settingsURL)
+                    UIApplication.shared.open(settingsURL)
 #endif
-                StateProvider.shared.tappedDone = true
+                    StateProvider.shared.tappedDone = true
+                }
             }
             
             return
         }
         
         guard !contactPairs.isEmpty else {
-            presentInviteAlert()
+            promptToInvite()
             return
         }
         
@@ -652,7 +700,7 @@ public class RecipientBar: UIView {
     
     /* MARK: - View Manipulation */
     
-    private func presentInviteAlert() {
+    public func promptToInvite() {
         let alert = AKAlert(message: "It doesn't appear that any of your contacts have an account with us.\n\nWould you like to send them an invite to sign up?",
                             actions: [AKAction(title: "Send Invite",
                                                style: .preferred)],

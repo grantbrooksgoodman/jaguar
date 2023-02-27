@@ -1,5 +1,5 @@
 //
-//  String+.swift
+//  Translator+StringExtensions.swift
 //  Jaguar
 //
 //  Created by Grant Brooks Goodman on 31/07/2022.
