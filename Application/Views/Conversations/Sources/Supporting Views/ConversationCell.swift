@@ -96,22 +96,24 @@ public struct ConversationCell: View {
     
     public func chatPageView(conversation: Binding<Conversation>,
                              title: String) -> some View {
-        ChatPageView(conversation: conversation)
+        withNavigationBarAppearance(ChatPageView(conversation: conversation)
             .onAppear {
                 guard let conversations = RuntimeStorage.currentUser?.openConversations else { return }
                 UserDefaults.standard.set(conversations.hashes(), forKey: "previousHashes")
                 
                 AnalyticsService.logEvent(.accessChat,
                                           with: ["conversationIdKey": conversation.wrappedValue.identifier.key!])
+                RuntimeStorage.store(RuntimeStorage.currentYOrigin ?? 0, as: .previousYOrigin)
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
             .onDisappear {
                 RuntimeStorage.messagesVC?.resignFirstResponder()
-            }
+                Core.ui.resetNavigationBarAppearance()
+            })
     }
     
-    public var dualIdentifierBadge: some View {
+    private var dualIdentifierBadge: some View {
         Button {
             let otherUser = conversation.otherUser!
             let message = getLanguageAndRegionString(languageCode: otherUser.languageCode!,
@@ -169,6 +171,20 @@ public struct ConversationCell: View {
         }
         .buttonStyle(HighPriorityButtonStyle())
         .disabled(presentingAlert)
+    }
+    
+    //==================================================//
+    
+    /* MARK: - View Configuration Helpers */
+    
+    private var appearanceBasedBackgroundColor: Color {
+        guard colorScheme == .dark else { return Color(uiColor: UIColor(hex: 0xF8F8F8)) }
+        return Color(uiColor: UIColor(hex: 0x2A2A2C))
+    }
+    
+    private func withNavigationBarAppearance(_ chatPageView: some View) -> some View {
+        guard #available(iOS 16.0, *) else { return AnyView(chatPageView) }
+        return AnyView(chatPageView.toolbarBackground(appearanceBasedBackgroundColor, for: .navigationBar))
     }
     
     //==================================================//

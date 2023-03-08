@@ -42,22 +42,16 @@ public final class ChatServices {
     public static func register(service: ChatService) {
         switch service.serviceType {
         case .audioMessage:
-            //            guard audioMessageService == nil else { logAlreadyRegistered(.audioMessage); return }
             audioMessageService = service as? AudioMessageService
         case .chatUI:
-            //            guard chatUIService == nil else { logAlreadyRegistered(.chatUI); return }
             chatUIService = service as? ChatUIService
         case .delivery:
-            //            guard deliveryService == nil else { logAlreadyRegistered(.delivery); return }
             deliveryService = service as? DeliveryService
         case .menuController:
-            //            guard menuControllerService == nil else { logAlreadyRegistered(.menuController); return }
             menuControllerService = service as? MenuControllerService
         case .observer:
-            //            guard observerService == nil else { logAlreadyRegistered(.observer); return }
             observerService = service as? ObserverService
         case .retranslation:
-            //            guard retranslationService == nil else { logAlreadyRegistered(.retranslation); return }
             retranslationService = service as? RetranslationService
         }
     }
@@ -66,32 +60,6 @@ public final class ChatServices {
         for service in services {
             register(service: service)
         }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Private Methods */
-    
-    private static func logAlreadyRegistered(_ serviceType: ChatServiceType) {
-        var descriptorPrefix = "Service"
-        
-        switch serviceType {
-        case .audioMessage:
-            descriptorPrefix = "Audio message service"
-        case .chatUI:
-            descriptorPrefix = "UI component service"
-        case .delivery:
-            descriptorPrefix = "Delivery service"
-        case .menuController:
-            descriptorPrefix = "Menu controller service"
-        case .observer:
-            descriptorPrefix = "Observer service"
-        case .retranslation:
-            descriptorPrefix = "Retranslation service"
-        }
-        
-        Logger.log(Exception("\(descriptorPrefix) already registered.",
-                             metadata: [#file, #function, #line]))
     }
 }
 
@@ -133,32 +101,34 @@ public extension ChatServices {
         return deliveryService
     }
     
-    //    static var defaultMenuControllerService: MenuControllerService? {
-    //        if menuControllerService == nil {
-    //            guard let messagesVC = RuntimeStorage.messagesVC,
-    //                  let service = try? MenuControllerService(delegate: messagesVC) else { return nil }
-    //            register(service: service)
-    //        }
-    //
-    //        return menuControllerService
-    //    }
+    static var defaultMenuControllerService: MenuControllerService? {
+        if menuControllerService == nil {
+            guard let messagesVC = RuntimeStorage.messagesVC,
+                  let service = try? MenuControllerService(delegate: messagesVC) else { return nil }
+            register(service: service)
+        }
+        
+        return menuControllerService
+    }
     
-    //    static var defaultObserverService: ObserverService? {
-    //        if observerService == nil {
-    //            guard let service = try? ObserverService() else { return nil }
-    //            register(service: service)
-    //        }
-    //
-    //        return observerService
-    //    }
+    /// - Warning: Unused.
+    static var defaultObserverService: ObserverService? {
+        if observerService == nil {
+            guard let service = try? ObserverService() else { return nil }
+            register(service: service)
+        }
+        
+        return observerService
+    }
     
-    //    static var defaultRetranslationService: RetranslationService? {
-    //        if retranslationService == nil {
-    //            guard let messagesVC = RuntimeStorage.messagesVC,
-    //                  let service = try? RetranslationService(delegate: messagesVC) else { return nil }
-    //            register(service: service)
-    //        }
-    //
-    //        return retranslationService
-    //    }
+    /// - Warning: Unused.
+    static var defaultRetranslationService: RetranslationService? {
+        if retranslationService == nil {
+            guard let messagesVC = RuntimeStorage.messagesVC,
+                  let service = try? RetranslationService(delegate: messagesVC) else { return nil }
+            register(service: service)
+        }
+        
+        return retranslationService
+    }
 }

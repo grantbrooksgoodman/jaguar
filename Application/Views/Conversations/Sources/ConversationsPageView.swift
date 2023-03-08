@@ -11,11 +11,7 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import AlertKit
-import FirebaseDatabase
-import MessageKit
 import Translator
-
-import FirebaseAnalytics
 
 public struct ConversationsPageView: View {
     
@@ -25,13 +21,19 @@ public struct ConversationsPageView: View {
     
     // Booleans
     @State private var composeButtonEnabled = true
+    @State private var hasRecordedInitialYOrigin = false
     @State private var settingsButtonEnabled = true
     @State private var showingPopover = false
+    
+    // CGFloats
+    @State private var currentYOrigin: CGFloat = 0.0
+    @State private var initialYOrigin: CGFloat = 0.0
     
     // Other
     @StateObject public var viewModel: ConversationsPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
+    @State private var forceAppearanceUpdate = UUID()
     @ObservedObject private var stateProvider = StateProvider.shared
     
     //==================================================//
@@ -59,7 +61,9 @@ public struct ConversationsPageView: View {
             NavigationView {
                 listView(conversations: conversations.visibleForCurrentUser,
                          messagesTranslation: translations["messages"]!.output)
+                .onFrameChange { frame in respondToListFrameChange(frame) }
             }
+            .id(forceAppearanceUpdate)
             .sheet(isPresented: $showingPopover) {
                 NewChatPageView(viewModel: NewChatPageViewModel(),
                                 isPresenting: $showingPopover)
@@ -77,6 +81,16 @@ public struct ConversationsPageView: View {
         .onChange(of: stateProvider.hasDisappeared, perform: { newValue in
             guard newValue else { return }
             viewModel.reloadIfNeeded()
+            
+            guard let previousYOrigin = RuntimeStorage.previousYOrigin,
+                  previousYOrigin != 0,
+                  initialYOrigin == previousYOrigin else {
+                RuntimeStorage.topWindow?.isUserInteractionEnabled = true
+                return
+            }
+            
+            forceAppearanceUpdate = UUID()
+            RuntimeStorage.topWindow?.isUserInteractionEnabled = true
         })
         .onChange(of: stateProvider.tappedSelectContactButton, perform: { newValue in
             guard newValue else { return }
@@ -235,6 +249,29 @@ public struct ConversationsPageView: View {
     
     /* MARK: - Private Methods */
     
+    private func respondToListFrameChange(_ frame: CGRect) {
+        guard !hasRecordedInitialYOrigin else {
+            currentYOrigin = frame.origin.y
+            RuntimeStorage.store(currentYOrigin, as: .currentYOrigin)
+            
+            guard let previousYOrigin = RuntimeStorage.previousYOrigin,
+                  previousYOrigin != currentYOrigin,
+                  currentYOrigin == initialYOrigin else { return }
+            RuntimeStorage.topWindow?.isUserInteractionEnabled = false
+            Core.gcd.after(milliseconds: 500) {
+                self.forceAppearanceUpdate = UUID()
+                RuntimeStorage.topWindow?.isUserInteractionEnabled = true
+            }
+            RuntimeStorage.remove(.previousYOrigin)
+            
+            return
+        }
+        
+        guard frame.origin.y != 0 else { return }
+        initialYOrigin = frame.origin.y
+        hasRecordedInitialYOrigin = true
+    }
+    
     private func testExceptionDepth() {
         let totalToGenerate = 10
         
@@ -280,5 +317,27 @@ public struct ConversationsPageView: View {
         let underlyingExceptions = compiledException.allUnderlyingExceptions()
         
         print("Total desired: \(totalToGenerate)\nTotal exceptions generated: \(exceptions.count)\nAll underlying exceptions result: \(underlyingExceptions.count)")
+    }
+}
+
+//==================================================//
+
+/* MARK: - Extensions */
+
+/**/
+
+/* MARK: - View */
+private extension View {
+    func onFrameChange(_ frameHandler: @escaping (CGRect)->(),
+                       enabled isEnabled: Bool = true) -> some View {
+        guard isEnabled else { return AnyView(self) }
+        return AnyView(self.background(GeometryReader { (geometry: GeometryProxy) in
+            Color.clear.beforeReturn { frameHandler(geometry.frame(in: .global)) }
+        }))
+    }
+    
+    private func beforeReturn(_ onBeforeReturn: ()->()) -> Self {
+        onBeforeReturn()
+        return self
     }
 }

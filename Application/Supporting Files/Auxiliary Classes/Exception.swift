@@ -284,8 +284,6 @@ public extension Array where Element == Exception {
      Returns a single **Exception** from an array of **Exceptions** by appending each as underlying **Exceptions** to the final item in the array.
      */
     var compiledException: Exception? {
-        //        return nil
-        
         guard !isEmpty else { return nil }
         
         var finalException = last!

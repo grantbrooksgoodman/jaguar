@@ -23,7 +23,7 @@ public protocol ObjCChatUIDelegate {
 public protocol SwiftChatUIDelegate {
     // MARK: Properties
     var isUserCancellationEnabled: Bool { get }
-    var messageInputBar: InputBarAccessoryView { get }
+    var shouldShowRecordButton: Bool { get }
     
     // MARK: Methods
     func configureInputBar(forRecord: Bool)
@@ -37,8 +37,13 @@ public class ChatUIService: ChatService {
     
     /* MARK: - Properties */
     
+    /* Internal */
     public var delegate: ChatUIDelegate
     public var serviceType: ChatServiceType = .chatUI
+    
+    /* Delegate */
+    public var isUserCancellationEnabled: Bool { get { delegate.isUserCancellationEnabled } }
+    public var shouldShowRecordButton: Bool { get { delegate.shouldShowRecordButton } }
     
     //==================================================//
     

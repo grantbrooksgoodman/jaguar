@@ -73,8 +73,7 @@ public enum ConversationArchiver {
         guard let conversationData = UserDefaults.standard.object(forKey: "conversationArchive") as? Data,
               let userID = UserDefaults.standard.object(forKey: "conversationArchiveUserID") as? String
         else {
-            completion(nil, Exception("Couldn't decode conversation archive. May be empty.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Couldn't decode conversation archive. May be empty.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -85,18 +84,12 @@ public enum ConversationArchiver {
             setUpStaticArchive((conversations: decodedConversations, userID: userID))
             completion((conversations: decodedConversations, userID: userID), nil)
             return
-        } catch {
-            Logger.log(Exception(error,
-                                 metadata: [#file, #function, #line]))
-            
-            completion(nil, Exception(error, metadata: [#file, #function, #line]))
-        }
+        } catch { completion(nil, Exception(error, metadata: [#file, #function, #line])) }
     }
     
     public static func setArchive(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         guard let currentUserID = RuntimeStorage.currentUserID else {
-            completion(Exception("No current user ID.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("No current user ID.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -107,12 +100,7 @@ public enum ConversationArchiver {
             UserDefaults.standard.setValue(encodedConversations, forKey: "conversationArchive")
             UserDefaults.standard.setValue(currentUserID, forKey: "conversationArchiveUserID")
             completion(nil)
-        } catch {
-            Logger.log(Exception(error,
-                                 metadata: [#file, #function, #line]))
-            
-            completion(Exception(error, metadata: [#file, #function, #line]))
-        }
+        } catch { completion(Exception(error, metadata: [#file, #function, #line])) }
     }
     
     //==================================================//

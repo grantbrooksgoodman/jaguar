@@ -37,29 +37,28 @@ public struct UserSerializer {
                     "openConversations": ["!"]] as [String: Any]
         
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
-        GeneralSerializer.updateValue(onKey: "\(pathPrefix)\(identifier)",
-                                      withData: data) { (returnedError) in
-            guard returnedError == nil else {
-                completion(Exception(returnedError!,
-                                     metadata: [#file, #function, #line]))
+        GeneralSerializer.updateChildValues(forKey: "\(pathPrefix)\(identifier)",
+                                            with: data) { exception in
+            guard exception == nil else {
+                completion(exception)
                 return
             }
             
-            GeneralSerializer.getValues(atPath: "/\(GeneralSerializer.environment.shortString)/userHashes/\(phoneNumber.digits.compressedHash)") { returnedValues, exception in
+            GeneralSerializer.getValues(atPath: "/\(GeneralSerializer.environment.shortString)/userHashes/\(phoneNumber.digits.compressedHash)") { values, exception in
                 var newValues = [identifier]
                 
-                if let values = returnedValues as? [String] {
+                if let values = values as? [String] {
                     newValues.append(contentsOf: values)
                 }
                 
-                GeneralSerializer.setValue(onKey: "/\(GeneralSerializer.environment.shortString)/userHashes/\(phoneNumber.digits.compressedHash)",
-                                           withData: newValues.unique()) { returnedError in
-                    guard let error = returnedError else {
+                GeneralSerializer.setValue(newValues.unique(),
+                                           forKey: "/\(GeneralSerializer.environment.shortString)/userHashes/\(phoneNumber.digits.compressedHash)") { exception in
+                    guard let exception else {
                         completion(nil)
                         return
                     }
                     
-                    completion(Exception(error, metadata: [#file, #function, #line]))
+                    completion(exception)
                 }
             }
         }
@@ -128,8 +127,7 @@ public struct UserSerializer {
         GeneralSerializer.getValues(atPath: "/\(GeneralSerializer.environment.shortString)/userHashes") { returnedValues, exception in
             
             guard let values = returnedValues as? [String: [String]] else {
-                completion(nil, Exception("Couldn't get user hashes.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Couldn't get user hashes.", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -310,44 +308,37 @@ public struct UserSerializer {
                                  completion: @escaping(_ deSerializedUser: User?,
                                                        _ exception: Exception?) -> Void) {
         guard let identifier = fromData["identifier"] as? String else {
-            completion(nil, Exception("Unable to deserialize «identifier».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «identifier».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let callingCode = fromData["callingCode"] as? String else {
-            completion(nil, Exception("Unable to deserialize «callingCode».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «callingCode».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let languageCode = fromData["languageCode"] as? String else {
-            completion(nil, Exception("Unable to deserialize «languageCode».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «languageCode».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let conversationIdentifiers = fromData["openConversations"] as? [String] else {
-            completion(nil, Exception("Unable to deserialize «openConversations».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «openConversations».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let phoneNumber = fromData["phoneNumber"] as? String else {
-            completion(nil, Exception("Unable to deserialize «phoneNumber».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «phoneNumber».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let pushTokens = fromData["pushTokens"] as? [String] else {
-            completion(nil, Exception("Unable to deserialize «pushTokens».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «pushTokens».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let region = fromData["region"] as? String else {
-            completion(nil, Exception("Unable to deserialize «region».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «region».", metadata: [#file, #function, #line]))
             return
         }
         

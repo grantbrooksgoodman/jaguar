@@ -178,7 +178,7 @@ public struct PhoneNumberService {
                 return
             }
             
-            self.verifyPhoneNumber("+\(phoneNumber.callingCode!)\(phoneNumber.digits!)") { identifier, exception in
+            self.verifyPhoneNumber("+\(phoneNumber.digits!)") { identifier, exception in
                 guard let identifier else {
                     completion(nil, exception ?? Exception(metadata: [#file, #function, #line]), false)
                     return

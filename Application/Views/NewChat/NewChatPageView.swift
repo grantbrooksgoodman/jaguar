@@ -66,6 +66,7 @@ public struct NewChatPageView: View {
                     var conversationToUse = Conversation.empty()
                     ChatPageView(conversation: Binding(get: { return conversationToUse },
                                                        set: { conversationToUse = $0 }))
+                    .onDisappear { Core.ui.resetNavigationBarAppearance() }
                 }
                 .navigationBarTitle(LocalizedString.newMessage,
                                     displayMode: .inline)
@@ -136,30 +137,5 @@ public struct NewChatPageView: View {
                   let recipientTextField = recipientBar.subview(for: "recipientTextField") as? UITextField else { return }
             recipientTextField.becomeFirstResponder()
         }
-    }
-}
-
-//==================================================//
-
-/* MARK: - Extensions */
-
-/**/
-
-/* MARK: View */
-extension View {
-    @available(iOS 14, *)
-    func navigationBar(backgroundColor: Color, titleColor: Color) -> some View {
-        let appearance = UINavigationBarAppearance()
-        appearance.configureWithTransparentBackground()
-        appearance.backgroundColor = UIColor(backgroundColor)
-        
-        let uiTitleColor = UIColor(titleColor)
-        appearance.largeTitleTextAttributes = [.foregroundColor: uiTitleColor]
-        appearance.titleTextAttributes = [.foregroundColor: uiTitleColor]
-        
-        UINavigationBar.appearance().standardAppearance = appearance
-        UINavigationBar.appearance().scrollEdgeAppearance = appearance
-        
-        return self
     }
 }

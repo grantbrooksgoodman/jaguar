@@ -16,9 +16,9 @@ public enum RegionDetailServer {
     /* MARK: - Properties */
     
     // Dictionaries
-    private static var localizedRegionStringsForRegionCodes = [String: String]()
     private static var imagesForRegionCodes = [String: UIImage]()
     private static var imagesForRegionTitles = [String: UIImage]()
+    private static var localizedRegionStringsForRegionCodes = [String: String]()
     private static var titlesForCallingCodes = [String: String]()
     private static var titlesForRegionCodes = [String: String]()
     
@@ -182,7 +182,7 @@ public enum RegionDetailServer {
     
     public static func regionTitleArray() -> [String] {
         guard regionTitles == nil else {
-            return regionTitles!
+            return regionTitles!.sorted()
         }
         
         var titleArray = [String]()
@@ -192,7 +192,7 @@ public enum RegionDetailServer {
         }
         
         regionTitles = titleArray.sorted()
-        return regionTitles!
+        return regionTitles!.sorted()
     }
     
     //==================================================//
@@ -200,9 +200,10 @@ public enum RegionDetailServer {
     /* MARK: - Other Methods */
     
     public static func clearCache() {
-        localizedRegionStringsForRegionCodes = [String: String]()
         imagesForRegionCodes = [String: UIImage]()
         imagesForRegionTitles = [String: UIImage]()
+        localizedRegionStringsForRegionCodes = [String: String]()
+        regionTitles = nil
         titlesForCallingCodes = [String: String]()
         titlesForRegionCodes = [String: String]()
     }

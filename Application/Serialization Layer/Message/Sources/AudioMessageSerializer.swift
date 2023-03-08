@@ -75,8 +75,7 @@ public struct AudioMessageSerializer {
         storageMetadata.contentType = contentType
         
         guard let data = try? Data(contentsOf: audioFile.url) else {
-            completion(Exception("Couldn't get data from file path.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Couldn't get data from file path.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -172,8 +171,7 @@ public struct AudioMessageSerializer {
             
             let inputFile = try? AudioFile(fromURL: localInputPath)
             guard let inputFile else {
-                completion(nil, Exception("Couldn't generate input file.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Couldn't generate input file.", metadata: [#file, #function, #line]))
                 return
             }
             

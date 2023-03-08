@@ -57,30 +57,12 @@ public struct PermissionsPageView: View {
             VStack(alignment: .center) {
                 capsuleButton(title: translations["contactPrompt"]!.output,
                               isCompleted: grantedContactPermission) {
-                    viewModel.requestContactPermission { granted, exception in
-                        guard exception == nil else {
-                            self.pressedContinue = false
-                            Logger.log(exception!,
-                                       with: .errorAlert)
-                            return
-                        }
-                        
-                        self.grantedContactPermission = granted
-                    }
+                    requestContactPermission()
                 }
                 
                 capsuleButton(title: translations["notificationPrompt"]!.output,
                               isCompleted: grantedNotificationPermission) {
-                    viewModel.requestNotificationPermission { granted, exception in
-                        guard exception == nil else {
-                            self.pressedContinue = false
-                            Logger.log(exception!,
-                                       with: .errorAlert)
-                            return
-                        }
-                        
-                        self.grantedNotificationPermission = granted
-                    }
+                    requestNotificationPermission()
                 }
             }
             .padding(.top, 80)
@@ -161,6 +143,55 @@ public struct PermissionsPageView: View {
             
             viewRouter.currentPage = .conversations
             RuntimeStorage.remove(.numberFromSignIn)
+        }
+    }
+    
+    private func requestContactPermission() {
+        PermissionService.requestPermission(for: .contacts) { status, exception in
+            self.grantedContactPermission = status == .granted
+            
+            guard status == .granted else {
+                self.pressedContinue = false
+                guard let exception else {
+                    Core.gcd.after(milliseconds: 500) { PermissionService.presentCTA(for: .contacts) { } }
+                    return
+                }
+                Logger.log(exception, with: .errorAlert)
+                return
+            }
+            
+            if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
+                RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
+            } else {
+                ContactService.getLocalUserHashes { hashes, exception in
+                    guard let hashes else {
+                        Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                                   with: .errorAlert)
+                        return
+                    }
+                    
+                    UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
+                    RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
+                }
+            }
+        }
+    }
+    
+    private func requestNotificationPermission() {
+        PermissionService.requestPermission(for: .notifications) { status, exception in
+            self.grantedNotificationPermission = status == .granted
+            
+            guard status == .granted else {
+                self.pressedContinue = false
+                guard let exception else {
+                    Core.gcd.after(milliseconds: 500) { PermissionService.presentCTA(for: .notifications) { } }
+                    return
+                }
+                Logger.log(exception, with: .errorAlert)
+                return
+            }
+            
+            DispatchQueue.main.async { UIApplication.shared.registerForRemoteNotifications() }
         }
     }
 }

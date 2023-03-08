@@ -75,7 +75,9 @@ public class Conversation: Codable, Equatable {
         
         // Filters for duplicates and blank messages.
         for message in messagesToUse! {
-            if !filteredMessages.contains(where: { $0.identifier == message.identifier }), message.identifier != "!" {
+            if !filteredMessages.contains(where: { $0.identifier == message.identifier }),
+               message.identifier != "!",
+               message.identifier != "NEW" {
                 filteredMessages.append(message)
             }
         }
@@ -178,8 +180,7 @@ public class Conversation: Codable, Equatable {
     
     public func setOtherUser(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         guard let otherUserIdentifier = participants.filter({ $0.userID != RuntimeStorage.currentUserID! })[0].userID else {
-            completion(Exception("Couldn't find other user ID.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Couldn't find other user ID.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -199,11 +200,9 @@ public class Conversation: Codable, Equatable {
         identifier.hash = hash
         
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
-        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!.key!)/hash",
-                                   withData: hash) { returnedError in
-            guard returnedError == nil else {
-                completion(Exception(returnedError!,
-                                     metadata: [#file, #function, #line]))
+        GeneralSerializer.setValue(hash, forKey: "\(pathPrefix)\(identifier!.key!)/hash") { exception in
+            guard exception == nil else {
+                completion(exception)
                 return
             }
             
@@ -214,8 +213,8 @@ public class Conversation: Codable, Equatable {
                 dispatchGroup.enter()
                 
                 let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
-                GeneralSerializer.getValues(atPath: "\(pathPrefix)\(participant.userID!)/openConversations") { (returnedValues, exception) in
-                    guard var conversationIdentifiers = returnedValues as? [String] else {
+                GeneralSerializer.getValues(atPath: "\(pathPrefix)\(participant.userID!)/openConversations") { values, exception in
+                    guard var conversationIdentifiers = values as? [String] else {
                         exceptions.append(exception ?? Exception(metadata: [#file, #function, #line]))
                         dispatchGroup.leave()
                         return
@@ -224,10 +223,10 @@ public class Conversation: Codable, Equatable {
                     conversationIdentifiers.removeAll(where: { $0.hasPrefix(self.identifier.key!) })
                     conversationIdentifiers.append("\(self.identifier!.key!) | \(self.hash)")
                     
-                    GeneralSerializer.setValue(onKey: "\(pathPrefix)\(participant.userID!)/openConversations",
-                                               withData: conversationIdentifiers) { (returnedError) in
-                        if let error = returnedError {
-                            exceptions.append(Exception(error, metadata: [#file, #function, #line]))
+                    GeneralSerializer.setValue(conversationIdentifiers,
+                                               forKey: "\(pathPrefix)\(participant.userID!)/openConversations") { exception in
+                        if let exception {
+                            exceptions.append(exception)
                         }
                         
                         dispatchGroup.leave()
@@ -245,14 +244,10 @@ public class Conversation: Codable, Equatable {
         lastModifiedDate = Date()
         
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
-        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!.key!)/lastModified",
-                                   withData: Core.secondaryDateFormatter!.string(from: lastModifiedDate)) { returnedError in
-            guard returnedError == nil else {
-                let error = Exception(returnedError!,
-                                      metadata: [#file, #function, #line])
-                
-                Logger.log(error)
-                completion(error)
+        GeneralSerializer.setValue(Core.secondaryDateFormatter!.string(from: lastModifiedDate),
+                                   forKey: "\(pathPrefix)\(identifier!.key!)/lastModified") { exception in
+            guard exception == nil else {
+                completion(exception!)
                 return
             }
             

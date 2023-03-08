@@ -17,12 +17,14 @@ public enum LocalizationCase: String /* Add pre-localized strings here. */ {
     
     case contacts
     case copy
+    case copied
     case delete // unused
     
     case delivered
     case read
     case sending
     
+    case failedToRetranslate
     case holdToRetry
     case retryTranslation
     
@@ -67,6 +69,9 @@ public enum LocalizationCase: String /* Add pre-localized strings here. */ {
     
     case settings
     
+    case selectCallingCode
+    case noResults
+    
     var description: String {
         return rawValue.snakeCase()
     }
@@ -80,12 +85,14 @@ public struct LocalizedString {
     
     public static var contacts: String { Localizer.preLocalizedString(for: .contacts) ?? "Contacts" }
     public static var copy: String { Localizer.preLocalizedString(for: .copy) ?? "Copy" }
+    public static var copied: String { Localizer.preLocalizedString(for: .copied) ?? "Copied" }
     public static var delete: String { Localizer.preLocalizedString(for: .delete) ?? "Delete" }
     
     public static var delivered: String { Localizer.preLocalizedString(for: .delivered) ?? "Delivered" }
     public static var read: String { Localizer.preLocalizedString(for: .read) ?? "Read" }
     public static var sending: String { Localizer.preLocalizedString(for: .sending) ?? "Sending" }
     
+    public static var failedToRetranslate: String { Localizer.preLocalizedString(for: .failedToRetranslate) ?? "Failed to retranslate" }
     public static var holdToRetry: String { Localizer.preLocalizedString(for: .holdToRetry) ?? "⚠️ Hold down to retry translation" }
     public static var retryTranslation: String { Localizer.preLocalizedString(for: .retryTranslation) ?? "Retry Translation" }
     
@@ -128,7 +135,10 @@ public struct LocalizedString {
     public static var holdDownToRecord: String { Localizer.preLocalizedString(for: .holdDownToRecord) ?? "Hold down to record" }
     public static var noSpeechDetected: String { Localizer.preLocalizedString(for: .noSpeechDetected) ?? "No speech detected" }
     
-    public static var settings: String { Localizer.preLocalizedString(for: .settings) ?? "Settings" }
+    public static var settings: String { Localizer.preLocalizedString(for: .settings) ?? "Settings..." }
+    
+    public static var selectCallingCode: String { Localizer.preLocalizedString(for: .selectCallingCode) ?? "Select Calling Code" }
+    public static var noResults: String { Localizer.preLocalizedString(for: .noResults) ?? "No results" }
 }
 
 public enum Localizer {

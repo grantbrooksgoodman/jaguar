@@ -26,9 +26,9 @@ public enum TranslationSerializer {
         let serializedTranslation = translation.serialize()
         let dictionary = [serializedTranslation.key: serializedTranslation.value]
         
-        GeneralSerializer.updateValue(onKey: "allTranslations/\(languagePair.asString())",
-                                      withData: dictionary) { (returnedError) in
-            guard let error = returnedError else {
+        GeneralSerializer.updateChildValues(forKey: "allTranslations/\(languagePair.asString())",
+                                            with: dictionary) { exception in
+            guard let exception else {
                 Logger.log("Successfully uploaded translation.",
                            verbose: true,
                            metadata: [#file, #function, #line])
@@ -38,14 +38,7 @@ public enum TranslationSerializer {
                 return
             }
             
-            let exception = Exception(error,
-                                      extraParams: ["UserFacingDescriptor": "Couldn't upload translation."],
-                                      metadata: [#file, #function, #line])
-            
-            Logger.log(exception,
-                       verbose: true)
-            
-            completion(exception)
+            completion(exception.appending(extraParams: ["UserFacingDescriptor": "Couldn't upload translation."]))
         }
     }
     
@@ -97,9 +90,7 @@ public enum TranslationSerializer {
             }
             
             guard let decodedValues = values.hashDecoded() else {
-                let exception = Exception("Unable to decode values.",
-                                          metadata: [#file, #function, #line])
-                Logger.log(exception)
+                let exception = Exception("Unable to decode values.", metadata: [#file, #function, #line])
                 completion(exception)
                 
                 return
@@ -167,8 +158,7 @@ public enum TranslationSerializer {
             
             guard let decodedInput = value.decoded(getInput: true),
                   let decodedOutput = value.decoded(getInput: false) else {
-                completion(nil, Exception("Failed to decode translation.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Failed to decode translation.", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -194,8 +184,7 @@ public enum TranslationSerializer {
             }
             
             guard let decoded = value.decoded(getInput: false) else {
-                completion(nil, Exception("Failed to decode translation.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Failed to decode translation.", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -255,9 +244,9 @@ public enum TranslationSerializer {
     public static func removeTranslation(for input: Translator.TranslationInput,
                                          languagePair: Translator.LanguagePair,
                                          completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
-        GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
-                                      withData: [input.value().compressedHash: NSNull()]) { (returnedError) in
-            guard let error = returnedError else {
+        GeneralSerializer.updateChildValues(forKey: "/allTranslations/\(languagePair.asString())",
+                                            with: [input.value().compressedHash: NSNull()]) { exception in
+            guard let exception else {
                 Logger.log("Successfully removed translation.",
                            verbose: true,
                            metadata: [#file, #function, #line])
@@ -266,14 +255,7 @@ public enum TranslationSerializer {
                 return
             }
             
-            let exception = Exception(error,
-                                      extraParams: ["UserFacingDescriptor": "Couldn't remove translation."],
-                                      metadata: [#file, #function, #line])
-            
-            Logger.log(exception,
-                       verbose: true)
-            
-            completion(exception)
+            completion(exception.appending(extraParams: ["UserFacingDescriptor": "Couldn't remove translation."]))
         }
     }
     
@@ -285,9 +267,9 @@ public enum TranslationSerializer {
             nulledDictionary[input.value()] = NSNull()
         }
         
-        GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
-                                      withData: nulledDictionary) { (returnedError) in
-            guard let error = returnedError else {
+        GeneralSerializer.updateChildValues(forKey: "/allTranslations/\(languagePair.asString())",
+                                            with: nulledDictionary) { exception in
+            guard let exception else {
                 Logger.log("Successfully removed translations.",
                            verbose: true,
                            metadata: [#file, #function, #line])
@@ -297,14 +279,7 @@ public enum TranslationSerializer {
                 return
             }
             
-            let exception = Exception(error,
-                                      extraParams: ["UserFacingDescriptor": "Couldn't remove translations."],
-                                      metadata: [#file, #function, #line])
-            
-            Logger.log(exception,
-                       verbose: true)
-            
-            completion(exception)
+            completion(exception.appending(extraParams: ["UserFacingDescriptor": "Couldn't remove translations."]))
         }
     }
     
@@ -316,8 +291,7 @@ public enum TranslationSerializer {
                                            for languagePair: Translator.LanguagePair,
                                            completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         guard translations.homogeneousLanguagePairs() else {
-            completion(Exception("Translations are not all from the same language!",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Translations are not all from the same language!", metadata: [#file, #function, #line]))
             return
         }
         
@@ -329,9 +303,9 @@ public enum TranslationSerializer {
             dictionary[serialized.key] = serialized.value
         }
         
-        GeneralSerializer.updateValue(onKey: "/allTranslations/\(languagePair.asString())",
-                                      withData: dictionary) { (returnedError) in
-            guard let error = returnedError else {
+        GeneralSerializer.updateChildValues(forKey: "/allTranslations/\(languagePair.asString())",
+                                            with: dictionary) { exception in
+            guard let exception else {
                 Logger.log("Successfully uploaded translations.",
                            verbose: true,
                            metadata: [#file, #function, #line])
@@ -341,14 +315,7 @@ public enum TranslationSerializer {
                 return
             }
             
-            let exception = Exception(error,
-                                      extraParams: ["UserFacingDescriptor": "Couldn't upload translations."],
-                                      metadata: [#file, #function, #line])
-            
-            Logger.log(exception,
-                       verbose: true)
-            
-            completion(exception)
+            completion(exception.appending(extraParams: ["UserFacingDescriptor": "Couldn't upload translations."]))
         }
     }
 }

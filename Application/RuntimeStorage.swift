@@ -39,6 +39,7 @@ public enum RuntimeStorage {
         // MARK: AppDelegate
         case appShareLink
         case pushApiKey
+        case redirectionKey
         
         case archivedLocalUserHashes
         case archivedServerUserHashes
@@ -60,6 +61,7 @@ public enum RuntimeStorage {
         case updatedPushToken
         
         case mismatchedHashes
+        case acknowledgedAudioMessagesUnsupported
         
         // MARK: BuildInfoOverlayView
         case currentFile
@@ -81,6 +83,10 @@ public enum RuntimeStorage {
         case typingIndicator
         
         case wantsToInvite
+        
+        // MARK: ConversationsPageView
+        case currentYOrigin
+        case previousYOrigin
         
         // MARK: ConversationsPageViewModel
         case becameActive
@@ -132,6 +138,7 @@ public extension RuntimeStorage {
     // MARK: AppDelegate
     static var appShareLink: URL? { get { retrieve(.appShareLink) as? URL } }
     static var pushApiKey: String? { get { retrieve(.pushApiKey) as? String } }
+    static var redirectionKey: String? { get { retrieve(.redirectionKey) as? String } }
     
     static var archivedLocalUserHashes: [String]? { get { retrieve(.archivedLocalUserHashes) as? [String] } }
     static var archivedServerUserHashes: [String]? { get { retrieve(.archivedServerUserHashes) as? [String] } }
@@ -151,6 +158,7 @@ public extension RuntimeStorage {
     
     static var selectedRegionCode: String? { get { retrieve(.selectedRegionCode) as? String } }
     static var mismatchedHashes: [String]? { get { retrieve(.mismatchedHashes) as? [String] } }
+    static var acknowledgedAudioMessagesUnsupported: Bool? { get { retrieve(.acknowledgedAudioMessagesUnsupported) as? Bool } }
     
     // MARK: BuildInfoOverlayView
     static var currentFile: String? { get { retrieve(.currentFile) as? String } }
@@ -172,6 +180,10 @@ public extension RuntimeStorage {
     static var typingIndicator: Bool? { get { retrieve(.typingIndicator) as? Bool } }
     
     static var wantsToInvite: Bool? { get { retrieve(.wantsToInvite) as? Bool } }
+    
+    // MARK: ConversationsPageView
+    static var currentYOrigin: CGFloat? { get { retrieve(.currentYOrigin) as? CGFloat } }
+    static var previousYOrigin: CGFloat? { get { retrieve(.previousYOrigin) as? CGFloat } }
     
     // MARK: ConversationsPageViewModel
     static var becameActive: Bool? { get { retrieve(.becameActive) as? Bool } }

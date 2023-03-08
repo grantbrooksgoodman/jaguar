@@ -114,14 +114,14 @@ public class Message: Codable, Equatable {
     public func updateLanguagePair(_ newPair: LanguagePair,
                                    completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
-        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/languagePair",
-                                   withData: newPair.asString()) { returnedError in
-            guard let error = returnedError else {
+        GeneralSerializer.setValue(newPair.asString(),
+                                   forKey: "\(pathPrefix)\(identifier!)/languagePair") { exception in
+            guard let exception else {
                 completion(nil)
                 return
             }
             
-            completion(Exception(error, metadata: [#file, #function, #line]))
+            completion(exception)
         }
     }
     
@@ -129,14 +129,14 @@ public class Message: Codable, Equatable {
         readDate = Date()
         
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
-        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/readDate",
-                                   withData: Core.secondaryDateFormatter!.string(from: readDate!)) { returnedError in
-            guard let error = returnedError else {
+        GeneralSerializer.setValue(Core.secondaryDateFormatter!.string(from: readDate!),
+                                   forKey: "\(pathPrefix)\(identifier!)/readDate") { exception in
+            guard let exception else {
                 completion(nil)
                 return
             }
             
-            completion(Exception(error, metadata: [#file, #function, #line]))
+            completion(exception)
         }
     }
 }

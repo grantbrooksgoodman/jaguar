@@ -41,6 +41,8 @@ public struct SignInPageView: View {
     @State private var verificationCode: String = ""
     @State private var selectedRegion = "US"
     
+    @Environment(\.colorScheme) private var colorScheme
+    
     //==================================================//
     
     /* MARK: - View Body */
@@ -63,6 +65,8 @@ public struct SignInPageView: View {
                 VStack(alignment: .center) {
                     Image(uiImage: UIImage(named: "Hello.png")!)
                         .resizable()
+                        .renderingMode(colorScheme == .dark ? .template : .original)
+                        .foregroundColor(colorScheme == .dark ? Color(uiColor: UIColor(hex: 0xF8F8F8)) : .none)
                         .frame(width: 150, height: 70)
                         .padding(.bottom, 30)
                     
@@ -84,7 +88,7 @@ public struct SignInPageView: View {
                             .keyboardType(.numberPad)
                     } else {
                         HStack(alignment: .center) {
-                            RegionMenu(selectedRegion: $selectedRegion)
+                            RegionMenu(selectedRegionCode: $selectedRegion)
                                 .padding(.leading, 20)
                                 .padding(.trailing, 5)
                             

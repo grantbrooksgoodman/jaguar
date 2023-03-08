@@ -44,16 +44,15 @@ public struct MessageSerializer {
             Logger.log("Unable to generate key for new message.",
                        metadata: [#file, #function, #line])
             
-            completion(nil, Exception("Unable to generate key for new message.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to generate key for new message.", metadata: [#file, #function, #line]))
             return
         }
         
         let messagesPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
-        GeneralSerializer.updateValue(onKey: "\(messagesPrefix)\(generatedKey)",
-                                      withData: data) { (returnedError) in
-            if let error = returnedError {
-                completion(nil, Exception(error, metadata: [#file, #function, #line]))
+        GeneralSerializer.updateChildValues(forKey: "\(messagesPrefix)\(generatedKey)",
+                                            with: data) { exception in
+            if let exception {
+                completion(nil, exception)
             }
         }
         
@@ -91,9 +90,9 @@ public struct MessageSerializer {
             if var messages = returnedMessages as? [String] {
                 messages.append(generatedKey)
                 
-                GeneralSerializer.updateValue(onKey: "\(conversationsPrefix)\(conversationIdentifier)",
-                                              withData: ["messages": messages.filter({$0 != "!"})]) { (returnedError) in
-                    guard let error = returnedError else {
+                GeneralSerializer.updateChildValues(forKey: "\(conversationsPrefix)\(conversationIdentifier)",
+                                                    with: ["messages": messages.filter({$0 != "!"})]) { exception in
+                    guard let exception else {
                         let message = Message(identifier: generatedKey,
                                               fromAccountIdentifier: fromAccountWithIdentifier,
                                               languagePair: translation.languagePair,
@@ -121,7 +120,7 @@ public struct MessageSerializer {
                         return
                     }
                     
-                    completion(nil, Exception(error, metadata: [#file, #function, #line]))
+                    completion(nil, exception)
                 }
             } else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
@@ -137,8 +136,7 @@ public struct MessageSerializer {
                            completion: @escaping(_ returnedMessage: Message?,
                                                  _ exception: Exception?) -> Void) {
         guard withIdentifier != "!" else {
-            completion(nil, Exception("Null/first message processed.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Null/first message processed.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -158,7 +156,6 @@ public struct MessageSerializer {
                 guard let message = returnedMessage else {
                     let error = exception ?? Exception(metadata: [#file, #function, #line])
                     
-                    Logger.log(error)
                     completion(nil, error)
                     return
                 }
@@ -184,8 +181,7 @@ public struct MessageSerializer {
             completion([], nil)
         } else {
             guard !withIdentifiers.isEmpty else {
-                completion(nil, Exception("No identifiers passed!",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("No identifiers passed!", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -215,44 +211,37 @@ public struct MessageSerializer {
                                     completion: @escaping(_ deSerializedMessage: Message?,
                                                           _ exception: Exception?) -> Void) {
         guard let identifier = fromData["identifier"] as? String else {
-            completion(nil, Exception("Unable to deserialize «identifier».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «identifier».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let fromAccountIdentifier = fromData["fromAccount"] as? String else {
-            completion(nil, Exception("Unable to deserialize «fromAccount».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «fromAccount».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let languagePairString = fromData["languagePair"] as? String else {
-            completion(nil, Exception("Unable to deserialize «languagePairString».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «languagePairString».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let languagePair = languagePairString.asLanguagePair() else {
-            completion(nil, Exception("Unable to convert «languagePairString» to LanguagePair.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to convert «languagePairString» to LanguagePair.", metadata: [#file, #function, #line]))
             return
         }
         
         guard let translationReference = fromData["translationReference"] as? String else {
-            completion(nil, Exception("Unable to deserialize «translationReference».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «translationReference».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let readDateString = fromData["readDate"] as? String else {
-            completion(nil, Exception("Unable to deserialize «readDate».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «readDate».", metadata: [#file, #function, #line]))
             return
         }
         
         guard let sentDateString = fromData["sentDate"] as? String else {
-            completion(nil, Exception("Unable to deserialize «sentDate».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «sentDate».", metadata: [#file, #function, #line]))
             return
         }
         
@@ -262,8 +251,7 @@ public struct MessageSerializer {
         formatter.locale = Locale(identifier: "en_GB")
         
         guard let sentDate = formatter.date(from: sentDateString) else {
-            completion(nil, Exception("Unable to convert «sentDateString» to Date.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to convert «sentDateString» to Date.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -271,8 +259,7 @@ public struct MessageSerializer {
         
         guard let hasAudioComponentString = fromData["hasAudioComponent"] as? String,
               hasAudioComponentString == "true" || hasAudioComponentString == "false" else {
-            completion(nil, Exception("Unable to deserialize «hasAudioComponent».",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to deserialize «hasAudioComponent».", metadata: [#file, #function, #line]))
             return
         }
         
@@ -283,10 +270,7 @@ public struct MessageSerializer {
                                                   languagePair: languagePair) { (returnedTranslation,
                                                                                  exception) in
                 guard let translation = returnedTranslation else {
-                    let error = exception ?? Exception(metadata: [#file, #function, #line])
-                    
-                    Logger.log(error)
-                    completion(nil, error)
+                    completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
                 

@@ -33,16 +33,14 @@ public struct UserTestingSerializer {
         guard let regionMetadata = phoneNumberKit.metadata(for: randomRegionCode.uppercased()),
               let description = regionMetadata.mobile,
               let exampleNumber = description.exampleNumber else {
-            completion(nil, Exception("Couldn't generate example number.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Couldn't generate example number.", metadata: [#file, #function, #line]))
             return
         }
         
         // TODO: Verfify user with same language code doesn't already exist
         
         guard let generatedKey = Database.database().reference().child("/\(GeneralSerializer.environment.shortString)/users/").childByAutoId().key else {
-            completion(nil, Exception("Unable to generate key for new user.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Unable to generate key for new user.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -67,8 +65,7 @@ public struct UserTestingSerializer {
         Database.database().reference().child("/\(GeneralSerializer.environment.shortString)/users").observeSingleEvent(of: .value) { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   let data = snapshot as? [String: Any] else {
-                completion(nil, Exception("Couldn't get user list.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Couldn't get user list.", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -117,8 +114,7 @@ public struct UserTestingSerializer {
         Database.database().reference().child("/\(GeneralSerializer.environment.shortString)/users").observeSingleEvent(of: .value) { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   let data = snapshot as? [String: Any] else {
-                completion(nil, Exception("Couldn't get user list.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Couldn't get user list.", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -204,8 +200,7 @@ public struct UserTestingSerializer {
     public func signInUser(with phoneNumber: String,
                            completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         guard phoneNumber.digits.count > 0 else {
-            completion(Exception("Invalid phone number",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Invalid phone number", metadata: [#file, #function, #line]))
             return
         }
         
@@ -216,8 +211,8 @@ public struct UserTestingSerializer {
             }
             
             guard users.count == 1 else {
-                Logger.log("Multiple users for this phone number!",
-                           metadata: [#file, #function, #line])
+                completion(Exception("Multiple users for this phone number!",
+                                     metadata: [#file, #function, #line]))
                 return
             }
             
@@ -242,10 +237,9 @@ public struct UserTestingSerializer {
                 dispatchGroup.enter()
                 
                 let path = "\(GeneralSerializer.environment.shortString)/users/\(identifier)/pushTokens"
-                GeneralSerializer.setValue(onKey: path,
-                                           withData: ["!"]) { error in
-                    guard error == nil else {
-                        exceptions.append(Exception(error!, metadata: [#file, #function, #line]))
+                GeneralSerializer.setValue(["!"], forKey: path) { exception in
+                    guard exception == nil else {
+                        exceptions.append(exception!)
                         dispatchGroup.leave()
                         return
                     }

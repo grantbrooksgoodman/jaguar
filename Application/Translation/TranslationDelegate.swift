@@ -14,7 +14,7 @@ public struct TranslationDelegate: AKTranslationDelegate {
     
     //==================================================//
     
-    /* MARK: - Protocol Compliance */
+    /* MARK: - Protocol Conformance */
     
     public func getTranslations(for inputs: [AlertKit.TranslationInput],
                                 languagePair: AlertKit.LanguagePair,

@@ -46,8 +46,7 @@ public class PageViewDataModel {
             }
             
             guard let matchedTranslations = translations.matchedTo(self.inputs) else {
-                completion(nil, Exception("Couldn't match translations with inputs.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Couldn't match translations with inputs.", metadata: [#file, #function, #line]))
                 return
             }
             

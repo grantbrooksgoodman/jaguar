@@ -240,7 +240,7 @@ public class RetranslationService: ChatService {
                      showAlert: false)
             
             Core.gcd.after(seconds: 1) {
-                Core.hud.flash("Failed to retranslate", image: .exclamation)
+                Core.hud.flash(LocalizedString.failedToRetranslate, image: .exclamation)
             }
             
             return
@@ -372,8 +372,7 @@ public class RetranslationService: ChatService {
             }
             
             guard translation.input.value() != translation.output else {
-                completion(nil, Exception("Translation result is still the same.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Translation result is still the same.", metadata: [#file, #function, #line]))
                 return
             }
             

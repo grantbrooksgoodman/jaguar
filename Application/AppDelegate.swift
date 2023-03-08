@@ -32,7 +32,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     /* MARK: - UIApplication Methods */
     
     public func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        //        resetIfNeeded()
+        // resetIfNeeded()
         
         preInitialize()
         
@@ -114,6 +114,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
                                        forKey: "developerModeEnabled")
         
         Logger.exposureLevel = .normal
+        DevModeService.addStandardActions()
         
         /* MARK: AlertKit Setup */
         
@@ -156,6 +157,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     private func setUpRuntimeStorage() {
         StateProvider.shared.hasDisappeared = false
         
+        RuntimeStorage.store(false, as: .acknowledgedAudioMessagesUnsupported)
         RuntimeStorage.store(false, as: .isPresentingChat)
         RuntimeStorage.store(false, as: .isSendingMessage)
         RuntimeStorage.store(false, as: .receivedNotification)
@@ -167,6 +169,10 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         RuntimeStorage.store(#file, as: .currentFile)
         RuntimeStorage.store(0, as: .messageOffset)
         RuntimeStorage.store([], as: .mismatchedHashes)
+        
+        if let acknowledgedAudioMessagesUnsupported = UserDefaults.standard.value(forKey: "acknowledgedAudioMessagesUnsupported") as? Bool {
+            RuntimeStorage.store(acknowledgedAudioMessagesUnsupported, as: .acknowledgedAudioMessagesUnsupported)
+        }
         
         if let mismatchedHashes = UserDefaults.standard.value(forKey: "mismatchedHashes") as? [String] {
             RuntimeStorage.store(mismatchedHashes, as: .mismatchedHashes)
@@ -245,6 +251,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         if let archivedHashes = UserDefaults.standard.value(forKey: "archivedServerUserHashes") as? [String] {
             RuntimeStorage.store(archivedHashes, as: .archivedServerUserHashes)
         } else {
+            // #warning("Maybe this should be async?")
             ContactService.getServerUserHashes { hashes, exception in
                 guard let updatedServerUserHashes = hashes else {
                     Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))

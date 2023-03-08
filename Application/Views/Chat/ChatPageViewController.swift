@@ -22,8 +22,10 @@ public final class ChatPageViewController: MessagesViewController,
     // Booleans
     public var viewHasLaidOutSubviewsAtLeastOnce = false
     
+    private var configureInputBarForText: Bool { getConfigureInputBarForText() }
     private var delegatesHaveBeenSet: Bool { getDelegatesHaveBeenSet() }
     private var isLastCellVisible: Bool { getIsLastCellVisible() }
+    private var otherUser: User? { getOtherUser() }
     
     // Timers
     private var reloadTimer: Timer?
@@ -141,6 +143,7 @@ public final class ChatPageViewController: MessagesViewController,
         }
         
         RuntimeStorage.store("ConversationsPageView.swift", as: .currentFile)
+        RuntimeStorage.topWindow?.isUserInteractionEnabled = false
         Core.gcd.after(milliseconds: 250) { StateProvider.shared.hasDisappeared = true }
         
         RuntimeStorage.remove(.messagesVC)
@@ -155,6 +158,22 @@ public final class ChatPageViewController: MessagesViewController,
     //==================================================//
     
     /* MARK: - Computed Property Getters */
+    
+    private func getConfigureInputBarForText() -> Bool {
+        guard let currentUser = RuntimeStorage.currentUser,
+              let conversation = RuntimeStorage.globalConversation else { return true }
+        
+        guard currentUser.canSendAudioMessages else { return RuntimeStorage.acknowledgedAudioMessagesUnsupported! }
+        
+        guard let otherUser = conversation.otherUser else {
+            guard conversation.identifier.key == "EMPTY" else { return true }
+            return false
+        }
+        
+        guard currentUser.canSendAudioMessages(to: otherUser) else { return true }
+        
+        return false
+    }
     
     private func getDelegatesHaveBeenSet() -> Bool {
         messagesCollectionView.messagesDataSource != nil &&
@@ -187,12 +206,36 @@ public final class ChatPageViewController: MessagesViewController,
         return true
     }
     
+    private func getOtherUser() -> User? {
+        guard let contactNavigationRouterUser = ContactNavigationRouter.currentlySelectedUser else {
+            guard let messagesVC = RuntimeStorage.messagesVC,
+                  let recipientBar = messagesVC.recipientBar,
+                  let selectedContactPair = recipientBar.selectedContactPair,
+                  let numberPairs = selectedContactPair.numberPairs,
+                  let recipientBarUser = numberPairs.first(where: { !$0.users.isEmpty })?.users.first else {
+                
+                guard let wrappedConversationUser = RuntimeStorage.coordinator?.conversation.wrappedValue.otherUser else {
+                    guard let globalConversationUser = RuntimeStorage.globalConversation?.otherUser else { return nil }
+                    return globalConversationUser
+                }
+                
+                return wrappedConversationUser
+            }
+            
+            return recipientBarUser
+        }
+        
+        return contactNavigationRouterUser
+    }
+    
     //==================================================//
     
     /* MARK: - Menu Controller Gesture Recognizer Selector */
     
     @objc
     private func showMenu(_ recognizer: UIGestureRecognizer) {
+        messageInputBar.tag = 86
+        
         guard !messageInputBar.inputTextView.isFirstResponder else {
             messageInputBar.inputTextView.resignFirstResponder()
             ChatServices.menuControllerService?.hideMenuIfNeeded()
@@ -202,7 +245,8 @@ public final class ChatPageViewController: MessagesViewController,
         let point = recognizer.location(in: messagesCollectionView)
         
         guard let indexPath = messagesCollectionView.indexPathForItem(at: point),
-              let selectedCell = messagesCollectionView.cellForItem(at: indexPath) as? MessageContentCell else { return }
+              let selectedCell = messagesCollectionView.cellForItem(at: indexPath) as? MessageContentCell,
+              !RuntimeStorage.isSendingMessage! else { return }
         
         ChatServices.menuControllerService?.presentMenu(at: point, on: selectedCell)
     }
@@ -336,18 +380,18 @@ public final class ChatPageViewController: MessagesViewController,
         messageInputBar.rightStackView.alignment = .center
         
         messageInputBar.contentView.clipsToBounds = true
-        messageInputBar.contentView.layer.borderColor = UIColor.clear.cgColor
+        messageInputBar.contentView.layer.borderColor = configureInputBarForText ? UIColor.systemGray.cgColor : UIColor.clear.cgColor
         messageInputBar.contentView.layer.borderWidth = 0.5
         messageInputBar.contentView.layer.cornerRadius = 15
         
         messageInputBar.inputTextView.clipsToBounds = true
-        messageInputBar.inputTextView.layer.borderColor = UIColor.systemGray.cgColor
+        messageInputBar.inputTextView.layer.borderColor = configureInputBarForText ? UIColor.clear.cgColor : UIColor.systemGray.cgColor
         messageInputBar.inputTextView.layer.borderWidth = 0.5
         messageInputBar.inputTextView.layer.cornerRadius = 15
         
-        messageInputBar.sendButton.setImage(UIImage(named: "Record"), for: .normal)
-        messageInputBar.sendButton.setImage(UIImage(named: "Record (Highlighted)"), for: .highlighted)
-        messageInputBar.sendButton.tintColor = .red
+        messageInputBar.sendButton.setImage(UIImage(named: configureInputBarForText ? "Send" : "Record"), for: .normal)
+        messageInputBar.sendButton.setImage(UIImage(named: "\(configureInputBarForText ? "Send" : "Record") (Highlighted)"), for: .highlighted)
+        messageInputBar.sendButton.tintColor = configureInputBarForText ? .systemBlue : .red
         
         messageInputBar.sendButton
             .onSelected { item in
@@ -355,8 +399,8 @@ public final class ChatPageViewController: MessagesViewController,
             }
             .onDeselected { item in item.transform = .identity }
         
-        // #warning("Not sure if this is needed.")
         messageInputBar.inputTextView.delegate = self
+        ChatServices.audioMessageService?.addGestureRecognizers()
     }
     
     private func configureMenuGestureRecognizer() {
@@ -529,13 +573,23 @@ extension ChatPageViewController: ChatUIDelegate {
         }
     }
     
+    public var shouldShowRecordButton: Bool {
+        get {
+            guard let currentUser = RuntimeStorage.currentUser,
+                  let otherUser,
+                  currentUser.canSendAudioMessages else { return !RuntimeStorage.acknowledgedAudioMessagesUnsupported! }
+            
+            guard Capabilities.textToSpeechSupported(for: otherUser.languageCode) else { return false }
+            return true
+        }
+    }
+    
     // MARK: - Methods
     
     public func configureInputBar(forRecord: Bool) {
         guard forRecord else {
-            messageInputBar.sendButton.gestureRecognizers?.removeAll()
-            
             guard messageInputBar.sendButton.isRecordButton else { return }
+            messageInputBar.sendButton.gestureRecognizers?.removeAll()
             
             UIView.transition(with: messageInputBar.sendButton,
                               duration: 0.3,
@@ -632,16 +686,25 @@ extension ChatPageViewController: ChatUIDelegate {
 
 /* MARK: UITextViewDelegate */
 extension ChatPageViewController: UITextViewDelegate {
+    public func textView(_ textView: UITextView,
+                         shouldChangeTextIn range: NSRange,
+                         replacementText text: String) -> Bool {
+        guard let recordingView = messageInputBar.contentView.subview(for: "recordingView"),
+              recordingView.alpha == 1 else {
+            guard self.messageInputBar.inputTextView.alpha == 0 || RuntimeStorage.isSendingMessage! else { return true }
+            return false
+        }
+        
+        return false
+    }
+    
     public func textViewDidBeginEditing(_ textView: UITextView) {
         messageInputBar.tag = 88
         
-        Core.gcd.after(milliseconds: 250) {
-            self.messagesCollectionView.scrollToLastItem(animated: true)
-        }
-        
-        //        print(messagesCollectionView.contentInset)
+        Core.gcd.after(milliseconds: 250) { self.messagesCollectionView.scrollToLastItem(animated: true) }
         
         UIMenuController.shared.menuItems = nil
+        ChatServices.menuControllerService?.hideMenuIfNeeded()
         
         guard let recipientBar = recipientBar else { return }
         recipientBar.deselectContact(animated: true)

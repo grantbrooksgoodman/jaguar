@@ -71,8 +71,7 @@ public enum ContactArchiver {
     public static func getArchive(completion: @escaping (_ returnedContactPairs: [ContactPair]?,
                                                          _ exception: Exception?) -> Void) {
         guard let contactData = UserDefaults.standard.object(forKey: "contactArchive") as? Data else {
-            completion(nil, Exception("Couldn't decode contact archive. May be empty.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Couldn't decode contact archive. May be empty.", metadata: [#file, #function, #line]))
             return
         }
         

@@ -33,6 +33,7 @@ public struct SearchBar: View {
                 TextField(LocalizedString.search,
                           text: $query)
                 .frame(height: 36)
+                .submitLabel(.done)
                 
                 Button(action: {
                     query = ""

@@ -99,6 +99,10 @@ public enum Core {
         /* MARK: - Public Methods */
         
         public enum HUDImage {
+            // Animated
+            case success
+            
+            // Still
             case exclamation
             case mic
             case micSlash
@@ -106,9 +110,12 @@ public enum Core {
         
         public func flash(_ text: String, image: HUDImage) {
 #if !EXTENSION
-            let alertIcon: AlertIcon
+            var alertIcon: AlertIcon?
+            var animatedIcon: AnimatedIcon?
             
             switch image {
+            case .success:
+                animatedIcon = .succeed
             case .exclamation:
                 alertIcon = .exclamation
             case .mic:
@@ -122,7 +129,13 @@ public enum Core {
                 text = text.dropSuffix()
             }
             
-            ProgressHUD.show(text, icon: alertIcon, interaction: true)
+            guard let alertIcon else {
+                guard let animatedIcon else { return }
+                DispatchQueue.main.async { ProgressHUD.show(text, icon: animatedIcon, interaction: true) }
+                return
+            }
+            
+            DispatchQueue.main.async { ProgressHUD.show(text, icon: alertIcon, interaction: true) }
 #endif
         }
         

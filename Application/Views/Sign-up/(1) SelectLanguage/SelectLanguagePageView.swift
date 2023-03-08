@@ -67,6 +67,7 @@ public struct SelectLanguagePageView: View {
                     Button {
                         let selectedLanguageCode = RuntimeStorage.languageCodeDictionary!.allKeys(forValue: selectedLanguage).first!
                         
+                        RegionDetailServer.clearCache()
                         RuntimeStorage.store(selectedLanguageCode,
                                              as: .languageCode)
                         AKCore.shared.setLanguageCode(selectedLanguageCode)

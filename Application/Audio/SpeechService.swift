@@ -31,27 +31,6 @@ public final class SpeechService: NSObject {
     
     /* MARK: - Audio Recording */
     
-    public func requestRecordingPermission(completion: @escaping(_ granted: Bool?,
-                                                                 _ exception: Exception?) -> Void) {
-        do {
-            try recordingSession.setCategory(.playAndRecord, mode: .default)
-            try recordingSession.setActive(true)
-            
-            recordingSession.requestRecordPermission { granted in
-                guard granted else {
-                    completion(false, Exception("Failed to get recording permission.",
-                                                metadata: [#file, #function, #line]))
-                    return
-                }
-                
-                completion(true, nil)
-            }
-        } catch {
-            completion(nil, Exception(error,
-                                      metadata: [#file, #function, #line]))
-        }
-    }
-    
     public func startRecording(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         let filePath = FileManager.default.documentsDirectoryURL.appendingPathComponent("input.m4a")
         
@@ -67,16 +46,14 @@ public final class SpeechService: NSObject {
             completion(nil)
         } catch {
             audioRecorder?.stop()
-            completion(Exception("Failed to start recording.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Failed to start recording.", metadata: [#file, #function, #line]))
         }
     }
     
     public func stopRecording(completion: @escaping(_ fileURL: URL?,
                                                     _ exception: Exception?) -> Void) {
         guard let audioRecorder else {
-            completion(nil, Exception("No audio recorder to stop.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("No audio recorder to stop.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -91,26 +68,12 @@ public final class SpeechService: NSObject {
     
     /* MARK: - Speech to Text */
     
-    public func requestTranscriptionPermission(completion: @escaping(_ granted: Bool,
-                                                                     _ exception: Exception?) -> Void) {
-        SFSpeechRecognizer.requestAuthorization { status in
-            guard status == .authorized else {
-                completion(false, Exception("Failed to get transcription permission.",
-                                            metadata: [#file, #function, #line]))
-                return
-            }
-            
-            completion(true, nil)
-        }
-    }
-    
     public func transcribeAudio(url: URL,
                                 languageCode: String,
                                 completion: @escaping(_ transcription: String?,
                                                       _ exception: Exception?) -> Void) {
-        guard SFSpeechRecognizer.authorizationStatus() == .authorized else {
-            completion(nil, Exception("Not authorized for speech recognition.",
-                                      metadata: [#file, #function, #line]))
+        guard PermissionService.transcribePermissionStatus == .granted else {
+            completion(nil, Exception("Not authorized for speech recognition.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -137,8 +100,7 @@ public final class SpeechService: NSObject {
             }
             
             guard result.isFinal else {
-                completion(nil, Exception("Returned transcription wasn't final.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Returned transcription wasn't final.", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -206,8 +168,7 @@ public final class SpeechService: NSObject {
                                                  presetName: AVAssetExportPresetAppleM4A)
         
         guard let exportSession else {
-            completion(nil, Exception("Failed to create export session.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Failed to create export session.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -249,8 +210,7 @@ public final class SpeechService: NSObject {
         synthesizer.write(utterance) { buffer in
             guard let pcmBuffer = buffer as? AVAudioPCMBuffer else {
                 guard !hasCompleted else { return }
-                completion(nil, Exception("Failed to generate PCM buffer.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Failed to generate PCM buffer.", metadata: [#file, #function, #line]))
                 return
             }
             

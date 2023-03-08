@@ -77,10 +77,10 @@ public enum ConversationTestingSerializer {
             
             var exceptions = [Exception]()
             for (index, key) in keys.enumerated() {
-                GeneralSerializer.setValue(onKey: "/\(GeneralSerializer.environment.shortString)/\(key)",
-                                           withData: NSNull()) { returnedError in
-                    if let error = returnedError {
-                        exceptions.append(Exception(error, metadata: [#file, #function, #line]))
+                GeneralSerializer.setValue(NSNull(),
+                                           forKey: "/\(GeneralSerializer.environment.shortString)/\(key)") { exception in
+                    if let exception {
+                        exceptions.append(exception)
                     }
                 }
                 
@@ -102,11 +102,7 @@ public enum ConversationTestingSerializer {
         Database.database().reference().child(GeneralSerializer.environment.shortString).child("/users").observeSingleEvent(of: .value) { (returnedSnapshot) in
             guard let snapshot = returnedSnapshot.value as? NSDictionary,
                   let data = snapshot as? [String: Any] else {
-                let exception = Exception("Couldn't get user list.",
-                                          metadata: [#file, #function, #line])
-                
-                Logger.log(exception,
-                           with: .errorAlert)
+                let exception = Exception("Couldn't get user list.", metadata: [#file, #function, #line])
                 completion(exception)
                 
                 return
@@ -115,12 +111,9 @@ public enum ConversationTestingSerializer {
             var exceptions = [Exception]()
             for (index, identifier) in Array(data.keys).enumerated() {
                 let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
-                GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier)/openConversations",
-                                           withData: ["!"]) { returnedError in
-                    if let error = returnedError {
-                        let exception = Exception(error, metadata: [#file, #function, #line])
-                        
-                        Logger.log(exception)
+                GeneralSerializer.setValue(["!"],
+                                           forKey: "\(pathPrefix)\(identifier)/openConversations") { exception in
+                    if let exception {
                         exceptions.append(exception)
                     }
                 }

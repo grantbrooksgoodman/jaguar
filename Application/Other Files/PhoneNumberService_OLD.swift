@@ -85,8 +85,7 @@ public enum PhoneNumberService_OLD {
         
         let filePath = PLISTGenerator.createPLIST(from: lookupTable)
         guard let path = filePath else {
-            Logger.log(Exception("Failed to generate PLIST.",
-                                 metadata: [#file, #function, #line]))
+            Logger.log(Exception("Failed to generate PLIST.", metadata: [#file, #function, #line]))
             return lookupTable
         }
         

@@ -20,7 +20,6 @@ public class ObserverService: ChatService {
     
     public var serviceType: ChatServiceType = .observer
     
-    private var CURRENT_USER_ID: String!
     private var GLOBAL_CONVERSATION: Conversation!
     
     //==================================================//
@@ -33,10 +32,7 @@ public class ObserverService: ChatService {
     
     @discardableResult
     private func syncDependencies() -> Bool {
-        guard let currentUserID = RuntimeStorage.currentUserID,
-              let globalConversation = RuntimeStorage.globalConversation else { return false }
-        
-        CURRENT_USER_ID = currentUserID
+        guard let globalConversation = RuntimeStorage.globalConversation else { return false }
         GLOBAL_CONVERSATION = globalConversation
         
         return true
@@ -55,6 +51,11 @@ public class ObserverService: ChatService {
             guard let identifier = returnedSnapshot.value as? String,
                   !self.GLOBAL_CONVERSATION.messages.contains(where: { $0.identifier == identifier }) else { return }
             
+            guard RuntimeStorage.coordinator?.conversation.wrappedValue.identifier.key == self.GLOBAL_CONVERSATION.identifier.key else {
+                RuntimeStorage.store(true, as: .receivedNotification)
+                return
+            }
+            
             MessageSerializer.shared.getMessage(withIdentifier: identifier) { (returnedMessage,
                                                                                exception) in
                 guard let message = returnedMessage else {
@@ -67,7 +68,7 @@ public class ObserverService: ChatService {
                     return
                 }
                 
-                guard message.fromAccountIdentifier != self.CURRENT_USER_ID else { return }
+                guard message.fromAccountIdentifier != RuntimeStorage.currentUserID else { return }
                 
                 print("Appending message with ID: \(message.identifier!)")
                 self.GLOBAL_CONVERSATION.messages.append(message)
@@ -136,7 +137,7 @@ public class ObserverService: ChatService {
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
         Database.database().reference().child("\(pathPrefix)\(GLOBAL_CONVERSATION.identifier!.key!)/participants").observe(.childChanged) { (returnedSnapshot) in
             guard let updatedTyper = returnedSnapshot.value as? String,
-                  updatedTyper.components(separatedBy: " | ")[0] != self.CURRENT_USER_ID else { return }
+                  updatedTyper.components(separatedBy: " | ")[0] != RuntimeStorage.currentUserID else { return }
             
             RuntimeStorage.store(updatedTyper.components(separatedBy: " | ")[2] == "true",
                                  as: .typingIndicator)

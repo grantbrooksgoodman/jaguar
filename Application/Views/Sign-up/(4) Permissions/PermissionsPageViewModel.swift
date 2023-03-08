@@ -66,59 +66,6 @@ public class PermissionsPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Authorization Requesting */
-    
-    public func requestContactPermission(completion: @escaping(_ granted: Bool?,
-                                                               _ exception: Exception?) -> Void) {
-        CNContactStore().requestAccess(for: .contacts) { granted, error in
-            guard error == nil else {
-                let exception = Exception(error!, metadata: [#file, #function, #line])
-                if exception.isEqual(to: .cnContactStoreAccessDenied) {
-                    completion(false, nil)
-                } else {
-                    completion(nil, Exception(error!, metadata: [#file, #function, #line]))
-                }
-                
-                return
-            }
-            
-            if granted {
-                if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
-                    RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
-                } else {
-                    ContactService.getLocalUserHashes { hashes, exception in
-                        guard let hashes else {
-                            completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                            return
-                        }
-                        
-                        UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
-                        RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
-                    }
-                }
-            }
-            
-            completion(granted, nil)
-        }
-    }
-    
-    public func requestNotificationPermission(completion: @escaping(_ granted: Bool?,
-                                                                    _ exception: Exception?) -> Void) {
-        let authOptions: UNAuthorizationOptions = [.alert, .badge, .sound]
-        UNUserNotificationCenter.current().requestAuthorization(options: authOptions) { granted, error in
-            guard error == nil else {
-                completion(nil, Exception(error!, metadata: [#file, #function, #line]))
-                return
-            }
-            
-            completion(granted, nil)
-        }
-        
-        UIApplication.shared.registerForRemoteNotifications()
-    }
-    
-    //==================================================//
-    
     /* MARK: - Other Methods */
     
     public func createUser(identifier: String,

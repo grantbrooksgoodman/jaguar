@@ -76,6 +76,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         let isTextSendButton = !messagesVC.messageInputBar.sendButton.isRecordButton
         let textFieldIsEmpty = messagesVC.messageInputBar.inputTextView.text.lowercasedTrimmingWhitespace == ""
         
+        guard !RuntimeStorage.isSendingMessage! else { return false }
+        
         if isTextSendButton {
             guard !textFieldIsEmpty else { return false }
             guard conversationNotEmpty || (hasSelectedContactPair && selectedContactPairNotEmpty) else { return false }
@@ -114,8 +116,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         ChatServices.defaultChatUIService?.setUserCancellation(enabled: false)
         
         inputBar.inputTextView.text = ""
-        inputBar.sendButton.isEnabled = false
         inputBar.sendButton.startAnimating()
+        inputBar.sendButton.isEnabled = false
         
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         RuntimeStorage.store(true, as: .isSendingMessage)
@@ -164,15 +166,23 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             inputBar.rightStackView.alignment = .center
         }
         
+        defer { inputBar.sendButton.isEnabled = shouldEnableSendButton }
+        
+        if currentText != "" {
+            ChatServices.defaultAudioMessageService?.removeGestureRecognizers()
+        }
+        
         if currentText != "" && inputBar.sendButton.isRecordButton {
             ChatServices.defaultChatUIService?.configureInputBar(forRecord: false)
-            ChatServices.defaultAudioMessageService?.removeGestureRecognizers()
         } else if currentText == "" && !inputBar.sendButton.isRecordButton {
+            guard ChatServices.defaultChatUIService?.shouldShowRecordButton ?? true else {
+                ChatServices.defaultChatUIService?.configureInputBar(forRecord: false)
+                return
+            }
+            
             ChatServices.defaultChatUIService?.configureInputBar(forRecord: true)
             ChatServices.defaultAudioMessageService?.addGestureRecognizers()
         }
-        
-        inputBar.sendButton.isEnabled = shouldEnableSendButton
     }
     
     //==================================================//
@@ -184,6 +194,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                                           command: RecordButtonCommand) {
         switch command {
         case .startRecording:
+            ChatServices.defaultMenuControllerService?.stopSpeakingIfNeeded()
             startRecording { exception in
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 guard let exception else { return }
@@ -220,7 +231,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     }
     
     private func handleStopRecordingException(_ exception: Exception) {
-        if exception.isEqual(to: .noSpeechDetected) {
+        if exception.isEqual(toAny: [.noSpeechDetected, .retry]) {
             ChatServices.defaultAudioMessageService?.playVibration()
             Core.hud.flash(LocalizedString.noSpeechDetected, image: .micSlash)
         }
@@ -232,15 +243,13 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             Core.gcd.after(seconds: 2) { inputBar.sendButton.isEnabled = self.shouldEnableSendButton }
         }
         
-        let filterParams: [JRException] = [.cannotOpenFile, .noAudioRecorderToStop, .noSpeechDetected]
+        let filterParams: [JRException] = [.cannotOpenFile, .noAudioRecorderToStop, .noSpeechDetected, .retry]
         guard !exception.isEqual(toAny: filterParams) else {
             Logger.log(exception, verbose: exception.isEqual(to: .noAudioRecorderToStop))
             return
         }
         
-        Core.gcd.after(seconds: 2) { Logger.log(exception,
-                                                with: .errorAlert,
-                                                verbose: exception.isEqual(to: .noSpeechDetected)) }
+        Core.gcd.after(seconds: 2) { Logger.log(exception, with: .errorAlert) }
     }
     
     private func startRecording(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
@@ -296,10 +305,13 @@ extension ChatPageViewCoordinator: MessagesDataSource {
               let messageSlice = RuntimeStorage.currentMessageSlice,
               messageSlice.count > indexPath.section else { return nil }
         
-        let translation = messageSlice[indexPath.section].translation!
+        let currentMessage = messageSlice[indexPath.section]
+        let translation = currentMessage.translation!
         let lastMessageIndex = messageSlice.count - 1
         
-        if translation.input.value() == translation.output,
+        // #warning("DANGEROUS TO BE HANDLING AUDIO COMPONENT HERE.")
+        if currentMessage.audioComponent == nil,
+           translation.input.value() == translation.output,
            RecognitionService.shouldMarkUntranslated(translation.output,
                                                      for: translation.languagePair) {
             let retryString = LocalizedString.holdToRetry
@@ -362,6 +374,11 @@ extension ChatPageViewCoordinator: MessagesDataSource {
             message.fromAccountIdentifier != currentUserID &&
             message.readDate == nil {
             message.updateReadDate()
+            for (index, message) in messages[0...indexPath.section].enumerated() {
+                print("updating read date for message #\(index + 1) before current")
+                message.updateReadDate()
+            }
+            
 #if !EXTENSION
             UIApplication.shared.applicationIconBadgeNumber = currentUser.badgeNumber
 #endif
@@ -390,6 +407,7 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
         let index = indexPath.section
         guard let messages = RuntimeStorage.currentMessageSlice,
               messages[index].translation.input.value() == messages[index].translation.output,
+              messages[index].audioComponent == nil, // #warning("DANGEROUS TO BE HANDLING AUDIO COMPONENT HERE.")
               message.sender.senderId == currentUserID,
               RecognitionService.shouldMarkUntranslated(messages[index].translation.output,
                                                         for: messages[index].translation.languagePair) else {
@@ -444,9 +462,11 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
         let lastMessageIndex = messageSlice.count - 1
         let messageTranslation: Translator.Translation = messageSlice[indexPath.section].translation
         
+        // #warning("DANGEROUS TO BE HANDLING AUDIO COMPONENT HERE.")
         if (messageTranslation.input.value() == messageTranslation.output &&
             RecognitionService.shouldMarkUntranslated(messageTranslation.output,
-                                                      for: messageTranslation.languagePair)) ||
+                                                      for: messageTranslation.languagePair) &&
+            messageSlice[indexPath.section].audioComponent == nil) ||
             (indexPath.section == lastMessageIndex &&
              messageSlice[lastMessageIndex].fromAccountIdentifier == currentUser.identifier) {
             return 20.0

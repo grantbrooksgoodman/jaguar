@@ -19,8 +19,7 @@ public enum SentenceGenerator {
         guard count > 0 else { return "" }
         
         guard let words = getWords() else {
-            Logger.log(Exception("Couldn't get words.",
-                                 metadata: [#file, #function, #line]))
+            Logger.log(Exception("Couldn't get words.", metadata: [#file, #function, #line]))
             return ""
         }
         

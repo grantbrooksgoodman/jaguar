@@ -171,6 +171,175 @@
 		<key>zh</key>
 		<string>驳回</string>
 	</dict>
+	<key>failed_to_retranslate</key>
+	<dict>
+		<key>af</key>
+		<string>Kon nie hervertaal nie</string>
+		<key>ar</key>
+		<string>فشلت إعادة الترجمة</string>
+		<key>az</key>
+		<string>Yenidən tərcümə etmək alınmadı</string>
+		<key>ba</key>
+		<string>Failed to retranslate</string>
+		<key>be</key>
+		<string>Не ўдалося перакласці</string>
+		<key>bg</key>
+		<string>Повторният превод не бе успешен</string>
+		<key>bn</key>
+		<string>পুনরায় অনুবাদ করতে ব্যর্থ হয়েছে৷</string>
+		<key>bs</key>
+		<string>Ponovno prevođenje nije uspjelo</string>
+		<key>ca</key>
+		<string>No s&apos;ha pogut tornar a traduir</string>
+		<key>ceb</key>
+		<string>Napakyas sa paghubad pag-usab</string>
+		<key>cs</key>
+		<string>Opětovný překlad se nezdařil</string>
+		<key>cy</key>
+		<string>Wedi methu ag ail-gyfieithu</string>
+		<key>da</key>
+		<string>Kunne ikke genoversætte</string>
+		<key>de</key>
+		<string>Neuübersetzung fehlgeschlagen</string>
+		<key>el</key>
+		<string>Αποτυχία επαναμετάφρασης</string>
+		<key>en</key>
+		<string>Failed to retranslate</string>
+		<key>eo</key>
+		<string>Malsukcesis retraduki</string>
+		<key>es</key>
+		<string>Error al volver a traducir</string>
+		<key>et</key>
+		<string>Uuesti tõlkimine ebaõnnestus</string>
+		<key>eu</key>
+		<string>Ezin izan da berriro itzuli</string>
+		<key>fa</key>
+		<string>ترجمه مجدد انجام نشد</string>
+		<key>fi</key>
+		<string>Uudelleenkääntäminen epäonnistui</string>
+		<key>fr</key>
+		<string>Échec de la retraduction</string>
+		<key>ga</key>
+		<string>Theip ar athaistriú</string>
+		<key>gd</key>
+		<string>Dh&apos;fhàillig ath-eadar-theangachadh</string>
+		<key>gl</key>
+		<string>Produciuse un erro ao volver traducir</string>
+		<key>gu</key>
+		<string>ફરીથી અનુવાદ કરવામાં નિષ્ફળ</string>
+		<key>he</key>
+		<string>התרגום מחדש נכשל</string>
+		<key>hi</key>
+		<string>पुन: अनुवाद करने में विफल</string>
+		<key>hr</key>
+		<string>Ponovni prijevod nije uspio</string>
+		<key>ht</key>
+		<string>Echwe pou retradui</string>
+		<key>hu</key>
+		<string>Nem sikerült újrafordítani</string>
+		<key>hy</key>
+		<string>Չհաջողվեց վերաթարգմանել</string>
+		<key>id</key>
+		<string>Gagal menerjemahkan ulang</string>
+		<key>is</key>
+		<string>Mistókst að endurþýða</string>
+		<key>it</key>
+		<string>Impossibile ritradurre</string>
+		<key>ja</key>
+		<string>再翻訳できませんでした</string>
+		<key>jv</key>
+		<string>Failed to retranslate</string>
+		<key>ka</key>
+		<string>ხელახლა თარგმნა ვერ მოხერხდა</string>
+		<key>kk</key>
+		<string>Қайта аудару мүмкін болмады</string>
+		<key>kn</key>
+		<string>ಮರು ಭಾಷಾಂತರಿಸಲು ವಿಫಲವಾಗಿದೆ</string>
+		<key>ko</key>
+		<string>재번역 실패</string>
+		<key>ky</key>
+		<string>Кайра которуу ишке ашкан жок</string>
+		<key>la</key>
+		<string>Deficio ad retranslate</string>
+		<key>lt</key>
+		<string>Nepavyko išversti iš naujo</string>
+		<key>mg</key>
+		<string>Tsy nahavita nandika indray</string>
+		<key>mi</key>
+		<string>I rahua te whakamaori ano</string>
+		<key>mk</key>
+		<string>Не успеа да се преведе</string>
+		<key>ml</key>
+		<string>വീണ്ടും വിവർത്തനം ചെയ്യുന്നതിൽ പരാജയപ്പെട്ടു</string>
+		<key>mn</key>
+		<string>Дахин орчуулж чадсангүй</string>
+		<key>mr</key>
+		<string>पुनर्अनुवाद करण्यात अयशस्वी</string>
+		<key>ms</key>
+		<string>Gagal menterjemah semula</string>
+		<key>mt</key>
+		<string>Naqas milli jerġa' jittraduċi</string>
+		<key>ne</key>
+		<string>पुन: अनुवाद गर्न असफल भयो</string>
+		<key>nl</key>
+		<string>Kan niet opnieuw vertalen</string>
+		<key>no</key>
+		<string>Kunne ikke oversette på nytt</string>
+		<key>pa</key>
+		<string>ਮੁੜ ਅਨੁਵਾਦ ਕਰਨ ਵਿੱਚ ਅਸਫਲ</string>
+		<key>pl</key>
+		<string>Nie udało się ponownie przetłumaczyć</string>
+		<key>pt</key>
+		<string>Falha ao traduzir novamente</string>
+		<key>ro</key>
+		<string>Nu s-a retradus</string>
+		<key>ru</key>
+		<string>Не удалось выполнить повторный перевод</string>
+		<key>si</key>
+		<string>නැවත පරිවර්තනය කිරීමට අසමත් විය</string>
+		<key>sk</key>
+		<string>Opätovný preklad zlyhal</string>
+		<key>sl</key>
+		<string>Ponovni prevod ni uspel</string>
+		<key>sq</key>
+		<string>Ripërkthimi dështoi</string>
+		<key>sr</key>
+		<string>Поновни превод није успео</string>
+		<key>su</key>
+		<string>Gagal narjamahkeun deui</string>
+		<key>sv</key>
+		<string>Det gick inte att översätta om</string>
+		<key>sw</key>
+		<string>Imeshindwa kutafsiri upya</string>
+		<key>ta</key>
+		<string>மீண்டும் மொழிபெயர்க்க முடியவில்லை</string>
+		<key>te</key>
+		<string>మళ్లీ అనువదించడంలో విఫలమైంది</string>
+		<key>tg</key>
+		<string>Муваффақияти дубора тарҷума кардан</string>
+		<key>th</key>
+		<string>แปลใหม่ไม่สำเร็จ</string>
+		<key>tl</key>
+		<string>Nabigong muling isalin</string>
+		<key>tr</key>
+		<string>Yeniden çevrilemedi</string>
+		<key>tt</key>
+		<string>Ретранслата алмады</string>
+		<key>udm</key>
+		<string>Failed to retranslate</string>
+		<key>uk</key>
+		<string>Не вдалося перекласти</string>
+		<key>ur</key>
+		<string>دوبارہ ترجمہ کرنے میں ناکام</string>
+		<key>uz</key>
+		<string>Qayta tarjima qilib bo‘lmadi</string>
+		<key>vi</key>
+		<string>Không thể dịch lại</string>
+		<key>yi</key>
+		<string>ניט אַנדערש צו איבערזעצן</string>
+		<key>zh</key>
+		<string>重新翻译失败</string>
+	</dict>
 	<key>language_codes</key>
 	<dict>
 		<key>af</key>
@@ -6055,6 +6224,175 @@ Vui lòng xác minh rằng ứng dụng e-mail của bạn đã được thiết
 		<key>zh</key>
 		<string>复制</string>
 	</dict>
+	<key>copied</key>
+	<dict>
+		<key>af</key>
+		<string>Teks Gekopieer</string>
+		<key>ar</key>
+		<string>تم نسخ النص</string>
+		<key>az</key>
+		<string>Mətn Kopyalandı</string>
+		<key>ba</key>
+		<string>Text Copied</string>
+		<key>be</key>
+		<string>Тэкст Скапіраваны</string>
+		<key>bg</key>
+		<string>Текстът е копиран</string>
+		<key>bn</key>
+		<string>পাঠ্য অনুলিপি করা হয়েছে৷</string>
+		<key>bs</key>
+		<string>Text Copied</string>
+		<key>ca</key>
+		<string>Text Copiat</string>
+		<key>ceb</key>
+		<string>Gikopya ang Teksto</string>
+		<key>cs</key>
+		<string>Text Zkopírován</string>
+		<key>cy</key>
+		<string>Testun wedi&apos;i Gopïo</string>
+		<key>da</key>
+		<string>Tekst Kopieret</string>
+		<key>de</key>
+		<string>Texte Kopiert</string>
+		<key>el</key>
+		<string>Το κείμενο αντιγράφηκε</string>
+		<key>en</key>
+		<string>Copied</string>
+		<key>eo</key>
+		<string>Teksto Kopiita</string>
+		<key>es</key>
+		<string>Copiado</string>
+		<key>et</key>
+		<string>Tekst Kopeeritud</string>
+		<key>eu</key>
+		<string>Testua kopiatu da</string>
+		<key>fa</key>
+		<string>متن کپی شد</string>
+		<key>fi</key>
+		<string>Teksti Kopioitu</string>
+		<key>fr</key>
+		<string>Texte Copié</string>
+		<key>ga</key>
+		<string>Téacs Cóipeáladh</string>
+		<key>gd</key>
+		<string>Teacs air a chopaigeadh</string>
+		<key>gl</key>
+		<string>Texto Copiado</string>
+		<key>gu</key>
+		<string>ટેક્સ્ટ કૉપિ કરેલ</string>
+		<key>he</key>
+		<string>הטקסט הועתק</string>
+		<key>hi</key>
+		<string>टेक्स्ट कॉपी किया गया</string>
+		<key>hr</key>
+		<string>Tekst Kopiran</string>
+		<key>ht</key>
+		<string>Tèks Kopye</string>
+		<key>hu</key>
+		<string>Szöveg Másolva</string>
+		<key>hy</key>
+		<string>Տեքստը պատճենված է</string>
+		<key>id</key>
+		<string>Teks Disalin</string>
+		<key>is</key>
+		<string>Texti Afritaður</string>
+		<key>it</key>
+		<string>Copiato</string>
+		<key>ja</key>
+		<string>テキストをコピーしました</string>
+		<key>jv</key>
+		<string>Text Copied</string>
+		<key>ka</key>
+		<string>Ტექსტი Დაკოპირებულია</string>
+		<key>kk</key>
+		<string>Мәтін Көшірілді</string>
+		<key>kn</key>
+		<string>ಪಠ್ಯವನ್ನು ನಕಲಿಸಲಾಗಿದೆ</string>
+		<key>ko</key>
+		<string>복사된 텍스트</string>
+		<key>ky</key>
+		<string>Текст Көчүрүлдү</string>
+		<key>la</key>
+		<string>Textus Copied</string>
+		<key>lt</key>
+		<string>Tekstas Nukopijuotas</string>
+		<key>mg</key>
+		<string>Lahatsoratra Voadika</string>
+		<key>mi</key>
+		<string>Kuputuhi kua kapea</string>
+		<key>mk</key>
+		<string>Текстот е копиран</string>
+		<key>ml</key>
+		<string>വാചകം പകർത്തി</string>
+		<key>mn</key>
+		<string>Текстийг Хуулсан</string>
+		<key>mr</key>
+		<string>मजकूर कॉपी केला</string>
+		<key>ms</key>
+		<string>Teks Disalin</string>
+		<key>mt</key>
+		<string>Test Ikkupjat</string>
+		<key>ne</key>
+		<string>पाठ प्रतिलिपि गरियो</string>
+		<key>nl</key>
+		<string>Tekst Gekopieerd</string>
+		<key>no</key>
+		<string>Tekst Kopiert</string>
+		<key>pa</key>
+		<string>ਟੈਕਸਟ ਕਾਪੀ ਕੀਤਾ ਗਿਆ</string>
+		<key>pl</key>
+		<string>Skopiowano Tekst</string>
+		<key>pt</key>
+		<string>Copiado</string>
+		<key>ro</key>
+		<string>Text Copiat</string>
+		<key>ru</key>
+		<string>Текст Скопирован</string>
+		<key>si</key>
+		<string>පෙළ පිටපත් කර ඇත</string>
+		<key>sk</key>
+		<string>Text bol skopírovaný</string>
+		<key>sl</key>
+		<string>Besedilo Kopirano</string>
+		<key>sq</key>
+		<string>Teksti u kopjua</string>
+		<key>sr</key>
+		<string>Тект Цопиед</string>
+		<key>su</key>
+		<string>Téks Disalin</string>
+		<key>sv</key>
+		<string>Text Kopierad</string>
+		<key>sw</key>
+		<string>Maandishi Yamenakiliwa</string>
+		<key>ta</key>
+		<string>உரை நகலெடுக்கப்பட்டது</string>
+		<key>te</key>
+		<string>టెక్స్ట్ కాపీ చేయబడింది</string>
+		<key>tg</key>
+		<string>Матни Нусхабардорӣ</string>
+		<key>th</key>
+		<string>คัดลอกข้อความแล้ว</string>
+		<key>tl</key>
+		<string>Nakopya ang Teksto</string>
+		<key>tr</key>
+		<string>Metin Kopyalandı</string>
+		<key>tt</key>
+		<string>Текст Күчерелде</string>
+		<key>udm</key>
+		<string>Text Copied</string>
+		<key>uk</key>
+		<string>Текст Скопійовано</string>
+		<key>ur</key>
+		<string>متن کاپی ہو گیا۔</string>
+		<key>uz</key>
+		<string>Matn Nusxalandi</string>
+		<key>vi</key>
+		<string>Đã sao chép văn bản</string>
+		<key>yi</key>
+		<string>טעקסט קאַפּיד</string>
+		<key>zh</key>
+		<string>文本已复制</string>
+	</dict>
 	<key>speak</key>
 	<dict>
 		<key>af</key>
@@ -7913,6 +8251,344 @@ Vui lòng xác minh rằng ứng dụng e-mail của bạn đã được thiết
 		<string>זען טראַנסקריפּציע</string>
 		<key>zh</key>
 		<string>查看转录</string>
+	</dict>
+	<key>select_calling_code</key>
+	<dict>
+		<key>af</key>
+		<string>Kies Oproepkode</string>
+		<key>ar</key>
+		<string>حدد رمز الاتصال</string>
+		<key>az</key>
+		<string>Zəng Kodunu Seçin</string>
+		<key>ba</key>
+		<string>Select Calling Code</string>
+		<key>be</key>
+		<string>Выберыце Тэлефонны Код</string>
+		<key>bg</key>
+		<string>Изберете код за повикване</string>
+		<key>bn</key>
+		<string>কলিং কোড নির্বাচন করুন</string>
+		<key>bs</key>
+		<string>Odaberite Pozivni Kod</string>
+		<key>ca</key>
+		<string>Seleccioneu el codi de trucada</string>
+		<key>ceb</key>
+		<string>Pilia ang Calling Code</string>
+		<key>cs</key>
+		<string>Vyberte Volací Kód</string>
+		<key>cy</key>
+		<string>Dewiswch Cod Galw</string>
+		<key>da</key>
+		<string>Vælg Opkaldskode</string>
+		<key>de</key>
+		<string>Wählen Sie Anrufcode</string>
+		<key>el</key>
+		<string>Επιλέξτε Κωδικός Κλήσης</string>
+		<key>en</key>
+		<string>Select Calling Code</string>
+		<key>eo</key>
+		<string>Elektu Vokan Kodon</string>
+		<key>es</key>
+		<string>Seleccionar código de llamada</string>
+		<key>et</key>
+		<string>Valige Kõnekood</string>
+		<key>eu</key>
+		<string>Hautatu Dei-kodea</string>
+		<key>fa</key>
+		<string>کد تماس را انتخاب کنید</string>
+		<key>fi</key>
+		<string>Valitse Soittokoodi</string>
+		<key>fr</key>
+		<string>Sélectionnez le code d&apos;appel</string>
+		<key>ga</key>
+		<string>Roghnaigh Cód Glaonna</string>
+		<key>gd</key>
+		<string>Tagh Còd Call</string>
+		<key>gl</key>
+		<string>Seleccione o código de chamada</string>
+		<key>gu</key>
+		<string>કૉલિંગ કોડ પસંદ કરો</string>
+		<key>he</key>
+		<string>בחר קוד חיוג</string>
+		<key>hi</key>
+		<string>कॉलिंग कोड चुनें</string>
+		<key>hr</key>
+		<string>Odaberite Pozivni Broj</string>
+		<key>ht</key>
+		<string>Chwazi Kòd Rele</string>
+		<key>hu</key>
+		<string>Válassza a Hívókód lehetőséget</string>
+		<key>hy</key>
+		<string>Ընտրեք Զանգի Կոդը</string>
+		<key>id</key>
+		<string>Pilih Kode Panggilan</string>
+		<key>is</key>
+		<string>Veldu Símtalsnúmer</string>
+		<key>it</key>
+		<string>Seleziona Codice di chiamata</string>
+		<key>ja</key>
+		<string>発信者番号を選択</string>
+		<key>jv</key>
+		<string>Select Calling Code</string>
+		<key>ka</key>
+		<string>Აირჩიეთ Დარეკვის Კოდი</string>
+		<key>kk</key>
+		<string>Қоңырау Кодын Таңдаңыз</string>
+		<key>kn</key>
+		<string>ಕರೆ ಕೋಡ್ ಆಯ್ಕೆಮಾಡಿ</string>
+		<key>ko</key>
+		<string>호출 코드 선택</string>
+		<key>ky</key>
+		<string>Чалуу Кодун Тандаңыз</string>
+		<key>la</key>
+		<string>Lego Calling Code</string>
+		<key>lt</key>
+		<string>Pasirinkite Skambinimo Kodas</string>
+		<key>mg</key>
+		<string>Mifidiana Calling Code</string>
+		<key>mi</key>
+		<string>Tīpako Waehere Waea</string>
+		<key>mk</key>
+		<string>Изберете Код за повикување</string>
+		<key>ml</key>
+		<string>കോളിംഗ് കോഡ് തിരഞ്ഞെടുക്കുക</string>
+		<key>mn</key>
+		<string>Дуудлагын кодыг сонгоно уу</string>
+		<key>mr</key>
+		<string>कॉलिंग कोड निवडा</string>
+		<key>ms</key>
+		<string>Pilih Kod Panggilan</string>
+		<key>mt</key>
+		<string>Agħżel Kodiċi Tas-Sejħa</string>
+		<key>ne</key>
+		<string>कलिङ कोड चयन गर्नुहोस्</string>
+		<key>nl</key>
+		<string>Selecteer Belcode</string>
+		<key>no</key>
+		<string>Velg Calling Code</string>
+		<key>pa</key>
+		<string>ਕਾਲਿੰਗ ਕੋਡ ਚੁਣੋ</string>
+		<key>pl</key>
+		<string>Wybierz Kod Wywołujący</string>
+		<key>pt</key>
+		<string>Selecione o código de chamada</string>
+		<key>ro</key>
+		<string>Selectați Codul de apelare</string>
+		<key>ru</key>
+		<string>Выберите Код Вызова</string>
+		<key>si</key>
+		<string>ඇමතුම් කේතය තෝරන්න</string>
+		<key>sk</key>
+		<string>Vyberte Volací Kód</string>
+		<key>sl</key>
+		<string>Izberite Klicno Kodo</string>
+		<key>sq</key>
+		<string>Zgjidhni Kodin e thirrjes</string>
+		<key>sr</key>
+		<string>Изаберите Позивни Код</string>
+		<key>su</key>
+		<string>Pilih Kode Telepon</string>
+		<key>sv</key>
+		<string>Välj Calling Code</string>
+		<key>sw</key>
+		<string>Chagua Msimbo wa Simu</string>
+		<key>ta</key>
+		<string>அழைப்புக் குறியீட்டைத் தேர்ந்தெடுக்கவும்</string>
+		<key>te</key>
+		<string>కాలింగ్ కోడ్‌ని ఎంచుకోండి</string>
+		<key>tg</key>
+		<string>Рамзи зангро интихоб кунед</string>
+		<key>th</key>
+		<string>เลือกรหัสการโทร</string>
+		<key>tl</key>
+		<string>Piliin ang Calling Code</string>
+		<key>tr</key>
+		<string>Arama Kodu Seçin</string>
+		<key>tt</key>
+		<string>Шалтырату Кодын Сайлагыз</string>
+		<key>udm</key>
+		<string>Select Calling Code</string>
+		<key>uk</key>
+		<string>Виберіть Код Виклику</string>
+		<key>ur</key>
+		<string>کالنگ کوڈ منتخب کریں۔</string>
+		<key>uz</key>
+		<string>Qo&apos;ng&apos;iroq Kodini Tanlang</string>
+		<key>vi</key>
+		<string>Chọn Mã Gọi</string>
+		<key>yi</key>
+		<string>אויסקלייַבן פאַך קאָד</string>
+		<key>zh</key>
+		<string>选择调用代码</string>
+	</dict>
+	<key>no_results</key>
+	<dict>
+		<key>af</key>
+		<string>Geen resultate</string>
+		<key>ar</key>
+		<string>لا نتائج</string>
+		<key>az</key>
+		<string>Nəticə yoxdur</string>
+		<key>ba</key>
+		<string>No results</string>
+		<key>be</key>
+		<string>Няма вынікаў</string>
+		<key>bg</key>
+		<string>Няма резултати</string>
+		<key>bn</key>
+		<string>কোন ফলাফল নেই</string>
+		<key>bs</key>
+		<string>Nema rezultata</string>
+		<key>ca</key>
+		<string>Sense resultats</string>
+		<key>ceb</key>
+		<string>Walay resulta</string>
+		<key>cs</key>
+		<string>Žádné výsledky</string>
+		<key>cy</key>
+		<string>Dim canlyniadau</string>
+		<key>da</key>
+		<string>Ingen resultater</string>
+		<key>de</key>
+		<string>Keine ergebnisse</string>
+		<key>el</key>
+		<string>Χωρίς αποτέλεσμα</string>
+		<key>en</key>
+		<string>No results</string>
+		<key>eo</key>
+		<string>Neniuj rezultoj</string>
+		<key>es</key>
+		<string>No hay resultados</string>
+		<key>et</key>
+		<string>Tulemused puuduvad</string>
+		<key>eu</key>
+		<string>Ez dago emaitzarik</string>
+		<key>fa</key>
+		<string>هیچ نتیجه ای</string>
+		<key>fi</key>
+		<string>Ei tuloksia</string>
+		<key>fr</key>
+		<string>Aucun résultat</string>
+		<key>ga</key>
+		<string>Gan torthaí</string>
+		<key>gd</key>
+		<string>Gun thoraidhean</string>
+		<key>gl</key>
+		<string>Sen resultados</string>
+		<key>gu</key>
+		<string>પરિણામ નથી</string>
+		<key>he</key>
+		<string>אין תוצאות</string>
+		<key>hi</key>
+		<string>कोई परिणाम नहीं</string>
+		<key>hr</key>
+		<string>Nema rezultata</string>
+		<key>ht</key>
+		<string>Pa gen rezilta</string>
+		<key>hu</key>
+		<string>Nincs eredmény</string>
+		<key>hy</key>
+		<string>Ոչ մի արդյունք</string>
+		<key>id</key>
+		<string>Tidak ada hasil</string>
+		<key>is</key>
+		<string>Engar niðurstöður</string>
+		<key>it</key>
+		<string>Nessun risultato</string>
+		<key>ja</key>
+		<string>結果がありません</string>
+		<key>jv</key>
+		<string>No results</string>
+		<key>ka</key>
+		<string>Არანაირი შედეგი</string>
+		<key>kk</key>
+		<string>Нәтиже жоқ</string>
+		<key>kn</key>
+		<string>ಯಾವುದೇ ಫಲಿತಾಂಶಗಳಿಲ್ಲ</string>
+		<key>ko</key>
+		<string>결과 없음</string>
+		<key>ky</key>
+		<string>Натыйжа жок</string>
+		<key>la</key>
+		<string>Nihil eventorum</string>
+		<key>lt</key>
+		<string>Jokių rezultatų</string>
+		<key>mg</key>
+		<string>Tsy misy valiny</string>
+		<key>mi</key>
+		<string>Karekau he hua</string>
+		<key>mk</key>
+		<string>Нема резултати</string>
+		<key>ml</key>
+		<string>ഫലങ്ങളൊന്നുമില്ല</string>
+		<key>mn</key>
+		<string>Үр дүнгүй</string>
+		<key>mr</key>
+		<string>कोणतेही परिणाम नाहीत</string>
+		<key>ms</key>
+		<string>Tiada keputusan</string>
+		<key>mt</key>
+		<string>Ebda riżultati</string>
+		<key>ne</key>
+		<string>कुनै परिणाम छैन</string>
+		<key>nl</key>
+		<string>Geen resultaten</string>
+		<key>no</key>
+		<string>Ingen resultater</string>
+		<key>pa</key>
+		<string>ਕੋਈ ਨਤੀਜਾ ਨਹੀਂ</string>
+		<key>pl</key>
+		<string>Brak wyników</string>
+		<key>pt</key>
+		<string>Sem resultados</string>
+		<key>ro</key>
+		<string>Fara rezultate</string>
+		<key>ru</key>
+		<string>Без результатов</string>
+		<key>si</key>
+		<string>ප්රතිපල නැත</string>
+		<key>sk</key>
+		<string>Žiadne výsledky</string>
+		<key>sl</key>
+		<string>Brez rezultatov</string>
+		<key>sq</key>
+		<string>Nuk ka rezultate</string>
+		<key>sr</key>
+		<string>Нема резултата</string>
+		<key>su</key>
+		<string>Taya hasilna</string>
+		<key>sv</key>
+		<string>Inga resultat</string>
+		<key>sw</key>
+		<string>Hakuna matokeo</string>
+		<key>ta</key>
+		<string>முடிவுகள் இல்லை</string>
+		<key>te</key>
+		<string>ఫలితాలు లేవు</string>
+		<key>tg</key>
+		<string>Ҳеҷ натиҷае нест</string>
+		<key>th</key>
+		<string>ไม่มีผลลัพธ์</string>
+		<key>tl</key>
+		<string>Walang resulta</string>
+		<key>tr</key>
+		<string>Sonuç yok</string>
+		<key>tt</key>
+		<string>Нәтиҗә юк</string>
+		<key>udm</key>
+		<string>No results</string>
+		<key>uk</key>
+		<string>Немає результатів</string>
+		<key>ur</key>
+		<string>کوئی نتیجہ نہیں۔</string>
+		<key>uz</key>
+		<string>Natija yoʻq</string>
+		<key>vi</key>
+		<string>Ko có kết quả</string>
+		<key>yi</key>
+		<string>קיין רעזולטאַטן</string>
+		<key>zh</key>
+		<string>没有结果</string>
 	</dict>
 </dict>
 </plist>

@@ -124,8 +124,7 @@ public class User: Codable {
             print("Conversations: \(updatedIdentifiers.count)")
             
             guard let asConversationIDs = updatedIdentifiers.asConversationIDs else {
-                completion(nil, Exception("Unable to deserialize «openConversations».",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Unable to deserialize «openConversations».", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -204,38 +203,36 @@ public class User: Codable {
             let updatedParticipants = ["\(self.identifier!) | \(currentUserParticipant.hasDeleted!) | \(isTyping)", otherUserID]
             
             let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
-            GeneralSerializer.setValue(onKey: "\(pathPrefix)\(inConversationWithID)/participants",
-                                       withData: updatedParticipants) { returnedError in
-                guard let error = returnedError else {
+            GeneralSerializer.setValue(updatedParticipants,
+                                       forKey: "\(pathPrefix)\(inConversationWithID)/participants") { exception in
+                guard let exception else {
                     completion(nil)
                     return
                 }
                 
-                completion(Exception(error, metadata: [#file, #function, #line]))
+                completion(exception)
             }
         }
     }
     
     public func updatePushTokens(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         guard let newToken = RuntimeStorage.pushToken else {
-            completion(Exception("No stored push token.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("No stored push token.", metadata: [#file, #function, #line]))
             return
         }
         
         var pushTokens = pushTokens ?? []
         guard !pushTokens.contains(newToken) else {
-            completion(Exception("Push token already stored on server!",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Push token already stored on server!", metadata: [#file, #function, #line]))
             return
         }
         
         pushTokens.append(newToken)
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
-        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/pushTokens",
-                                   withData: pushTokens) { error in
-            guard error == nil else {
-                completion(Exception(error!, metadata: [#file, #function, #line]))
+        GeneralSerializer.setValue(pushTokens,
+                                   forKey: "\(pathPrefix)\(identifier!)/pushTokens") { exception in
+            guard exception == nil else {
+                completion(exception!)
                 return
             }
             
@@ -243,15 +240,11 @@ public class User: Codable {
         }
     }
     
-    public func updateLastActiveDate() {
+    public func updateLastActiveDate(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         let pathPrefix = "/\(GeneralSerializer.environment.shortString)/users/"
-        GeneralSerializer.setValue(onKey: "\(pathPrefix)\(identifier!)/lastActive",
-                                   withData: Core.secondaryDateFormatter!.string(from: Date())) { returnedError in
-            if let error = returnedError {
-                Logger.log(Exception(error,
-                                     extraParams: ["UserFacingDescriptor": "Update last active date failed!"],
-                                     metadata: [#file, #function, #line]))
-            }
+        GeneralSerializer.setValue(Core.secondaryDateFormatter!.string(from: Date()),
+                                   forKey: "\(pathPrefix)\(identifier!)/lastActive") { exception in
+            completion(exception)
         }
     }
     
@@ -262,8 +255,7 @@ public class User: Codable {
     public func notifyOfNewMessage(_ text: String,
                                    completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         guard let pushTokens else {
-            completion(Exception("User hasn't registered for push notifications!",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("User hasn't registered for push notifications!", metadata: [#file, #function, #line]))
             return
         }
         
@@ -290,14 +282,12 @@ public class User: Codable {
                         _ text: String,
                         completion: @escaping(_ exception: Exception?) -> Void) {
         guard let url = URL(string: "https://fcm.googleapis.com/fcm/send") else {
-            completion(Exception("Couldn't generate URL.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Couldn't generate URL.", metadata: [#file, #function, #line]))
             return
         }
         
         guard let apiKey = RuntimeStorage.pushApiKey else {
-            completion(Exception("Couldn't get push API key.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Couldn't get push API key.", metadata: [#file, #function, #line]))
             return
         }
         

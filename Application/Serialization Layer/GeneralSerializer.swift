@@ -48,13 +48,12 @@ public enum GeneralSerializer {
      - Parameter atPath: The server path at which to retrieve values.
      - Parameter completion: Returns the Firebase snapshot value.
      */
-    public static func getValues(atPath: String, completion: @escaping (_ returnedValues: Any?,
-                                                                        _ returnedException: Exception?) -> Void) {
-        Database.database().reference().child(atPath).observeSingleEvent(of: .value) { returnedSnapshot in
-            completion(returnedSnapshot.value, nil)
-        } withCancel: { returnedError in
-            completion(nil, Exception(returnedError,
-                                      metadata: [#file, #function, #line]))
+    public static func getValues(atPath: String, completion: @escaping (_ values: Any?,
+                                                                        _ exception: Exception?) -> Void) {
+        Database.database().reference().child(atPath).observeSingleEvent(of: .value) { snapshot in
+            completion(snapshot.value, nil)
+        } withCancel: { error in
+            completion(nil, Exception(error, metadata: [#file, #function, #line]))
         }
     }
     
@@ -64,14 +63,16 @@ public enum GeneralSerializer {
     
     public static func queryValues(atPath: String,
                                    limit: Int,
-                                   completion: @escaping (_ returnedValues: Any?,
+                                   completion: @escaping (_ values: Any?,
                                                           _ exception: Exception?) -> Void) {
-        Database.database().reference().child(atPath).queryLimited(toFirst: UInt(limit)).getData { (returnedError, returnedSnapshot) in
-            if let error = returnedError {
-                completion(nil, Exception(error, metadata: [#file, #function, #line]))
+        Database.database().reference().child(atPath).queryLimited(toFirst: UInt(limit)).getData { (error, snapshot) in
+            guard let snapshot, let value = snapshot.value else {
+                let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
+                completion(nil, exception)
+                return
             }
             
-            completion(returnedSnapshot?.value, nil)
+            completion(value, nil)
         }
     }
     
@@ -79,35 +80,40 @@ public enum GeneralSerializer {
     
     /* MARK: - Setter Methods */
     
-    public static func setValue(onKey: String, withData: Any, completion: @escaping (Error?) -> Void) {
-        Database.database().reference().child(onKey).setValue(withData) { returnedError, _ in
-            guard let error = returnedError else {
+    public static func setValue(_ value: Any,
+                                forKey key: String,
+                                completion: @escaping(_ exception: Exception?) -> Void) {
+        Database.database().reference().child(key).setValue(value) { error, _ in
+            guard let error else {
                 completion(nil)
                 return
             }
             
-            completion(error)
+            completion(Exception(error, metadata: [#file, #function, #line]))
         }
     }
     
     /**
      Updates a value on the server for a given key and data bundle.
      
-     - Parameter onKey: The server path at which to update values.
-     - Parameter withData: The data bundle to update the server with.
+     - Parameter forKey: The server path at which to update child values.
+     - Parameter with: The data with which to update the server.
      
-     - Parameter completion: Returns an `Error` if unable to update values.
+     - Parameter completion: Returns an `Exception` if unable to update values.
      */
-    public static func updateValue(onKey: String, withData: [String: Any], completion: @escaping (Error?) -> Void) {
-        Database.database().reference().child(onKey).updateChildValues(withData, withCompletionBlock: { returnedError, _ in
-            guard let error = returnedError else {
+    public static func updateChildValues(forKey key: String,
+                                         with data: [String: Any],
+                                         completion: @escaping(_ exception: Exception?) -> Void) {
+        Database.database().reference().child(key).updateChildValues(data, withCompletionBlock: { error, _ in
+            guard let error else {
                 completion(nil)
                 return
             }
             
-            completion(error)
+            completion(Exception(error, metadata: [#file, #function, #line]))
         })
     }
+    
     
     //==================================================//
     
@@ -115,10 +121,10 @@ public enum GeneralSerializer {
     
     public static func getAppShareLink(completion: @escaping(_ link: URL?,
                                                              _ exception: Exception?) -> Void) {
-        getValues(atPath: "/appShareLink") { returnedValues, returnedException in
-            guard let linkString = returnedValues as? String,
+        getValues(atPath: "/appShareLink") { values, exception in
+            guard let linkString = values as? String,
                   let url = URL(string: linkString) else {
-                completion(nil, returnedException ?? Exception(metadata: [#file, #function, #line]))
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
@@ -128,9 +134,21 @@ public enum GeneralSerializer {
     
     public static func getPushApiKey(completion: @escaping(_ key: String?,
                                                            _ exception: Exception?) -> Void) {
-        getValues(atPath: "/pushApiKey") { returnedValues, returnedException in
-            guard let key = returnedValues as? String else {
-                completion(nil, returnedException ?? Exception(metadata: [#file, #function, #line]))
+        getValues(atPath: "/pushApiKey") { values, exception in
+            guard let key = values as? String else {
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(key, nil)
+        }
+    }
+    
+    public static func getRedirectionKey(completion: @escaping(_ key: String?,
+                                                               _ exception: Exception?) -> Void) {
+        getValues(atPath: "/redirectionKey") { values, exception in
+            guard let key = values as? String else {
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             

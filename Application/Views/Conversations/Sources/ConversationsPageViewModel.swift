@@ -56,17 +56,14 @@ public class ConversationsPageViewModel: ObservableObject {
         Core.ui.resetNavigationBarAppearance()
         
         guard let currentUserID = RuntimeStorage.currentUserID else {
-            state = .failed(Exception("No current user ID!",
-                                      metadata: [#file, #function, #line]))
+            state = .failed(Exception("No current user ID!", metadata: [#file, #function, #line]))
             completion()
             return
         }
         
-        //        ContactService.clearCache()
-        
         if RuntimeStorage.shouldUpdateReadState! ||
-            /*RuntimeStorage.receivedNotification! ||*/
-            (RuntimeStorage.becameActive ?? false) {
+        RuntimeStorage.receivedNotification! ||
+        (RuntimeStorage.becameActive ?? false) {
             if (RuntimeStorage.becameActive ?? false) {
                 print("reloading because became active")
             }
@@ -83,6 +80,7 @@ public class ConversationsPageViewModel: ObservableObject {
         }
         
         setPushApiKey()
+        setRedirectionKey()
         
         UserSerializer.shared.getUser(withIdentifier: currentUserID) { (returnedUser,
                                                                         exception) in
@@ -127,31 +125,6 @@ public class ConversationsPageViewModel: ObservableObject {
                                    verbose: true)
                     }
                 }
-                
-                //                guard !ContactArchiver.contactArchive.isEmpty else {
-                //                    guard !silent else {
-                //                        self.translateAndLoad(conversations: conversations) { completion() }
-                //                        return
-                //                    }
-                //
-                //                    ContactService.loadContacts { contactPairs, exception in
-                //                        guard contactPairs != nil else {
-                //                            self.translateAndLoad(conversations: conversations) {
-                //                                Core.gcd.after(seconds: 2) {
-                //                                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
-                //                                }
-                //
-                //                                completion()
-                //                            }
-                //
-                //                            return
-                //                        }
-                //
-                //                        self.translateAndLoad(conversations: conversations) { completion() }
-                //                    }
-                //
-                //                    return
-                //                }
                 
                 self.translateAndLoad(conversations: conversations) { completion() }
             }
@@ -324,23 +297,7 @@ public class ConversationsPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Miscellaneous Methods */
-    
-    public func reloadIfNeeded() {
-        StateProvider.shared.hasDisappeared = false
-        
-        guard !RuntimeStorage.isPresentingChat! else { return }
-        
-        guard let previousHashes = UserDefaults.standard.object(forKey: "previousHashes") as? [String],
-              let currentHashes = RuntimeStorage.currentUser?.openConversations?.hashes(),
-              (previousHashes != currentHashes) || RuntimeStorage.shouldUpdateReadState! || RuntimeStorage.receivedNotification! || (RuntimeStorage.becameActive ?? false) else { return }
-        
-        UserDefaults.standard.set(currentHashes, forKey: "previousHashes")
-        
-        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else { return }
-        
-        load(silent: true)
-    }
+    /* MARK: - Global Key Setters */
     
     private func setPushApiKey(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         guard RuntimeStorage.pushApiKey == nil else {
@@ -363,6 +320,49 @@ public class ConversationsPageViewModel: ObservableObject {
                 completion(nil)
             }
         }
+    }
+    
+    private func setRedirectionKey(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        guard RuntimeStorage.redirectionKey == nil else {
+            completion(nil)
+            return
+        }
+        
+        if let redirectionKey = UserDefaults.standard.value(forKey: "redirectionKey") as? String {
+            RuntimeStorage.store(redirectionKey, as: .redirectionKey)
+            completion(nil)
+        } else {
+            GeneralSerializer.getRedirectionKey { urlString, exception in
+                guard let urlString else {
+                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                RuntimeStorage.store(urlString, as: .redirectionKey)
+                UserDefaults.standard.set(RuntimeStorage.redirectionKey!, forKey: "redirectionKey")
+                completion(nil)
+            }
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Miscellaneous Methods */
+    
+    public func reloadIfNeeded() {
+        StateProvider.shared.hasDisappeared = false
+        
+        guard !RuntimeStorage.isPresentingChat! else { return }
+        
+        guard let previousHashes = UserDefaults.standard.object(forKey: "previousHashes") as? [String],
+              let currentHashes = RuntimeStorage.currentUser?.openConversations?.hashes(),
+              (previousHashes != currentHashes) || RuntimeStorage.shouldUpdateReadState! || RuntimeStorage.receivedNotification! || (RuntimeStorage.becameActive ?? false) else { return }
+        
+        UserDefaults.standard.set(currentHashes, forKey: "previousHashes")
+        
+        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else { return }
+        
+        load(silent: true)
     }
     
     private func setUpObserver(for conversation: Conversation) {

@@ -22,7 +22,7 @@ public final class MessageComposer: NSObject, MFMessageComposeViewControllerDele
     
     //==================================================//
     
-    /* MARK: - Protocol Compliance */
+    /* MARK: - Protocol Conformance */
     
     public func messageComposeViewController(_ controller: MFMessageComposeViewController,
                                              didFinishWith result: MessageComposeResult) {

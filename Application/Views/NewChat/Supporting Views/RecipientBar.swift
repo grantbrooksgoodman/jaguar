@@ -34,7 +34,7 @@ public class RecipientBar: UIView {
     public let delegate: ChatPageViewController!
     public var selectedContactPair: ContactPair? {
         didSet {
-            RuntimeStorage.messagesVC?.messageInputBar.sendButton.isEnabled = RuntimeStorage.coordinator?.shouldEnableSendButton ?? true
+            delegate.messageInputBar.sendButton.isEnabled = RuntimeStorage.coordinator?.shouldEnableSendButton ?? true
         }
     }
     
@@ -122,6 +122,9 @@ public class RecipientBar: UIView {
                 coordinator.setConversation(conversation)
                 delegate.messagesCollectionView.reloadData()
             }
+            
+            guard let otherUser = conversation.otherUser else { return }
+            reconfigureInputBar(nil, otherUser)
         }
     }
     
@@ -141,6 +144,8 @@ public class RecipientBar: UIView {
                 coordinator.setConversation(Conversation.empty())
                 self.delegate.messagesCollectionView.reloadData()
             }
+            
+            reconfigureInputBar(contactPair)
         }
         
         ContactNavigationRouter.routeNavigation(with: contactPair) { selectedUser, exception in
@@ -224,6 +229,8 @@ public class RecipientBar: UIView {
                 
                 return
             }
+            
+            self.reconfigureInputBar(nil, selectedUser)
             
             guard RuntimeStorage.currentUser?.openConversations?.filter({ $0.participants.userIDs.contains(selectedUser.identifier) }).first == nil else {
                 showChat(with: selectedUser.identifier, cellTitle: selectedUser.cellTitle)
@@ -333,6 +340,7 @@ public class RecipientBar: UIView {
         }
         
         delegate.messageInputBar.sendButton.isEnabled = (RuntimeStorage.coordinator?.shouldEnableSendButton ?? false)
+        reconfigureInputBar()
         
         guard subviews(for: "selectContactButton").isEmpty else {
             if let button = subview(for: "selectContactButton") as? UIButton {
@@ -352,63 +360,34 @@ public class RecipientBar: UIView {
         addSubview(selectContactButton)
     }
     
-    public func requestContactPermission(completion: @escaping(_ granted: Bool?,
-                                                               _ exception: Exception?) -> Void) {
-        CNContactStore().requestAccess(for: .contacts) { granted, error in
-            guard error == nil else {
-                let exception = Exception(error!, metadata: [#file, #function, #line])
-                if exception.isEqual(to: .cnContactStoreAccessDenied) {
-                    completion(false, nil)
-                } else {
-                    completion(nil, Exception(error!, metadata: [#file, #function, #line]))
-                }
-                
+    @objc public func selectContactButtonAction() {
+        guard PermissionService.contactPermissionStatus == .granted else {
+            guard PermissionService.contactPermissionStatus == .unknown else {
+                PermissionService.presentCTA(for: .contacts) { }
                 return
             }
             
-            if granted {
+            PermissionService.requestPermission(for: .contacts) { status, exception in
+                guard status == .granted else {
+                    let error = exception ?? Exception(metadata: [#file, #function, #line])
+                    Logger.log(error, with: .errorAlert)
+                    return
+                }
+                
                 if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
                     RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
+                    Core.gcd.after(milliseconds: 1500) { self.selectContactButtonAction() }
                 } else {
                     ContactService.getLocalUserHashes { hashes, exception in
                         guard let hashes else {
-                            completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                            Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                             return
                         }
                         
                         UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
                         RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
+                        Core.gcd.after(milliseconds: 1500) { self.selectContactButtonAction() }
                     }
-                }
-            }
-            
-            completion(granted, nil)
-        }
-    }
-    
-    @objc public func selectContactButtonAction() {
-        guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
-            requestContactPermission { granted, exception in
-                guard exception == nil else {
-                    Logger.log(exception!,
-                               with: .errorAlert)
-                    return
-                }
-                
-#warning("GUARD GRANTED")
-                
-                var message = "*Hello* has not been granted permission to access your contact list.\n\nYou can change this in Settings."
-                message = RuntimeStorage.languageCode == "en" ? message.removingOccurrences(of: ["*"]) : message
-                
-                AKAlert(message: message,
-                        actions: [AKAction(title: "Go to Settings", style: .preferred)],
-                        cancelButtonTitle: "Dismiss").present { actionID in
-                    guard actionID != -1,
-                          let settingsURL = URL(string: UIApplication.openSettingsURLString) else { return }
-#if !EXTENSION
-                    UIApplication.shared.open(settingsURL)
-#endif
-                    StateProvider.shared.tappedDone = true
                 }
             }
             
@@ -466,8 +445,7 @@ public class RecipientBar: UIView {
         
         guard let contactEnclosingView = subview(for: "contactEnclosingView"),
               let contactLabel = contactEnclosingView.subview(Core.ui.nameTag(for: "contactLabel")) as? UILabel else {
-            Logger.log(Exception("Couldn't unwrap subviews.",
-                                 metadata: [#file, #function, #line]))
+            Logger.log(Exception("Couldn't unwrap subviews.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -568,8 +546,7 @@ public class RecipientBar: UIView {
     
     private func getClearButton() -> UIButton? {
         guard let contactEnclosingView = subview(for: "contactEnclosingView") else {
-            Logger.log(Exception("Couldn't unwrap subviews.",
-                                 metadata: [#file, #function, #line]))
+            Logger.log(Exception("Couldn't unwrap subviews.", metadata: [#file, #function, #line]))
             return nil
         }
         
@@ -698,6 +675,42 @@ public class RecipientBar: UIView {
     
     //==================================================//
     
+    /* MARK: - Input Bar Configuration */
+    
+    private func reconfigureInputBar(_ pair: ContactPair? = nil,
+                                     _ user: User? = nil) {
+        guard let currentUser = RuntimeStorage.currentUser,
+              currentUser.canSendAudioMessages else {
+            ChatServices.defaultChatUIService?.configureInputBar(forRecord: !RuntimeStorage.acknowledgedAudioMessagesUnsupported!)
+            return
+        }
+        
+        var selectedUser: User? {
+            guard let selectedContactPair,
+                  let numberPairs = selectedContactPair.numberPairs,
+                  let user = numberPairs.first(where: { !$0.users.isEmpty })?.users.first else { return nil }
+            return user
+        }
+        
+        var shouldEnableRecording = false
+        
+        if let pair,
+           let numberPairs = pair.numberPairs,
+           let user = numberPairs.first(where: { !$0.users.isEmpty })?.users.first {
+            shouldEnableRecording = Capabilities.textToSpeechSupported(for: user.languageCode)
+        } else if let user {
+            shouldEnableRecording = Capabilities.textToSpeechSupported(for: user.languageCode)
+        } else if let selectedUser {
+            shouldEnableRecording = Capabilities.textToSpeechSupported(for: selectedUser.languageCode)
+        } else {
+            shouldEnableRecording = currentUser.canSendAudioMessages
+        }
+        
+        ChatServices.defaultChatUIService?.configureInputBar(forRecord: shouldEnableRecording)
+    }
+    
+    //==================================================//
+    
     /* MARK: - View Manipulation */
     
     public func promptToInvite() {
@@ -819,7 +832,7 @@ extension RecipientBar: UITableViewDataSource, UITableViewDelegate {
 }
 
 /* MARK: UIView */
-public extension UIView {
+private extension UIView {
     func addVerticalBorders(color: CGColor? = nil,
                             height: CGFloat? = nil) {
         let borderHeight = height ?? 0.3
@@ -844,26 +857,3 @@ public extension UIView {
         layer.addSublayer(bottomBorder)
     }
 }
-
-#if !EXTENSION
-/* MARK: UIApplication */
-public extension UIApplication {
-    class func topViewController(_ base: UIViewController? = UIApplication.shared.windows.first?.rootViewController) -> UIViewController? {
-        if let nav = base as? UINavigationController {
-            return topViewController(nav.visibleViewController)
-        }
-        
-        if let tab = base as? UITabBarController {
-            if let selected = tab.selectedViewController {
-                return topViewController(selected)
-            }
-        }
-        
-        if let presented = base?.presentedViewController {
-            return topViewController(presented)
-        }
-        
-        return base
-    }
-}
-#endif

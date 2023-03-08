@@ -21,6 +21,8 @@ public struct InitialPageView: View {
     @StateObject public var viewModel: InitialPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
+    @Environment(\.colorScheme) private var colorScheme
+    
     //==================================================//
     
     /* MARK: - View Body */
@@ -33,11 +35,12 @@ public struct InitialPageView: View {
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
             VStack {
-                Image(uiImage: UIImage(named: "Hello.png")!)
+                Image(uiImage: UIImage(named: "Hello")!)
                     .resizable()
+                    .renderingMode(colorScheme == .dark ? .template : .original)
+                    .foregroundColor(colorScheme == .dark ? Color(uiColor: UIColor(hex: 0xF8F8F8)) : .none)
                     .frame(width: 150, height: 70)
                     .padding(.bottom, 5)
-                    .foregroundColor(Color.blue)
                 
                 Text(translations["instruction"]!.output)
                     .padding(.vertical, 5)

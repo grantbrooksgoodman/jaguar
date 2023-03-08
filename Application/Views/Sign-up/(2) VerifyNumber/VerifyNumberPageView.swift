@@ -57,7 +57,7 @@ public struct VerifyNumberPageView: View {
                         .padding(.vertical, 5)
                     
                     HStack(alignment: .center) {
-                        RegionMenu(selectedRegion: $selectedRegion)
+                        RegionMenu(selectedRegionCode: $selectedRegion)
                             .padding(.leading, 20)
                             .padding(.trailing, 5)
                         

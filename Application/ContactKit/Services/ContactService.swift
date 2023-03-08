@@ -183,9 +183,8 @@ public enum ContactService {
     
     public static func loadContacts(completion: @escaping(_ contactPairs: [ContactPair]?,
                                                           _ exception: Exception?) -> Void) {
-        guard CNContactStore.authorizationStatus(for: .contacts) == .authorized else {
-            completion(nil, Exception("Not authorized to access contacts.",
-                                      metadata: [#file, #function, #line]))
+        guard PermissionService.contactPermissionStatus == .granted else {
+            completion(nil, Exception("Not authorized to access contacts.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -250,8 +249,7 @@ public enum ContactService {
             let sorted = contacts.sorted
             guard var contactsToReturn = sorted[0] as? [ContactPair],
                   let contactsToFetch = sorted[1] as? [Contact] else {
-                let exception = Exception("Unable to sort contacts.",
-                                          metadata: [#file, #function, #line])
+                let exception = Exception("Unable to sort contacts.", metadata: [#file, #function, #line])
                 
                 Logger.log(exception)
                 completion(nil, exception)

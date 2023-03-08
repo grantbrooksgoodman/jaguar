@@ -61,7 +61,6 @@ public enum PLISTGenerator {
         }
     }
     
-    
     public static func translate(text: String,
                                  toLanguages: [String],
                                  completion: @escaping(_ filePath: String?,
@@ -102,8 +101,7 @@ public enum PLISTGenerator {
             let filePath = self.createPLIST(from: translations, fileName: hashCharacters[0...hashCharacters.count / 4].joined())
             
             guard let path = filePath else {
-                completion(nil, Exception("Failed to generate PLIST.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Failed to generate PLIST.", metadata: [#file, #function, #line]))
                 return
             }
             

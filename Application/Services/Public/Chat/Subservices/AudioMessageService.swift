@@ -12,6 +12,7 @@ import Foundation
 import UIKit
 
 /* Third-party Frameworks */
+import AlertKit
 import InputBarAccessoryView
 import Translator
 
@@ -43,8 +44,6 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         self.delegate = delegate
         super.init()
         
-        addGestureRecognizers()
-        
         guard syncDependencies() else { throw AudioMessageServiceError.failedToRetrieveDependencies }
     }
     
@@ -71,25 +70,49 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
             return
         }
         
-        SpeechService.shared.requestRecordingPermission { granted, exception in
-            guard let granted,
-                  granted else {
-#warning("THIS should show an alert telling them they can re-enable it in Settings. Then, make the text one always the default?")
-                self.logError(exception ?? Exception(metadata: [#file, #function, #line]),
-                              showAlert: false)
+        guard PermissionService.recordPermissionStatus == .granted else {
+            guard PermissionService.recordPermissionStatus == .unknown else {
+                PermissionService.presentCTA(for: .recording) { }
                 return
             }
             
-            self.showRecordingUI { exception in
-                guard exception == nil else {
-                    self.logError(exception!, showAlert: true)
+            PermissionService.requestPermission(for: .recording) { status, exception in
+                guard status == .granted else {
+                    guard let exception else { self.presentCTA(forRecording: true); return }
+                    self.logError(exception, showAlert: true)
                     return
                 }
                 
-                SpeechService.shared.startRecording { exception in
-                    guard let exception else { return }
-                    self.logError(exception, showAlert: true)
-                }
+                self.initiateRecording()
+            }
+            
+            return
+        }
+        
+        showRecordingUI { exception in
+            guard exception == nil else {
+                self.logError(exception!, showAlert: true)
+                return
+            }
+            
+            SpeechService.shared.startRecording { exception in
+                guard let exception else { return }
+                self.logError(exception, showAlert: true)
+            }
+        }
+    }
+    
+    private func presentCTA(forRecording: Bool) {
+        syncDependencies()
+        
+        delegate.messageInputBar.sendButton.isEnabled = false
+        Core.gcd.after(milliseconds: 500) {
+            let shouldShowKeyboard = self.delegate.messageInputBar.inputTextView.isFirstResponder
+            PermissionService.presentCTA(for: forRecording ? .recording : .transcription,
+                                         sender: self.delegate.messageInputBar.sendButton) {
+                RuntimeStorage.messagesVC?.becomeFirstResponder()
+                if shouldShowKeyboard { self.delegate.messageInputBar.inputTextView.becomeFirstResponder() }
+                self.delegate.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
             }
         }
     }
@@ -123,7 +146,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     public func finishRecording(progressHandler: @escaping() -> Void?,
                                 completion: @escaping(_ inputFile: AudioFile?,
                                                       _ outputFile: AudioFile?,
-                                                      _ translation: Translation?,
+                                                      _ translation: Translator.Translation?,
                                                       _ exception: Exception?) -> Void) {
         stopRecording(cancelled: false) { fileURL, exception in
             guard let fileURL else {
@@ -165,8 +188,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     
     private func showRecordingUI(completion: @escaping(_ exception: Exception?) -> Void) {
         guard let recordingViewComponents = getRecordingViewComponents() else {
-            completion(Exception("Couldn't unwrap recording view elements.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Couldn't unwrap recording view elements.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -246,7 +268,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     
     /* MARK: - Media Processing  */
     
-    private func generateOutputFile(for translation: Translation,
+    private func generateOutputFile(for translation: Translator.Translation,
                                     completion: @escaping(_ outputFile: AudioFile?,
                                                           _ exception: Exception?) -> Void) {
         SpeechService.shared.readToM4A(text: translation.output,
@@ -258,8 +280,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
             
             let outputFile = try? AudioFile(fromURL: fileURL)
             guard let outputFile else {
-                completion(nil, Exception("Failed to generate output audio file.",
-                                          metadata: [#file, #function, #line]))
+                completion(nil, Exception("Failed to generate output audio file.", metadata: [#file, #function, #line]))
                 return
             }
             
@@ -270,18 +291,17 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     /** Transcribes and translates the audio content of the recorded file. */
     private func getTranslationForInputFile(at url: URL,
                                             progressHandler: @escaping() -> Void?,
-                                            completion: @escaping(_ translation: Translation?,
+                                            completion: @escaping(_ translation: Translator.Translation?,
                                                                   _ exception: Exception?) -> Void) {
         syncDependencies()
         
         guard let currentUserLanguage = CURRENT_USER.languageCode,
               let otherUserLanguage = GLOBAL_CONVERSATION.otherUser?.languageCode ?? RuntimeStorage.messagesVC?.recipientBar?.selectedContactPair?.numberPairs?.users.first?.languageCode else {
-            completion(nil, Exception("Couldn't determine language pair.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Couldn't determine language pair.", metadata: [#file, #function, #line]))
             return
         }
         
-        let languagePair = LanguagePair(from: currentUserLanguage, to: otherUserLanguage)
+        let languagePair = Translator.LanguagePair(from: currentUserLanguage, to: otherUserLanguage)
         transcribeAndTranslate(forInputFile: url,
                                languagePair: languagePair,
                                progressHandler: progressHandler) { translation, exception in
@@ -297,7 +317,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     private func processInputFile(at url: URL,
                                   progressHandler: @escaping() -> Void?,
                                   completion: @escaping(_ outputFile: AudioFile?,
-                                                        _ translation: Translation?,
+                                                        _ translation: Translator.Translation?,
                                                         _ exception: Exception?) -> Void) {
         getTranslationForInputFile(at: url,
                                    progressHandler: progressHandler) { translation, exception in
@@ -323,7 +343,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
                                       progressHandler: @escaping() -> Void,
                                       completion: @escaping(_ inputFile: AudioFile?,
                                                             _ outputFile: AudioFile?,
-                                                            _ translation: Translation?,
+                                                            _ translation: Translator.Translation?,
                                                             _ exception: Exception?) -> Void) {
         guard let inputFile = try? AudioFile(fromURL: url) else {
             completion(nil, nil, nil, Exception("Failed to generate input audio file.",
@@ -343,9 +363,9 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     }
     
     private func transcribeAndTranslate(forInputFile atURL: URL,
-                                        languagePair: LanguagePair,
+                                        languagePair: Translator.LanguagePair,
                                         progressHandler: @escaping() -> Void?,
-                                        completion: @escaping(_ translation: Translation?,
+                                        completion: @escaping(_ translation: Translator.Translation?,
                                                               _ exception: Exception?) -> Void) {
         syncDependencies()
         
@@ -363,7 +383,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
             }
             progressHandler()
             
-            FirebaseTranslator.shared.translate(TranslationInput(transcription),
+            FirebaseTranslator.shared.translate(Translator.TranslationInput(transcription),
                                                 with: languagePair) { translation, exception in
                 guard let translation else {
                     completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
@@ -379,27 +399,114 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     
     /* MARK: - Helper Methods */
     
+    private func addOrEnableRecognizer(_ recognizer: UIGestureRecognizer) {
+        let sendButton = delegate.messageInputBar.sendButton
+        if sendButton.gestureRecognizers == nil || !sendButton.gestureRecognizers!.contains(where: { $0 == recognizer }) {
+            sendButton.addGestureRecognizer(recognizer)
+        } else {
+            sendButton.gestureRecognizers?.first(where: { $0 == recognizer })?.isEnabled = true
+        }
+    }
+    
+    @objc
+    private func presentAudioMessagesUnsupportedAlert() {
+        syncDependencies()
+        
+        let alert = AKAlert(message: "Audio messages are unsupported for your language.\n\nPlease check back later in a future update!",
+                            cancelButtonTitle: "OK",
+                            sender: delegate.messageInputBar.sendButton)
+        
+        let shouldShowKeyboard = delegate.messageInputBar.inputTextView.isFirstResponder
+        alert.present { _ in
+            RuntimeStorage.store(true, as: .acknowledgedAudioMessagesUnsupported)
+            UserDefaults.standard.set(true, forKey: "acknowledgedAudioMessagesUnsupported")
+            
+            self.removeGestureRecognizers()
+            ChatServices.defaultChatUIService?.configureInputBar(forRecord: false)
+            self.delegate.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
+            
+            Core.gcd.after(milliseconds: 500) {
+                guard shouldShowKeyboard else {
+                    RuntimeStorage.messagesVC?.becomeFirstResponder()
+                    return
+                }
+                
+                self.delegate.messageInputBar.inputTextView.becomeFirstResponder()
+            }
+        }
+    }
+    
     public func addGestureRecognizers() {
         syncDependencies()
         
         let sendButton = delegate.messageInputBar.sendButton
+        guard sendButton.isRecordButton else { return }
+        
+        defer { sendButton.isEnabled = COORDINATOR.shouldEnableSendButton }
+        
+        guard CURRENT_USER.canSendAudioMessages else {
+            let singleTapGesture = UITapGestureRecognizer(target: self, action: #selector(presentAudioMessagesUnsupportedAlert))
+            addOrEnableRecognizer(singleTapGesture)
+            return
+        }
+        
+        if let otherUser = GLOBAL_CONVERSATION.otherUser {
+            guard Capabilities.textToSpeechSupported(for: otherUser.languageCode) else {
+                guard !RuntimeStorage.acknowledgedAudioMessagesUnsupported! else { return }
+                let singleTapGesture = UITapGestureRecognizer(target: self, action: #selector(presentAudioMessagesUnsupportedAlert))
+                addOrEnableRecognizer(singleTapGesture)
+                return
+            }
+        }
+        
+        guard PermissionService.recordPermissionStatus == .granted,
+              PermissionService.transcribePermissionStatus == .granted else {
+            let singleTapGesture = UITapGestureRecognizer(target: self, action: #selector(requestPermissions))
+            addOrEnableRecognizer(singleTapGesture)
+            return
+        }
         
         let longPressGesture = UILongPressGestureRecognizer(target: self, action: #selector(longPress))
         longPressGesture.minimumPressDuration = 0.3
-        if sendButton.gestureRecognizers == nil || !sendButton.gestureRecognizers!.contains(where: { $0 == longPressGesture }) {
-            delegate.messageInputBar.sendButton.addGestureRecognizer(longPressGesture)
-        } else {
-            delegate.messageInputBar.sendButton.gestureRecognizers?.first(where: { $0 == longPressGesture })?.isEnabled = true
-        }
+        addOrEnableRecognizer(longPressGesture)
         
         let singleTapGesture = UITapGestureRecognizer(target: self, action: #selector(showRecordToast))
-        if sendButton.gestureRecognizers == nil || !sendButton.gestureRecognizers!.contains(where: { $0 == singleTapGesture }) {
-            delegate.messageInputBar.sendButton.addGestureRecognizer(singleTapGesture)
-        } else {
-            delegate.messageInputBar.sendButton.gestureRecognizers?.first(where: { $0 == singleTapGesture })?.isEnabled = true
+        addOrEnableRecognizer(singleTapGesture)
+    }
+    
+    private func requestTranscribePermission() {
+        guard PermissionService.transcribePermissionStatus == .granted else {
+            PermissionService.requestPermission(for: .transcription) { status, exception in
+                guard status == .granted else {
+                    guard let exception else { self.presentCTA(forRecording: false); return }
+                    Logger.log(exception, with: .errorAlert)
+                    return
+                }
+                
+                Core.gcd.after(milliseconds: 100) { self.addGestureRecognizers() }
+            }
+            
+            return
+        }
+    }
+    
+    @objc
+    private func requestPermissions() {
+        guard PermissionService.recordPermissionStatus == .granted else {
+            PermissionService.requestPermission(for: .recording) { status, exception in
+                guard status == .granted else {
+                    guard let exception else { self.presentCTA(forRecording: true); return }
+                    Logger.log(exception, with: .errorAlert)
+                    return
+                }
+                
+                self.requestTranscribePermission()
+            }
+            
+            return
         }
         
-        delegate.messageInputBar.sendButton.isEnabled = COORDINATOR.shouldEnableSendButton
+        self.requestTranscribePermission()
     }
     
     public func removeGestureRecognizers() {
@@ -413,7 +520,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         delegate.messageInputBar.sendButton.stopAnimating()
         delegate.messageInputBar.sendButton.isEnabled = (showAlert && COORDINATOR.shouldEnableSendButton)
         
-        let filterParams: [JRException] = [.cannotOpenFile, .noAudioRecorderToStop, .noSpeechDetected]
+        let filterParams: [JRException] = [.cannotOpenFile, .noAudioRecorderToStop, .noSpeechDetected, .retry]
         let passesFilter = !exception.isEqual(toAny: filterParams)
         
         Logger.log(exception,
@@ -421,7 +528,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
                    verbose: exception.isEqual(to: .noAudioRecorderToStop))
         
         guard let componentService = ChatServices.chatUIService,
-              !componentService.delegate.isUserCancellationEnabled else { return }
+              !componentService.isUserCancellationEnabled else { return }
         componentService.setUserCancellation(enabled: true)
     }
     

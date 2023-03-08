@@ -175,7 +175,7 @@ public class DeliveryService: ChatService {
         let mockMessage = generateMockMessage(text: text, audio: audio)
         
         conversation.messages.append(mockMessage)
-        conversation.messages = conversation.sortedFilteredMessages()
+        conversation.messages = conversation.messages.sorted(by: { $0.sentDate < $1.sentDate }) /*.sortedFilteredMessages()*/
         
         RuntimeStorage.store(conversation, as: .globalConversation)
         
@@ -236,8 +236,7 @@ public class DeliveryService: ChatService {
         syncDependencies()
         
         guard let otherUser = COORDINATOR.conversation.wrappedValue.otherUser else {
-            completion(nil, Exception("Other user has not been set.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Other user has not been set.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -349,8 +348,7 @@ public class DeliveryService: ChatService {
         appendMockMessage(text: text)
         
         guard let otherUser = COORDINATOR.conversation.wrappedValue.otherUser else {
-            completion(nil, Exception("Other user has not been set.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("Other user has not been set.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -403,8 +401,7 @@ public class DeliveryService: ChatService {
         
         let conversation = COORDINATOR.conversation.wrappedValue
         guard conversation.identifier.key != "EMPTY" else {
-            completion(nil, Exception("No conversation to send message in.",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("No conversation to send message in.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -450,6 +447,7 @@ public class DeliveryService: ChatService {
                                  translation: Translation,
                                  completion: @escaping(_ exception: Exception?) -> Void) {
         syncDependencies()
+        ChatServices.defaultMenuControllerService?.stopSpeakingIfNeeded()
         
         createAudioMessage(inputFile: inputFile,
                            outputFile: outputFile,
@@ -466,7 +464,7 @@ public class DeliveryService: ChatService {
                 Core.hud.hide(delay: 1)
                 self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(message.translation.output)
                 
-                ChatServices.chatUIService?.setUserCancellation(enabled: true)
+                ChatServices.defaultChatUIService?.setUserCancellation(enabled: true)
                 RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 RuntimeStorage.messagesVC?.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
                 
@@ -483,6 +481,7 @@ public class DeliveryService: ChatService {
                                 completion: @escaping(_ exception: Exception?) -> Void) {
         syncDependencies()
         startAnimatingDelivery()
+        ChatServices.defaultMenuControllerService?.stopSpeakingIfNeeded()
         
         createTextMessage(text: text) { message, exception in
             guard let message else {
@@ -496,7 +495,7 @@ public class DeliveryService: ChatService {
                 Core.hud.hide(delay: 1)
                 self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(message.translation.output)
                 
-                ChatServices.chatUIService?.setUserCancellation(enabled: true)
+                ChatServices.defaultChatUIService?.setUserCancellation(enabled: true)
                 RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
                 RuntimeStorage.messagesVC?.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
                 

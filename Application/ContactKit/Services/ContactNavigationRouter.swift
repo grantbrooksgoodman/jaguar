@@ -219,8 +219,7 @@ public struct ContactNavigationRouter {
                                                        completion: @escaping(_ selectedPair: NumberPair?,
                                                                              _ exception: Exception?) -> Void) {
         guard let numberPairs = contactPair.numberPairs else {
-            completion(nil, Exception("No number pairs for this contact!",
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception("No number pairs for this contact!", metadata: [#file, #function, #line]))
             return
         }
         

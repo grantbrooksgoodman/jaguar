@@ -36,6 +36,11 @@ public class MenuControllerService: NSObject, ChatService {
     
     /* MARK: - Properties */
     
+    // MessageContentCells
+    private var selectedCell: MessageContentCell?
+    private var speakingCell: MessageContentCell?
+    
+    // Other
     public var delegate: MenuControllerDelegate
     public var serviceType: ChatServiceType = .menuController
     
@@ -43,7 +48,6 @@ public class MenuControllerService: NSObject, ChatService {
     
     private var CURRENT_USER_ID: String!
     private var CURRENT_MESSAGE_SLICE: [Message]!
-    private var selectedCell: MessageContentCell?
     private var speechSynthesizer: AVSpeechSynthesizer!
     
     //==================================================//
@@ -81,7 +85,15 @@ public class MenuControllerService: NSObject, ChatService {
     
     public func presentMenu(at point: CGPoint,
                             on cell: MessageContentCell) {
-        guard (!speechSynthesizer.isSpeaking || selectedCell == cell),
+        syncDependencies()
+        
+        guard cell.tag < CURRENT_MESSAGE_SLICE.count else { return }
+        let currentMessage = CURRENT_MESSAGE_SLICE[cell.tag]
+        
+        // #warning("Bug exists where can't select speaking cell to stop it once dequeued for reuse.")
+        guard currentMessage.identifier != "NEW",
+              !menuController.isMenuVisible,
+              (!speechSynthesizer.isSpeaking || speakingCell == cell),
               let menuItems = getMenuItems(for: cell) else { return }
         
         let convertedPoint = delegate.messagesCollectionView.convert(point,
@@ -103,6 +115,7 @@ public class MenuControllerService: NSObject, ChatService {
     public func stopSpeakingIfNeeded() {
         guard speechSynthesizer.isSpeaking else { return }
         speechSynthesizer.stopSpeaking(at: .immediate)
+        speakingCell = nil
     }
     
     //==================================================//
@@ -124,13 +137,17 @@ public class MenuControllerService: NSObject, ChatService {
         message.hasAudioComponent = message.isDisplayingAlternate ? true : false
         message.isDisplayingAlternate = message.isDisplayingAlternate ? false : true
         
-        delegate.messagesCollectionView.reloadItems(at: alternateIndexPaths)
         selectedCell = nil
+        
+        guard delegate.messagesCollectionView.visibleCells.contains(cell),
+              !RuntimeStorage.isSendingMessage! else { return }
+        delegate.messagesCollectionView.reloadItems(at: alternateIndexPaths)
     }
     
     public func copyMenuItemAction() {
         guard let cell = selectedCell as? TextMessageCell else { return }
         UIPasteboard.general.string = cell.messageLabel.text
+        Core.hud.flash(LocalizedString.copied, image: .success)
         
         hideMenuIfNeeded()
     }
@@ -161,13 +178,16 @@ public class MenuControllerService: NSObject, ChatService {
         let messageIsFromCurrentUser = message.fromAccountIdentifier == CURRENT_USER_ID
         let languagePair = message.translation!.languagePair
         
-        if message.isDisplayingAlternate {
+        if message.audioComponent != nil {
+            utteranceLanguage = messageIsFromCurrentUser ? languagePair.from : languagePair.to
+        } else if message.isDisplayingAlternate {
             utteranceLanguage = messageIsFromCurrentUser ? languagePair.to : languagePair.from
         } else {
             utteranceLanguage = messageIsFromCurrentUser ? languagePair.from : languagePair.to
         }
         
         utterance.voice = SpeechService.shared.highestQualityVoice(for: utteranceLanguage)
+        speakingCell = cell
         speechSynthesizer.speak(utterance)
     }
     
@@ -195,8 +215,11 @@ public class MenuControllerService: NSObject, ChatService {
         message.translation.output = originalInput.value()
         message.isDisplayingAlternate = !message.isDisplayingAlternate
         
-        delegate.messagesCollectionView.reloadItems(at: alternateIndexPaths)
         selectedCell = nil
+        
+        guard delegate.messagesCollectionView.visibleCells.contains(cell),
+              !RuntimeStorage.isSendingMessage! else { return }
+        delegate.messagesCollectionView.reloadItems(at: alternateIndexPaths)
     }
     
     //==================================================//
@@ -204,7 +227,7 @@ public class MenuControllerService: NSObject, ChatService {
     /* MARK: - Item Builders */
     
     private func getAudioMessageMenuItem(title: String? = nil) -> UIMenuItem {
-        return .init(title: title ?? LocalizedString.viewOriginal,
+        return .init(title: title ?? LocalizedString.viewTranscription,
                      action: #selector(delegate.audioMessageMenuItemAction))
     }
     
@@ -225,7 +248,7 @@ public class MenuControllerService: NSObject, ChatService {
     
     private func getViewAlternateMenuItem(title: String? = nil) -> UIMenuItem {
         return .init(title: title ?? LocalizedString.viewOriginal,
-                     action: #selector(ChatPageViewController.viewAlternateMenuItemAction))
+                     action: #selector(delegate.viewAlternateMenuItemAction))
     }
     
     //==================================================//
@@ -251,6 +274,7 @@ public class MenuControllerService: NSObject, ChatService {
         
         let currentMessage = CURRENT_MESSAGE_SLICE[cell.tag]
         let translation = currentMessage.translation!
+        let messageIsFromCurrentUser = currentMessage.fromAccountIdentifier == CURRENT_USER_ID
         
         guard cell as? TextMessageCell != nil else {
             guard cell as? AudioMessageCell != nil else { return nil }
@@ -259,12 +283,21 @@ public class MenuControllerService: NSObject, ChatService {
         
         var menuItems = [getCopyMenuItem()]
         
+        if !AudioPlaybackController.isPlaying,
+           !(!messageIsFromCurrentUser && currentMessage.audioComponent != nil) {
+            let pair = translation.languagePair
+            let isAlternate = currentMessage.isDisplayingAlternate
+            
+            if Capabilities.textToSpeechSupported(for: isAlternate ? (messageIsFromCurrentUser ? pair.to : pair.from) : (messageIsFromCurrentUser ? pair.from : pair.to)) {
+                menuItems.append(getSpeakMenuItem(title: speechSynthesizer.isSpeaking ? LocalizedString.stopSpeaking : nil))
+            }
+        }
+        
         guard currentMessage.audioComponent == nil else {
+            guard !speechSynthesizer.isSpeaking else { return menuItems }
             menuItems.append(getAudioMessageMenuItem(title: LocalizedString.viewAsAudio))
             return menuItems
         }
-        
-        menuItems.append(getSpeakMenuItem(title: speechSynthesizer.isSpeaking ? LocalizedString.stopSpeaking : nil))
         
         if translation.input.value() == translation.output,
            RecognitionService.shouldMarkUntranslated(translation.output,
@@ -272,8 +305,6 @@ public class MenuControllerService: NSObject, ChatService {
             menuItems.append(getRetryMenuItem())
         } else {
             guard !speechSynthesizer.isSpeaking else { return menuItems }
-            
-            let messageIsFromCurrentUser = currentMessage.fromAccountIdentifier == CURRENT_USER_ID
             
             var menuTitle: String!
             switch currentMessage.isDisplayingAlternate {
@@ -305,17 +336,31 @@ extension MenuControllerService: AVSpeechSynthesizerDelegate {
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
                                   didCancel: AVSpeechUtterance) {
         guard let cell = selectedCell else { return }
-        delegate.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
         
         hideMenuIfNeeded()
+        speakingCell = nil
+        
+        guard delegate.messagesCollectionView.visibleCells.contains(cell),
+              !RuntimeStorage.isSendingMessage! else { return }
+        delegate.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
     }
     
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
                                   didFinish: AVSpeechUtterance) {
-        guard let cell = selectedCell else { return }
-        delegate.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
+        guard let cell = selectedCell as? TextMessageCell,
+              cell.tag < CURRENT_MESSAGE_SLICE.count else { return }
+        let messageIsFromCurrentUser = CURRENT_MESSAGE_SLICE[cell.tag].fromAccountIdentifier == CURRENT_USER_ID
+        let useWhite = messageIsFromCurrentUser || UITraitCollection.current.userInterfaceStyle == .dark
+        cell.messageLabel.attributedText = NSAttributedString(string: cell.messageLabel.text!,
+                                                              attributes: [.font: cell.messageLabel.font!,
+                                                                           .foregroundColor: useWhite ? UIColor.white : UIColor.black])
         
         hideMenuIfNeeded()
+        speakingCell = nil
+        
+        guard delegate.messagesCollectionView.visibleCells.contains(cell),
+              !RuntimeStorage.isSendingMessage! else { return }
+        delegate.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
     }
     
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
@@ -326,13 +371,23 @@ extension MenuControllerService: AVSpeechSynthesizerDelegate {
         guard let cell = selectedCell as? TextMessageCell,
               cell.tag < CURRENT_MESSAGE_SLICE.count else { return }
         
+        guard delegate.messagesCollectionView.visibleCells.contains(cell) else { return }
+        
         let font = cell.messageLabel.font!
-        let useWhite = CURRENT_MESSAGE_SLICE[cell.tag].fromAccountIdentifier == CURRENT_USER_ID
+        let messageIsFromCurrentUser = CURRENT_MESSAGE_SLICE[cell.tag].fromAccountIdentifier == CURRENT_USER_ID
+        let useWhite = messageIsFromCurrentUser || UITraitCollection.current.userInterfaceStyle == .dark
         
         let attributed = NSMutableAttributedString(string: cell.messageLabel.text!)
+        guard characterRange.lowerBound >= 0,
+              characterRange.lowerBound < attributed.length,
+              characterRange.upperBound > 0,
+              characterRange.upperBound < attributed.length,
+              characterRange.lowerBound < characterRange.upperBound else { return }
+        
         attributed.addAttribute(.foregroundColor, value: useWhite ? UIColor.white : UIColor.black, range: NSMakeRange(0, attributed.length))
         attributed.addAttribute(.foregroundColor, value: UIColor.red, range: characterRange)
         attributed.addAttribute(.font, value: font, range: NSMakeRange(0, attributed.length))
+        
         cell.messageLabel.attributedText = attributed
     }
 }

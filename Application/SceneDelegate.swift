@@ -45,18 +45,13 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
                 self.connectScene(scene)
             }
             
-            UserTestingSerializer.shared.getRandomUserID { returnedIdentifier, exception in
-                timeout.cancel()
-                
-                guard let returnedIdentifier else {
-                    Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                               with: .errorAlert)
-                    return
-                }
-                
-                RuntimeStorage.store(returnedIdentifier, as: .currentUserID)
-                self.connectScene(scene)
-            }
+#if targetEnvironment(simulator)
+            self.signInUser(withLanguage: "en", scene: scene, timeout: timeout)
+#else
+            self.signInUser(withLanguage: "te", scene: scene, timeout: timeout)
+            UserDefaults.standard.set(false, forKey: "acknowledgedAudioMessagesUnsupported")
+            Core.gcd.after(seconds: 1) { RuntimeStorage.store(false, as: .acknowledgedAudioMessagesUnsupported) }
+#endif
             
             return
         }
@@ -87,10 +82,11 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
     public func sceneWillResignActive(_: UIScene) {
         // Called when the scene will move from an active state to an inactive state.
         // This may occur due to temporary interruptions (ex. an incoming phone call).
-        
         AnalyticsService.logEvent(.closeApp)
         RuntimeStorage.store(false, as: .becameActive)
         lastResigned = Date()
+        
+        ChatServices.defaultAudioMessageService?.removeRecordingUI()
     }
     
     public func sceneWillEnterForeground(_: UIScene) {
@@ -108,7 +104,6 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
         // Called as the scene transitions from the foreground to the background.
         // Use this method to save data, release shared resources, and store enough scene-specific state information
         // to restore the scene back to its current state.
-        
         AnalyticsService.logEvent(.closeApp)
         RuntimeStorage.store(false, as: .becameActive)
         lastResigned = Date()
@@ -146,6 +141,63 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
     
     //==================================================//
     
+    /* MARK: - Debug Sign In Methods */
+    
+    private func signInRandomUser(scene: UIScene,
+                                  timeout: Timeout) {
+        UserTestingSerializer.shared.getRandomUserID { returnedIdentifier, exception in
+            timeout.cancel()
+            
+            guard let returnedIdentifier else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
+                return
+            }
+            
+            RuntimeStorage.store(returnedIdentifier, as: .currentUserID)
+            self.connectScene(scene)
+        }
+    }
+    
+    private func signInUser(withLanguage: String,
+                            scene: UIScene,
+                            timeout: Timeout) {
+        UserTestingSerializer.shared.getUserIDs(forLanguageCode: withLanguage) { userIDs, exception in
+            timeout.cancel()
+            
+            guard let userIDs,
+                  !userIDs.isEmpty else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
+                return
+            }
+            
+            RuntimeStorage.store(userIDs[0], as: .currentUserID)
+            self.connectScene(scene)
+        }
+    }
+    
+    private func signInUser(withPhoneNumber: String,
+                            scene: UIScene,
+                            timeout: Timeout) {
+        UserSerializer.shared.findUsers(for: withPhoneNumber) { users, exception in
+            timeout.cancel()
+            
+            guard let users,
+                  !users.isEmpty else {
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
+                           with: .errorAlert)
+                return
+            }
+            
+            RuntimeStorage.store(users[0].identifier!, as: .currentUserID)
+            RuntimeStorage.store(users[0], as: .currentUser)
+            self.connectScene(scene)
+        }
+    }
+    
+    //==================================================//
+    
     /* MARK: - Other Methods */
     
     private func connectScene(_ scene: UIScene) {
@@ -170,7 +222,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
                                                   y: bounds.maxY - 100,
                                                   width: bounds.size.width,
                                                   height: 100)
-            buildInfoOverlayWindow.rootViewController = UIHostingController(rootView: BuildInfoOverlayView())
+            buildInfoOverlayWindow.rootViewController = UIHostingController(rootView: BuildInfoOverlayView(viewModel: BuildInfoOverlayViewModel()))
             buildInfoOverlayWindow.isHidden = false
             buildInfoOverlayWindow.tag = Core.ui.nameTag(for: "buildInfoOverlayWindow")
             

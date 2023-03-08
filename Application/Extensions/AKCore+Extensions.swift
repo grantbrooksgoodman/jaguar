@@ -20,12 +20,14 @@ public extension AKCore {
                                   extraParams: ["IsConnected": Build.isOnline],
                                   metadata: [#file, #function, #line])
         
-        let settingsUrl = URL(string: UIApplication.openSettingsURLString)
-        
+        var settingsURL: URL?
         var actions = [AKAction]()
+        
 #if !EXTENSION
-        if let settingsUrl,
-           UIApplication.shared.canOpenURL(settingsUrl) {
+        if let urlString = RuntimeStorage.redirectionKey,
+           let asURL = URL(string: massageRedirectionKey(urlString)),
+           UIApplication.shared.canOpenURL(asURL) {
+            settingsURL = asURL
             actions.append(AKAction(title: LocalizedString.settings, style: .default))
         }
 #endif
@@ -41,11 +43,24 @@ public extension AKCore {
         
         errorAlert.present { actionID in
             guard actionID == errorAlert.actions.first(where: { $0.title == LocalizedString.settings })?.identifier,
-                  let settingsUrl else { return }
-            
+                  let settingsURL else { return }
 #if !EXTENSION
-            UIApplication.shared.open(settingsUrl)
+            UIApplication.shared.open(settingsURL)
 #endif
         }
+    }
+    
+    private static func massageRedirectionKey(_ string: String) -> String {
+        var lowercasedString = string.lowercased().ciphered(by: 12)
+        lowercasedString = lowercasedString.replacingOccurrences(of: "g", with: "-")
+        lowercasedString = lowercasedString.replacingOccurrences(of: "n", with: ":")
+        
+        var capitalizedCharacters = [String]()
+        for (index, character) in lowercasedString.characterArray.enumerated() {
+            let finalCharacter = (index == 0 || index == 4) ? character.uppercased() : character
+            capitalizedCharacters.append(finalCharacter)
+        }
+        
+        return capitalizedCharacters.joined()
     }
 }

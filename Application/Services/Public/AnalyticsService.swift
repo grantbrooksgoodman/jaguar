@@ -59,9 +59,9 @@ public struct AnalyticsService {
             return
         }
         
-        let standardParams = standardParams()
+        let commonParams = commonParams()
         var injectedParams = parameters ?? [:]
-        injectedParams.merge(standardParams, uniquingKeysWith: { _,_ in })
+        injectedParams.merge(commonParams, uniquingKeysWith: { _,_ in })
         
 #if !EXTENSION
         Analytics.logEvent(event.description,
@@ -77,7 +77,7 @@ public struct AnalyticsService {
     
     /* MARK: - Private Methods */
     
-    private static func standardParams() -> [String: Any] {
+    private static func commonParams() -> [String: Any] {
         var parameters = [String: Any]()
         
         if let currentUserID = RuntimeStorage.currentUserID {

@@ -24,22 +24,15 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
     
     //==================================================//
     
-    /* MARK: - Protocol Compliance */
+    /* MARK: - Protocol Conformance */
     
     public func fileReport(error: AKError) {
         var injectedError = error
-        
-        if let currentUserID = RuntimeStorage.currentUserID,
-           let languageCode = RuntimeStorage.languageCode {
-            injectedError = inject(params: ["CurrentUserID": currentUserID,
-                                            "LanguageCode": languageCode],
-                                   into: error)
-        }
+        injectedError = inject(params: commonParams(), into: error)
         
         guard let data = getLogFileData(type: .error,
                                         error: injectedError) else {
-            Logger.log(Exception("Couldn't get log file data!",
-                                 metadata: [#file, #function, #line]))
+            Logger.log(Exception("Couldn't get log file data!", metadata: [#file, #function, #line]))
             return
         }
         
@@ -259,8 +252,7 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
                         description: String? = nil,
                         completion: @escaping(_ exception: Exception?) -> Void) {
         guard !Array(reportedErrors.keys).contains(logFile.directoryName) else {
-            completion(Exception("Already reported this error.",
-                                 metadata: [#file, #function, #line]))
+            completion(Exception("Already reported this error.", metadata: [#file, #function, #line]))
             return
         }
         
@@ -355,6 +347,29 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
     //==================================================//
     
     /* MARK: - Other Methods */
+    
+    private func commonParams() -> [String: String] {
+        var parameters = [String: String]()
+        
+        if let currentFile = RuntimeStorage.currentFile,
+           !currentFile.components(separatedBy: "/").isEmpty {
+            guard let fileName = currentFile.components(separatedBy: "/").last else { return parameters }
+            guard let trimmedFileName = fileName.components(separatedBy: ".").first else { return parameters }
+            
+            let snakeCaseFileName = trimmedFileName.firstLowercase.snakeCase()
+            parameters["CurrentFile"] = snakeCaseFileName
+        }
+        
+        if let currentUserID = RuntimeStorage.currentUserID {
+            parameters["CurrentUserID"] = currentUserID
+        }
+        
+        if let languageCode = RuntimeStorage.languageCode {
+            parameters["LanguageCode"] = languageCode
+        }
+        
+        return parameters
+    }
     
     private func inject(params: [String: Any], into: AKError) -> AKError {
         var mutable = into

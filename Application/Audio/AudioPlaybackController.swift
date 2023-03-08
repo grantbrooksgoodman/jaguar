@@ -39,6 +39,7 @@ public class AudioPlaybackController {
         }
         
         stopPlaybackForAllVisibleCells()
+        ChatServices.defaultMenuControllerService?.stopSpeakingIfNeeded()
         
         guard let currentUserID = RuntimeStorage.currentUserID,
               let message = message(for: cell),
