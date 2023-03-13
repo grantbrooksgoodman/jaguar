@@ -25,7 +25,6 @@ public final class SpeechService: NSObject {
     
     private let synthesizer = AVSpeechSynthesizer()
     private var audioRecorder: AVAudioRecorder?
-    private var recordingSession = AVAudioSession.sharedInstance()
     
     //==================================================//
     
@@ -38,6 +37,8 @@ public final class SpeechService: NSObject {
                       AVSampleRateKey: 12000,
                 AVNumberOfChannelsKey: 1,
              AVEncoderAudioQualityKey: AVAudioQuality.high.rawValue]
+        
+        AudioPlaybackController.resetAudioSession()
         
         do {
             audioRecorder = try AVAudioRecorder(url: filePath, settings: settings)
@@ -147,6 +148,7 @@ public final class SpeechService: NSObject {
         var chosenVoice: AVSpeechSynthesisVoice?
         for voice in applicableVoices {
             guard voice.quality == .enhanced,
+                  !voice.audioFileSettings.isEmpty,
                   chosenVoice == nil else { continue }
             chosenVoice = voice
         }
@@ -254,6 +256,15 @@ public final class SpeechService: NSObject {
 
 /* MARK: AVAudioRecorderDelegate */
 extension SpeechService: AVAudioRecorderDelegate {
+    public func audioRecorderBeginInterruption(_ recorder: AVAudioRecorder) {
+        stopRecording { _, exception in
+            guard exception == nil else {
+                Logger.log(exception!)
+                return
+            }
+        }
+    }
+    
     public func audioRecorderDidFinishRecording(_ recorder: AVAudioRecorder,
                                                 successfully flag: Bool) {
         guard flag else {
@@ -265,6 +276,15 @@ extension SpeechService: AVAudioRecorderDelegate {
             }
             
             return
+        }
+    }
+    
+    public func audioRecorderEncodeErrorDidOccur(_ recorder: AVAudioRecorder, error: Error?) {
+        stopRecording { _, exception in
+            guard exception == nil else {
+                Logger.log(exception!)
+                return
+            }
         }
     }
 }

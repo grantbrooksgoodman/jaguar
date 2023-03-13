@@ -102,25 +102,12 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         }
     }
     
-    private func presentCTA(forRecording: Bool) {
-        syncDependencies()
-        
-        delegate.messageInputBar.sendButton.isEnabled = false
-        Core.gcd.after(milliseconds: 500) {
-            let shouldShowKeyboard = self.delegate.messageInputBar.inputTextView.isFirstResponder
-            PermissionService.presentCTA(for: forRecording ? .recording : .transcription,
-                                         sender: self.delegate.messageInputBar.sendButton) {
-                RuntimeStorage.messagesVC?.becomeFirstResponder()
-                if shouldShowKeyboard { self.delegate.messageInputBar.inputTextView.becomeFirstResponder() }
-                self.delegate.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
-            }
-        }
-    }
-    
     private func stopRecording(cancelled: Bool,
                                completion: @escaping(_ fileURL: URL?,
                                                      _ exception: Exception?) -> Void) {
         SpeechService.shared.stopRecording { fileURL, exception in
+            AudioPlaybackController.resetAudioSession()
+            
             guard let fileURL else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
@@ -132,7 +119,6 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
                 } catch { completion(nil, Exception(error, metadata: [#file, #function, #line])) }
                 
                 self.currentRecordingDuration = 0
-                //                self.delegate.messageInputBar.gestureRecognizers?.removeAll()
                 self.delegate.messageInputBar.sendButton.isEnabled = false
                 Core.gcd.after(seconds: 2) { self.addGestureRecognizers() }
             }
@@ -258,6 +244,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         Core.hud.hide()
         
         hideRecordingUI {
+            guard SpeechService.shared.isRecording else { completion(nil); return }
             self.stopRecording(cancelled: true) { _, exception in
                 completion(exception)
             }
@@ -327,6 +314,14 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
             }
             
             progressHandler()
+            
+            guard translation.languagePair.from != translation.languagePair.to else {
+                var inputFile = try! AudioFile(fromURL: url)
+                inputFile.name = "output"
+                
+                completion(inputFile, translation, nil)
+                return
+            }
             
             self.generateOutputFile(for: translation) { outputFile, exception in
                 guard let outputFile else {
@@ -399,43 +394,6 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     
     /* MARK: - Helper Methods */
     
-    private func addOrEnableRecognizer(_ recognizer: UIGestureRecognizer) {
-        let sendButton = delegate.messageInputBar.sendButton
-        if sendButton.gestureRecognizers == nil || !sendButton.gestureRecognizers!.contains(where: { $0 == recognizer }) {
-            sendButton.addGestureRecognizer(recognizer)
-        } else {
-            sendButton.gestureRecognizers?.first(where: { $0 == recognizer })?.isEnabled = true
-        }
-    }
-    
-    @objc
-    private func presentAudioMessagesUnsupportedAlert() {
-        syncDependencies()
-        
-        let alert = AKAlert(message: "Audio messages are unsupported for your language.\n\nPlease check back later in a future update!",
-                            cancelButtonTitle: "OK",
-                            sender: delegate.messageInputBar.sendButton)
-        
-        let shouldShowKeyboard = delegate.messageInputBar.inputTextView.isFirstResponder
-        alert.present { _ in
-            RuntimeStorage.store(true, as: .acknowledgedAudioMessagesUnsupported)
-            UserDefaults.standard.set(true, forKey: "acknowledgedAudioMessagesUnsupported")
-            
-            self.removeGestureRecognizers()
-            ChatServices.defaultChatUIService?.configureInputBar(forRecord: false)
-            self.delegate.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
-            
-            Core.gcd.after(milliseconds: 500) {
-                guard shouldShowKeyboard else {
-                    RuntimeStorage.messagesVC?.becomeFirstResponder()
-                    return
-                }
-                
-                self.delegate.messageInputBar.inputTextView.becomeFirstResponder()
-            }
-        }
-    }
-    
     public func addGestureRecognizers() {
         syncDependencies()
         
@@ -474,43 +432,13 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         addOrEnableRecognizer(singleTapGesture)
     }
     
-    private func requestTranscribePermission() {
-        guard PermissionService.transcribePermissionStatus == .granted else {
-            PermissionService.requestPermission(for: .transcription) { status, exception in
-                guard status == .granted else {
-                    guard let exception else { self.presentCTA(forRecording: false); return }
-                    Logger.log(exception, with: .errorAlert)
-                    return
-                }
-                
-                Core.gcd.after(milliseconds: 100) { self.addGestureRecognizers() }
-            }
-            
-            return
+    private func addOrEnableRecognizer(_ recognizer: UIGestureRecognizer) {
+        let sendButton = delegate.messageInputBar.sendButton
+        if sendButton.gestureRecognizers == nil || !sendButton.gestureRecognizers!.contains(where: { $0 == recognizer }) {
+            sendButton.addGestureRecognizer(recognizer)
+        } else {
+            sendButton.gestureRecognizers?.first(where: { $0 == recognizer })?.isEnabled = true
         }
-    }
-    
-    @objc
-    private func requestPermissions() {
-        guard PermissionService.recordPermissionStatus == .granted else {
-            PermissionService.requestPermission(for: .recording) { status, exception in
-                guard status == .granted else {
-                    guard let exception else { self.presentCTA(forRecording: true); return }
-                    Logger.log(exception, with: .errorAlert)
-                    return
-                }
-                
-                self.requestTranscribePermission()
-            }
-            
-            return
-        }
-        
-        self.requestTranscribePermission()
-    }
-    
-    public func removeGestureRecognizers() {
-        delegate.messageInputBar.sendButton.gestureRecognizers?.removeAll()
     }
     
     private func logError(_ exception: Exception,
@@ -538,6 +466,41 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         Core.gcd.after(milliseconds: 50) {
             generator.impactOccurred()
             Core.gcd.after(milliseconds: 50) { generator.impactOccurred() }
+        }
+    }
+    
+    private func presentCTA(forRecording: Bool) {
+        syncDependencies()
+        
+        delegate.messageInputBar.sendButton.isEnabled = false
+        Core.gcd.after(milliseconds: 500) {
+            let shouldShowKeyboard = self.delegate.messageInputBar.inputTextView.isFirstResponder
+            PermissionService.presentCTA(for: forRecording ? .recording : .transcription,
+                                         sender: self.delegate.messageInputBar.sendButton) {
+                RuntimeStorage.messagesVC?.becomeFirstResponder()
+                if shouldShowKeyboard { self.delegate.messageInputBar.inputTextView.becomeFirstResponder() }
+                self.delegate.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
+            }
+        }
+    }
+    
+    public func removeGestureRecognizers() {
+        delegate.messageInputBar.sendButton.gestureRecognizers?.removeAll()
+    }
+    
+    private func requestTranscribePermission() {
+        guard PermissionService.transcribePermissionStatus == .granted else {
+            PermissionService.requestPermission(for: .transcription) { status, exception in
+                guard status == .granted else {
+                    guard let exception else { self.presentCTA(forRecording: false); return }
+                    Logger.log(exception, with: .errorAlert)
+                    return
+                }
+                
+                Core.gcd.after(milliseconds: 100) { self.addGestureRecognizers() }
+            }
+            
+            return
         }
     }
     
@@ -607,6 +570,53 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         default:
             return
         }
+    }
+    
+    @objc
+    private func presentAudioMessagesUnsupportedAlert() {
+        syncDependencies()
+        
+        let alert = AKAlert(message: "Audio messages are unsupported for your language.\n\nPlease check back later in a future update!",
+                            cancelButtonTitle: "OK",
+                            sender: delegate.messageInputBar.sendButton)
+        
+        let shouldShowKeyboard = delegate.messageInputBar.inputTextView.isFirstResponder
+        alert.present { _ in
+            RuntimeStorage.store(true, as: .acknowledgedAudioMessagesUnsupported)
+            UserDefaults.standard.set(true, forKey: "acknowledgedAudioMessagesUnsupported")
+            
+            self.removeGestureRecognizers()
+            ChatServices.defaultChatUIService?.configureInputBar(forRecord: false)
+            self.delegate.messageInputBar.sendButton.isEnabled = self.COORDINATOR.shouldEnableSendButton
+            
+            Core.gcd.after(milliseconds: 500) {
+                guard shouldShowKeyboard else {
+                    RuntimeStorage.messagesVC?.becomeFirstResponder()
+                    return
+                }
+                
+                self.delegate.messageInputBar.inputTextView.becomeFirstResponder()
+            }
+        }
+    }
+    
+    @objc
+    private func requestPermissions() {
+        guard PermissionService.recordPermissionStatus == .granted else {
+            PermissionService.requestPermission(for: .recording) { status, exception in
+                guard status == .granted else {
+                    guard let exception else { self.presentCTA(forRecording: true); return }
+                    Logger.log(exception, with: .errorAlert)
+                    return
+                }
+                
+                self.requestTranscribePermission()
+            }
+            
+            return
+        }
+        
+        self.requestTranscribePermission()
     }
     
     @objc

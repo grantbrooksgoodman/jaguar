@@ -28,10 +28,14 @@ public extension DevModeService {
         let resetUserDefaultsAction = DevModeAction(title: "Reset UserDefaults", perform: resetUserDefaults)
         let switchEnvironmentAction = DevModeAction(title: "Switch Environment", perform: switchEnvironment)
         let overrideLanguageCodeAction = DevModeAction(title: "Override Language Code", perform: overrideLanguageCode)
+        let restoreResetOnFirstRunFlag = DevModeAction(title: "Restore “Reset on First Run” Flag", perform: restoreResetOnFirstRunFlag)
         
         let destroyConversationDatabaseAction = DevModeAction(title: "Destroy Conversation Database",
                                                               perform: destroyConversationDatabase,
                                                               isDestructive: true)
+        let resetPushTokensAction = DevModeAction(title: "Reset Push Tokens",
+                                                  perform: resetPushTokens,
+                                                  isDestructive: true)
         let disableDeveloperModeAction = DevModeAction(title: "Disable Developer Mode",
                                                        perform: promptToToggle,
                                                        isDestructive: true)
@@ -40,7 +44,9 @@ public extension DevModeService {
                                resetUserDefaultsAction,
                                switchEnvironmentAction,
                                overrideLanguageCodeAction,
+                               restoreResetOnFirstRunFlag,
                                destroyConversationDatabaseAction,
+                               resetPushTokensAction,
                                disableDeveloperModeAction]
         addActions(standardActions)
     }
@@ -60,14 +66,19 @@ public extension DevModeService {
     }
     
     private static func destroyConversationDatabase() {
+        let previousLanguage = RuntimeStorage.languageCode!
+        AKCore.shared.lockLanguageCode(to: "en")
         AKConfirmationAlert(title: "Destroy Database",
                             message: "This will delete all conversations for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
                             confirmationStyle: .destructivePreferred).present { confirmed in
+            AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
             guard confirmed == 1 else { return }
+            AKCore.shared.lockLanguageCode(to: "en")
             AKConfirmationAlert(title: "Are you sure?",
                                 message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
                                 cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
                                 confirmationStyle: .destructivePreferred).present { doubleConfirmed in
+                AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
                 guard doubleConfirmed == 1 else { return }
                 ConversationTestingSerializer.deleteAllConversations { exception in
                     guard exception == nil else {
@@ -75,6 +86,7 @@ public extension DevModeService {
                         return
                     }
                     
+                    Core.hud.showSuccess()
 #if !EXTENSION
                     RuntimeStorage.conversationsPageViewModel?.load(silent: false)
 #endif
@@ -84,6 +96,7 @@ public extension DevModeService {
     }
     
     private static func overrideLanguageCode() {
+        AKCore.shared.lockLanguageCode(to: "en")
         let languageCodePrompt = AKTextFieldAlert(title: "Override Language Code",
                                                   message: "Enter the two-letter code of the language to apply:",
                                                   actions: [AKAction(title: "Done", style: .preferred)],
@@ -95,14 +108,17 @@ public extension DevModeService {
                                                   networkDependent: true)
         
         languageCodePrompt.present { returnedString, actionID in
+            AKCore.shared.unlockLanguageCode()
             guard actionID != -1 else { return }
             guard let returnedString,
                   returnedString.lowercasedTrimmingWhitespace != "" else {
+                AKCore.shared.lockLanguageCode(to: "en")
                 AKConfirmationAlert(title: "Override Language Code",
                                     message: "No input was entered.\n\nWould you like to try again?",
                                     cancelConfirmTitles: (cancel: nil, confirm: "Try Again"),
                                     confirmationStyle: .preferred,
                                     shouldTranslate: [.none]).present { confirmed in
+                    AKCore.shared.unlockLanguageCode()
                     guard confirmed == 1 else { return }
                     self.overrideLanguageCode()
                 }
@@ -112,11 +128,13 @@ public extension DevModeService {
             
             guard let languageCodes = RuntimeStorage.languageCodeDictionary,
                   languageCodes.keys.contains(returnedString.lowercasedTrimmingWhitespace) else {
+                AKCore.shared.lockLanguageCode(to: "en")
                 AKConfirmationAlert(title: "Override Language Code",
                                     message: "The language code entered was invalid. Please try again.",
                                     cancelConfirmTitles: (cancel: nil, confirm: "Try Again"),
                                     confirmationStyle: .preferred,
                                     shouldTranslate: [.none]).present { confirmed in
+                    AKCore.shared.unlockLanguageCode()
                     guard confirmed == 1 else { return }
                     self.overrideLanguageCode()
                 }
@@ -138,10 +156,38 @@ public extension DevModeService {
         }
     }
     
+    private static func resetPushTokens() {
+        let previousLanguage = RuntimeStorage.languageCode!
+        AKCore.shared.lockLanguageCode(to: "en")
+        AKConfirmationAlert(title: "Reset Push Tokens",
+                            message: "This will remove all push tokens for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
+                            confirmationStyle: .destructivePreferred,
+                            shouldTranslate: [.none],
+                            networkDependent: true).present { confirmed in
+            defer { AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage) }
+            
+            guard confirmed == 1 else { return }
+            UserTestingSerializer.shared.resetPushTokensForAllUsers { exception in
+                guard exception == nil else {
+                    Logger.log(exception!, with: .errorAlert)
+                    return
+                }
+                
+                Core.hud.flash("Reset Push Tokens", image: .success)
+            }
+        }
+    }
+    
     private static func resetUserDefaults() {
         UserDefaults.reset()
         UserDefaults.standard.set(true, forKey: "developerModeEnabled")
         Core.hud.showSuccess(text: "Reset UserDefaults")
+    }
+    
+    private static func restoreResetOnFirstRunFlag() {
+        RuntimeStorage.store(false, as: .didResetForFirstRun)
+        UserDefaults.standard.set(false, forKey: "didResetForFirstRun")
+        Core.hud.flash("App will reset on next launch", image: .success)
     }
     
     private static func switchEnvironment() {
@@ -165,7 +211,14 @@ public extension DevModeService {
                                         actions: actions,
                                         shouldTranslate: [.none])
         
+        let previousLanguage = RuntimeStorage.languageCode!
+        AKCore.shared.lockLanguageCode(to: "en")
         actionSheet.present { actionID in
+            guard actionID != -1 else {
+                AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
+                return
+            }
+            
             switch firebaseEnvironment {
             case .production:
                 GeneralSerializer.environment = actionID == actions[0].identifier ? .staging : .development
@@ -175,23 +228,23 @@ public extension DevModeService {
                 GeneralSerializer.environment = actionID == actions[0].identifier ? .production : .staging
             }
             
-            guard actionID != -1 else { return }
-            
+            UserDefaults.reset()
             ContactArchiver.clearArchive()
+            ContactService.clearCache()
             ConversationArchiver.clearArchive()
+            RecognitionService.clearCache()
+            RegionDetailServer.clearCache()
             TranslationArchiver.clearArchive()
             
-            UserDefaults.reset()
-            
             environment = GeneralSerializer.environment.description
+            UserDefaults.standard.set(true, forKey: "developerModeEnabled")
+            UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
             
             AKAlert(message: "Switched to \(environment) environment. You must now restart the app.",
                     actions: [AKAction(title: "Exit", style: .destructivePreferred)],
                     showsCancelButton: false,
                     shouldTranslate: [.none]).present { _ in
-                UserDefaults.standard.set(true, forKey: "developerModeEnabled")
-                UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
-                
+                AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
                 fatalError()
             }
         }

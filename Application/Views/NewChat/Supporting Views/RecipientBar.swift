@@ -367,26 +367,33 @@ public class RecipientBar: UIView {
                 return
             }
             
-            PermissionService.requestPermission(for: .contacts) { status, exception in
-                guard status == .granted else {
-                    let error = exception ?? Exception(metadata: [#file, #function, #line])
-                    Logger.log(error, with: .errorAlert)
-                    return
-                }
-                
-                if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
-                    RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
-                    Core.gcd.after(milliseconds: 1500) { self.selectContactButtonAction() }
-                } else {
-                    ContactService.getLocalUserHashes { hashes, exception in
-                        guard let hashes else {
-                            Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+            StateProvider.shared.tappedDone = true
+            Core.gcd.after(seconds: 1) {
+                PermissionService.requestPermission(for: .contacts) { status, exception in
+                    guard status == .granted else {
+                        guard let exception else {
+                            PermissionService.presentCTA(for: .contacts) { }
                             return
                         }
                         
-                        UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
-                        RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
-                        Core.gcd.after(milliseconds: 1500) { self.selectContactButtonAction() }
+                        Logger.log(exception, with: .errorAlert)
+                        return
+                    }
+                    
+                    if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
+                        RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
+                        StateProvider.shared.showNewChatPageForGrantedContactAccess = true
+                    } else {
+                        ContactService.getLocalUserHashes { hashes, exception in
+                            guard let hashes else {
+                                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
+                                return
+                            }
+                            
+                            UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
+                            RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
+                            StateProvider.shared.showNewChatPageForGrantedContactAccess = true
+                        }
                     }
                 }
             }

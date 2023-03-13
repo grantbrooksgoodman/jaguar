@@ -46,11 +46,9 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             }
             
 #if targetEnvironment(simulator)
-            self.signInUser(withLanguage: "en", scene: scene, timeout: timeout)
+            self.signInRandomUser(scene: scene, timeout: timeout)
 #else
-            self.signInUser(withLanguage: "te", scene: scene, timeout: timeout)
-            UserDefaults.standard.set(false, forKey: "acknowledgedAudioMessagesUnsupported")
-            Core.gcd.after(seconds: 1) { RuntimeStorage.store(false, as: .acknowledgedAudioMessagesUnsupported) }
+            self.signInRandomUser(scene: scene, timeout: timeout)
 #endif
             
             return

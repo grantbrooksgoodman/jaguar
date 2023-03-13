@@ -50,6 +50,12 @@ public struct ConversationsPageView: View {
                      let conversations):
             loadedView(translations: translations,
                        conversations: conversations)
+            .onAppear {
+                UserTestingSerializer.shared.resetPushTokensForAllUsers { exception in
+                    guard let exception else { return }
+                    Logger.log(exception)
+                }
+            }
         case .failed(let exception):
             Text(exception.userFacingDescriptor)
         }
@@ -95,6 +101,10 @@ public struct ConversationsPageView: View {
         .onChange(of: stateProvider.tappedSelectContactButton, perform: { newValue in
             guard newValue else { return }
             stateProvider.tappedSelectContactButton = false
+        })
+        .onChange(of: stateProvider.showNewChatPageForGrantedContactAccess, perform: { newValue in
+            guard newValue else { return }
+            showingPopover = true
         })
         .onAppear {
             RuntimeStorage.store(#file, as: .currentFile)

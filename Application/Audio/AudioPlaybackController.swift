@@ -32,8 +32,19 @@ public class AudioPlaybackController {
     
     // MARK: Public
     
+    public static func resetAudioSession(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        let audioSession = AVAudioSession.sharedInstance()
+        do {
+            try audioSession.setCategory(.playAndRecord,
+                                         mode: .default,
+                                         options: [.defaultToSpeaker, .allowBluetooth])
+            try audioSession.setActive(true)
+        } catch { completion(Exception(error, metadata: [#file, #function, #line])) }
+    }
+    
     public static func startPlayback(for cell: AudioMessageCell) {
-        guard !cell.playButton.isSelected else {
+        guard !cell.playButton.isSelected,
+              !SpeechService.shared.isRecording else {
             stopPlayback()
             return
         }
@@ -60,12 +71,10 @@ public class AudioPlaybackController {
     // MARK: Private
     
     private static func playAudio(url: URL) {
-        let recordingSession = AVAudioSession.sharedInstance()
-        do {
-            try recordingSession.setCategory(.playAndRecord,
-                                             mode: .default,
-                                             options: [.defaultToSpeaker, .allowBluetooth])
-        } catch { Logger.log(Exception(error, metadata: [#file, #function, #line])) }
+        resetAudioSession { exception in
+            guard let exception else { return }
+            Logger.log(exception)
+        }
         
         player.removeAllItems()
         player.insert(AVPlayerItem(url: url), after: nil)

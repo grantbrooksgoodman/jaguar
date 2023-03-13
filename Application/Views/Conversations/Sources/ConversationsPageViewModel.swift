@@ -14,8 +14,6 @@ import AlertKit
 import Firebase
 import Translator
 
-import FirebaseAnalytics
-
 public class ConversationsPageViewModel: ObservableObject {
     
     //==================================================//
@@ -62,14 +60,18 @@ public class ConversationsPageViewModel: ObservableObject {
         }
         
         if RuntimeStorage.shouldUpdateReadState! ||
-        RuntimeStorage.receivedNotification! ||
-        (RuntimeStorage.becameActive ?? false) {
+            RuntimeStorage.receivedNotification! ||
+            (RuntimeStorage.becameActive ?? false) {
             if (RuntimeStorage.becameActive ?? false) {
                 print("reloading because became active")
             }
             
             if silent {
-                ConversationArchiver.clearArchive()
+                if let globalConversationKey = RuntimeStorage.globalConversation?.identifier.key {
+                    ConversationArchiver.removeFromArchive(withKey: globalConversationKey)
+                } else {
+                    ConversationArchiver.clearArchive()
+                }
             }
             
             RuntimeStorage.store(false, as: .shouldUpdateReadState)
@@ -81,6 +83,7 @@ public class ConversationsPageViewModel: ObservableObject {
         
         setPushApiKey()
         setRedirectionKey()
+        RuntimeStorage.remove(.globalConversation)
         
         UserSerializer.shared.getUser(withIdentifier: currentUserID) { (returnedUser,
                                                                         exception) in
@@ -98,10 +101,12 @@ public class ConversationsPageViewModel: ObservableObject {
             RuntimeStorage.store(user.languageCode!, as: .languageCode)
             AKCore.shared.setLanguageCode(user.languageCode)
             
+            RuntimeStorage.topWindow?.isUserInteractionEnabled = false
             user.deSerializeConversations { (returnedConversations,
                                              exception) in
                 guard let conversations = returnedConversations else {
                     self.state = .failed(exception ?? Exception(metadata: [#file, #function, #line]))
+                    RuntimeStorage.topWindow?.isUserInteractionEnabled = true
                     completion()
                     return
                 }
@@ -126,7 +131,11 @@ public class ConversationsPageViewModel: ObservableObject {
                     }
                 }
                 
-                self.translateAndLoad(conversations: conversations) { completion() }
+                RuntimeStorage.topWindow?.isUserInteractionEnabled = true
+                self.translateAndLoad(conversations: conversations) {
+                    self.requestNotificationPermissionIfNeeded()
+                    completion()
+                }
             }
         }
     }
@@ -356,13 +365,34 @@ public class ConversationsPageViewModel: ObservableObject {
         
         guard let previousHashes = UserDefaults.standard.object(forKey: "previousHashes") as? [String],
               let currentHashes = RuntimeStorage.currentUser?.openConversations?.hashes(),
-              (previousHashes != currentHashes) || RuntimeStorage.shouldUpdateReadState! || RuntimeStorage.receivedNotification! || (RuntimeStorage.becameActive ?? false) else { return }
+              (previousHashes != currentHashes) || RuntimeStorage.shouldUpdateReadState! || RuntimeStorage.receivedNotification! || (RuntimeStorage.becameActive ?? false) else {
+            RuntimeStorage.remove(.globalConversation)
+            return
+        }
         
         UserDefaults.standard.set(currentHashes, forKey: "previousHashes")
         
-        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else { return }
+        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else {
+            RuntimeStorage.remove(.globalConversation)
+            return
+        }
         
         load(silent: true)
+    }
+    
+    private func requestNotificationPermissionIfNeeded() {
+        PermissionService.getNotificationPermissionStatus(completion: { status in
+            guard status == .unknown else { return }
+            Core.gcd.after(seconds: 2) {
+                PermissionService.requestPermission(for: .notifications) { status, exception in
+                    guard status == .granted else {
+                        guard let exception else { PermissionService.presentCTA(for: .notifications) { }; return }
+                        Logger.log(exception, with: .errorAlert)
+                        return
+                    }
+                }
+            }
+        })
     }
     
     private func setUpObserver(for conversation: Conversation) {

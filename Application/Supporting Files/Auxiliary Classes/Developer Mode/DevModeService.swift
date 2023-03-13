@@ -99,12 +99,16 @@ public struct DevModeService {
     public static func promptToToggle() {
         guard Build.stage != .generalRelease else { return }
         
+        let previousLanguage = RuntimeStorage.languageCode!
+        AKCore.shared.lockLanguageCode(to: "en")
+        
         guard !Build.developerModeEnabled else {
             AKConfirmationAlert(title: "Disable Developer Mode",
                                 message: "Are you sure you'd like to disable Developer Mode?",
                                 cancelConfirmTitles: (cancel: nil, confirm: "Disable"),
                                 confirmationStyle: .destructivePreferred,
                                 shouldTranslate: [.none]).present { confirmed in
+                AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
                 guard confirmed == 1 else { return }
                 toggleDeveloperMode(enabled: false)
             }
@@ -122,14 +126,18 @@ public struct DevModeService {
                                               shouldTranslate: [.none])
         
         passwordPrompt.present { returnedString, actionID in
+            AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
+            
             guard actionID != -1 else { return }
             
             guard let returnedString,
                   returnedString == ExpiryAlertDelegate().getExpirationOverrideCode() else {
+                AKCore.shared.lockLanguageCode(to: "en")
                 AKAlert(title: "Enable Developer Mode",
                         message: "The password entered was not correct. Please try again.",
                         actions: [AKAction(title: "Try Again", style: .preferred)],
                         shouldTranslate: [.none]).present { actionID in
+                    AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
                     guard actionID != -1 else { return }
                     self.promptToToggle()
                 }
@@ -148,6 +156,7 @@ public struct DevModeService {
     private static func toggleDeveloperMode(enabled: Bool) {
         Build.set(.developerModeEnabled, to: enabled)
         UserDefaults.standard.set(enabled, forKey: "developerModeEnabled")
+        StateProvider.shared.developerModeEnabled = enabled
         Core.hud.showSuccess(text: "Developer Mode \(enabled ? "Enabled" : "Disabled")")
     }
 }

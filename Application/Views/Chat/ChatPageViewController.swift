@@ -148,7 +148,6 @@ public final class ChatPageViewController: MessagesViewController,
         
         RuntimeStorage.remove(.messagesVC)
         RuntimeStorage.store(0, as: .messageOffset)
-        RuntimeStorage.remove(.globalConversation)
         RuntimeStorage.remove(.currentMessageSlice)
         RuntimeStorage.remove(.typingIndicator)
         

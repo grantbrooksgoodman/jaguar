@@ -140,6 +140,7 @@ public struct AudioMessageSerializer {
     }
     
     private func downloadAudioReference(for message: Message,
+                                        retrying: Bool = false,
                                         completion: @escaping(_ audioReference: AudioMessageReference?,
                                                               _ exception: Exception?) -> Void) {
         guard let localFilePaths = message.localAudioFilePaths else {
@@ -156,8 +157,9 @@ public struct AudioMessageSerializer {
             guard let localInputPath else {
                 let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
                 guard !exception.descriptor.contains("does not exist") else {
+                    guard !retrying else { completion(nil, exception); return }
                     Core.gcd.after(milliseconds: 500) {
-                        self.downloadAudioReference(for: message) { audioReference, exception in
+                        self.downloadAudioReference(for: message, retrying: true) { audioReference, exception in
                             completion(audioReference, exception)
                         }
                     }
@@ -179,8 +181,9 @@ public struct AudioMessageSerializer {
                 guard let localOutputPath else {
                     let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
                     guard !exception.descriptor.contains("does not exist") else {
+                        guard !retrying else { completion(nil, exception); return }
                         Core.gcd.after(milliseconds: 500) {
-                            self.downloadAudioReference(for: message) { audioReference, exception in
+                            self.downloadAudioReference(for: message, retrying: true) { audioReference, exception in
                                 completion(audioReference, exception)
                             }
                         }

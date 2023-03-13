@@ -71,12 +71,6 @@ public class User: Codable {
             return
         }
         
-        guard user.languageCode != languageCode else {
-            completion(false, Exception("Cannot start a conversation with a user who speaks the same language.",
-                                        metadata: [#file, #function, #line]))
-            return
-        }
-        
         deSerializeConversations(completion: { (returnedConversations,
                                                 exception) in
             guard let conversations = returnedConversations else {

@@ -99,23 +99,21 @@ public struct FirebaseTranslator: Translatorable {
                           using: TranslationPlatform? = nil,
                           completion: @escaping (_ returnedTranslation: Translation?,
                                                  _ exception: Exception?) -> Void) {
-        if input.value().rangeOfCharacter(from: CharacterSet.letters) == nil {
-            let processedInput = TranslationInput(input.original/*.removingOccurrences(of: ["*"])*/,
-                                                  alternate: input.alternate/*?.removingOccurrences(of: ["*"])*/)
-            let translation = Translation(input: processedInput,
-                                          output: processedInput.original,
-                                          languagePair: languagePair)
-            
-            TranslationSerializer.uploadTranslation(translation)
-            TranslationArchiver.addToArchive(translation)
-            
-            completion(translation, nil)
+        if let archivedTranslation = TranslationArchiver.getFromArchive(input, languagePair: languagePair) {
+            completion(archivedTranslation, nil)
             return
         }
         
-        if let archivedTranslation = TranslationArchiver.getFromArchive(input,
-                                                                        languagePair: languagePair) {
-            completion(archivedTranslation, nil)
+        guard input.value().rangeOfCharacter(from: CharacterSet.letters) != nil,
+              languagePair.from != languagePair.to else {
+            let translation = Translation(input: input,
+                                          output: input.original,
+                                          languagePair: languagePair)
+            
+            DispatchQueue.global(qos: .userInteractive).async { TranslationSerializer.uploadTranslation(translation) }
+            TranslationArchiver.addToArchive(translation)
+            
+            completion(translation, nil)
             return
         }
         
@@ -158,7 +156,7 @@ public struct FirebaseTranslator: Translatorable {
                                                           output: input.value(),
                                                           languagePair: languagePair)
                             
-                            TranslationSerializer.uploadTranslation(translation)
+                            DispatchQueue.global(qos: .userInteractive).async { TranslationSerializer.uploadTranslation(translation) }
                             TranslationArchiver.addToArchive(translation)
                             
                             if let required = requiresHUD,
@@ -182,7 +180,7 @@ public struct FirebaseTranslator: Translatorable {
                                                   output: translatedString.matchingCapitalization(of: input.value()),
                                                   languagePair: languagePair)
                     
-                    TranslationSerializer.uploadTranslation(translation)
+                    DispatchQueue.global(qos: .userInteractive).async { TranslationSerializer.uploadTranslation(translation) }
                     TranslationArchiver.addToArchive(translation)
                     
                     if let required = requiresHUD,

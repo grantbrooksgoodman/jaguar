@@ -19,7 +19,6 @@ public enum JRException {
     
     case conversationAlreadyExists
     case conversationWithYourself
-    case sameLanguageConversation
     
     case failedToRetranslate
     case operationTimedOut
@@ -63,8 +62,6 @@ public enum JRException {
             return "CE84"
         case .conversationWithYourself:
             return "F8E5"
-        case .sameLanguageConversation:
-            return "1B76"
             
         case .failedToRetranslate:
             return "1BC2"

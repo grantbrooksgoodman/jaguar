@@ -106,7 +106,9 @@ public struct PermissionService: PermissionServiceable {
                                                                       _ exception: Exception?) -> Void) {
         let sharedAudioSession = AVAudioSession.sharedInstance()
         do {
-            try sharedAudioSession.setCategory(.playAndRecord, mode: .default)
+            try sharedAudioSession.setCategory(.playAndRecord,
+                                               mode: .default,
+                                               options: [.defaultToSpeaker, .allowBluetooth])
             try sharedAudioSession.setActive(true)
             
             sharedAudioSession.requestRecordPermission { granted in

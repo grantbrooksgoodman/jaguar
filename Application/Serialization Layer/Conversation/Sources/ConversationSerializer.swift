@@ -316,6 +316,7 @@ public struct ConversationSerializer {
         var exceptions = [Exception]()
         
         guard withIdentifiers != ["!"] else {
+            completion(nil, Exception("No identifiers passed!", metadata: [#file, #function, #line]))
             return
         }
         

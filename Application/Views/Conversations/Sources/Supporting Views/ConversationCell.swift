@@ -139,13 +139,23 @@ public struct ConversationCell: View {
                 presentingAlert = false
                 guard actionID != -1 else { return }
                 
+                UserDefaults.reset()
                 ContactArchiver.clearArchive()
                 ContactService.clearCache()
                 ConversationArchiver.clearArchive()
+                RecognitionService.clearCache()
+                RegionDetailServer.clearCache()
                 TranslationArchiver.clearArchive()
                 
-                UserDefaults.standard.set(userID, forKey: "currentUserID")
+                RuntimeStorage.remove(.currentMessageSlice)
                 RuntimeStorage.remove(.currentUser)
+                RuntimeStorage.remove(.globalConversation)
+                RuntimeStorage.store([], as: .archivedLocalUserHashes)
+                RuntimeStorage.store([], as: .archivedServerUserHashes)
+                RuntimeStorage.store([], as: .contactPairs)
+                RuntimeStorage.store(0, as: .messageOffset)
+                
+                UserDefaults.standard.set(userID, forKey: "currentUserID")
                 RuntimeStorage.store(userID, as: .currentUserID)
                 
                 RuntimeStorage.conversationsPageViewModel?.load()

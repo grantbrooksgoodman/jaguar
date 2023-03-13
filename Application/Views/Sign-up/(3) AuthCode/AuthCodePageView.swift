@@ -69,8 +69,8 @@ public struct AuthCodePageView: View {
                         .keyboardType(.numberPad)
                     
                     Button {
-                        authenticateUser()
                         pressedContinue = true
+                        authenticateUser()
                     } label: {
                         Text(translations["continue"]!.output)
                             .bold()
@@ -106,8 +106,6 @@ public struct AuthCodePageView: View {
     private func authenticateUser() {
         viewModel.authenticateUser(identifier: verificationIdentifier,
                                    verificationCode: verificationCode) { userID, returnedError in
-            self.pressedContinue = false
-            
             guard let userID else {
                 if let returnedError {
                     Logger.log(Exception(returnedError, metadata: [#file, #function, #line]),
@@ -117,12 +115,15 @@ public struct AuthCodePageView: View {
                                with: .errorAlert)
                 }
                 
+                self.pressedContinue = false
+                
                 return
             }
             
             viewRouter.currentPage = .signUp_permissions(phoneNumber: phoneNumber,
                                                          region: region,
                                                          userID: userID)
+            self.pressedContinue = false
         }
     }
 }

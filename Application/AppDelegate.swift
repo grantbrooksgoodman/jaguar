@@ -32,12 +32,11 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     /* MARK: - UIApplication Methods */
     
     public func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // resetIfNeeded()
-        
         preInitialize()
+        resetForFirstRunIfNeeded(environment: .staging)
         
         setUpRuntimeStorage()
-        setEnvironment(to: .development)
+        setEnvironment()
         
         setUpCallingCodes()
         
@@ -60,30 +59,34 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     
     /* MARK: - Setup/Initialization Methods */
     
-    private func resetIfNeeded() {
-        guard Build.stage != .generalRelease,
-              !Build.developerModeEnabled else { return }
+    private func resetForFirstRunIfNeeded(environment: GeneralSerializer.Environment = .production) {
+        guard Build.stage != .generalRelease else { return }
         
-        guard let previousBuildNumber = UserDefaults.standard.value(forKey: "buildNumber") as? Int else {
-            UserDefaults.standard.set(Build.buildNumber, forKey: "buildNumber")
-            return
+        if let didResetForFirstRun = UserDefaults.standard.value(forKey: "didResetForFirstRun") as? Bool {
+            RuntimeStorage.store(didResetForFirstRun, as: .didResetForFirstRun)
+        } else {
+            RuntimeStorage.store(false, as: .didResetForFirstRun)
+            UserDefaults.standard.set(false, forKey: "didResetForFirstRun")
         }
         
-        if previousBuildNumber != Build.buildNumber {
-            Logger.log("Resetting application due to new build number.",
+        guard !RuntimeStorage.didResetForFirstRun! else { return }
+        
+        Core.gcd.after(milliseconds: 100) {
+            Logger.log("Resetting application for first run.",
                        metadata: [#file, #function, #line])
-            
-            UserDefaults.reset()
-            ContactArchiver.clearArchive()
-            ContactService.clearCache()
-            ConversationArchiver.clearArchive()
-            RecognitionService.clearCache()
-            TranslationArchiver.clearArchive()
-            
-            setEnvironment(to: .development)
-            
-            UserDefaults.standard.set(Build.buildNumber, forKey: "buildNumber")
         }
+        
+        UserDefaults.reset()
+        ContactArchiver.clearArchive()
+        ContactService.clearCache()
+        ConversationArchiver.clearArchive()
+        RecognitionService.clearCache()
+        TranslationArchiver.clearArchive()
+        
+        RuntimeStorage.store(true, as: .didResetForFirstRun)
+        UserDefaults.standard.set(true, forKey: "didResetForFirstRun")
+        
+        UserDefaults.standard.set(environment.shortString, forKey: "firebaseEnvironment")
     }
     
     private func preInitialize() {
@@ -113,7 +116,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         UserDefaults.standard.setValue(Build.stage == .generalRelease ? false : developerModeEnabled,
                                        forKey: "developerModeEnabled")
         
-        Logger.exposureLevel = .normal
+        Logger.exposureLevel = .verbose
         DevModeService.addStandardActions()
         
         /* MARK: AlertKit Setup */
@@ -181,7 +184,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     
     private func setEnvironment(to environment: GeneralSerializer.Environment? = nil) {
         guard let environment else {
-            if let environmentString = UserDefaults.standard.value(forKey: "firebaseEnvironment") as? String,
+            if let environmentString = UserDefaults.standard.string(forKey: "firebaseEnvironment"),
                let environment = environmentString.asEnvironment {
                 GeneralSerializer.environment = environment
             }
@@ -189,6 +192,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         }
         
         GeneralSerializer.environment = environment
+        UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
     }
     
     private func setUpCallingCodes() {

@@ -91,6 +91,10 @@ public struct NewChatPageView: View {
                     stateProvider.wantsToInvite = false
                     handleContactSelectorDismissed()
                 }
+                .onChange(of: stateProvider.showNewChatPageForGrantedContactAccess) { newValue in
+                    guard !newValue else { return }
+                    showingContactSelector = true
+                }
             }
             .sheet(isPresented: $showingContactSelector) {
                 ContactSelectorView(isPresenting: $showingContactSelector,

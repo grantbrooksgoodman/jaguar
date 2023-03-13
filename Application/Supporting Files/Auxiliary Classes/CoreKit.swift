@@ -174,7 +174,7 @@ public enum Core {
         
         public func showSuccess(text: String? = nil) {
 #if !EXTENSION
-            ProgressHUD.showSucceed(text)
+            DispatchQueue.main.async { ProgressHUD.showSucceed(text) }
 #endif
         }
     }

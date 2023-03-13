@@ -963,6 +963,8 @@ public extension UserDefaults {
         let defaults = UserDefaults.standard
         
         let developerModeEnabled = defaults.value(forKey: "developerModeEnabled") as? Bool
+        let didResetForFirstRun = defaults.value(forKey: "didResetForFirstRun") as? Bool
+        let firebaseEnvironment = defaults.value(forKey: "firebaseEnvironment") as? String
         let dictionary = defaults.dictionaryRepresentation()
         
         dictionary.keys.forEach { key in
@@ -971,6 +973,14 @@ public extension UserDefaults {
         
         if let developerModeEnabled {
             defaults.set(developerModeEnabled, forKey: "developerModeEnabled")
+        }
+        
+        if let didResetForFirstRun {
+            defaults.set(didResetForFirstRun, forKey: "didResetForFirstRun")
+        }
+        
+        if let firebaseEnvironment {
+            defaults.set(firebaseEnvironment, forKey: "firebaseEnvironment")
         }
     }
 }

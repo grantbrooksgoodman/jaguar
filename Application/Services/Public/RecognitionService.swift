@@ -17,6 +17,7 @@ public struct RecognitionService {
     
     /* MARK: - Properties */
     
+    private static var detectionCache = [String: String]()
     private static var translationCache = [String: (pair: LanguagePair, untranslated: Bool)]()
     
     //==================================================//
@@ -24,6 +25,7 @@ public struct RecognitionService {
     /* MARK: - Public Methods */
     
     public static func clearCache() {
+        detectionCache = [:]
         translationCache = [:]
     }
     
@@ -33,6 +35,7 @@ public struct RecognitionService {
         
         guard let languageCode = recognizer.dominantLanguage?.rawValue else { return nil }
         
+        detectionCache[string] = languageCode
         return languageCode
     }
     
@@ -40,8 +43,16 @@ public struct RecognitionService {
                                               for pair: LanguagePair) -> Bool {
         guard !translationCache.contains(where: { $0.key == string && $0.value.pair.asString() == pair.asString() }) else { return translationCache[string]!.untranslated }
         
+        guard detectedLanguage(for: string) != pair.to else {
+            translationCache[string] = (pair: pair, untranslated: false)
+            return false
+        }
+        
         guard string.rangeOfCharacter(from: CharacterSet.letters) != nil,
-              string.lowercasedTrimmingWhitespace.count > 1 else { return false }
+              string.lowercasedTrimmingWhitespace.count > 1 else {
+            translationCache[string] = (pair: pair, untranslated: false)
+            return false
+        }
         
         let fromPossibleWords = percentOfPossibleWords(in: string, language: pair.from)
         let toPossibleWords = percentOfPossibleWords(in: string, language: pair.to)

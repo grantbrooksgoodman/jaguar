@@ -17,6 +17,12 @@ public class BuildInfoOverlayViewModel: ObservableObject {
     
     //==================================================//
     
+    /* MARK: - Properties */
+    
+    private var willPresentDisclaimerAlert = false
+    
+    //==================================================//
+    
     /* MARK: - Build Information Alert */
     
     public func presentBuildInformationAlert() {
@@ -51,6 +57,14 @@ public class BuildInfoOverlayViewModel: ObservableObject {
     /* MARK: - Disclaimer Alert */
     
     public func presentDisclaimerAlert() {
+        guard let topViewController = UIApplication.topViewController(),
+              !topViewController.isKind(of: UIAlertController.self) else { return }
+        
+        guard !willPresentDisclaimerAlert else { return }
+        willPresentDisclaimerAlert = true
+        
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        
         let typeString = Build.stage.description(short: false)
         let expiryString = Build.timebombActive ? "\n\n\(Build.expiryInfoString)" : ""
         
@@ -68,16 +82,22 @@ public class BuildInfoOverlayViewModel: ObservableObject {
         let enableOrDisable = Build.developerModeEnabled ? "Disable" : "Enable"
         let developerModeString = "\(enableOrDisable) Developer Mode"
         
+        var hasPresented = false
+        Core.gcd.after(milliseconds: 750) {
+            guard !hasPresented else { return }
+            Core.hud.showProgress()
+        }
+        
         TranslatorService.shared.getTranslations(for: [TranslationInput(messageToDisplay),
                                                        TranslationInput(projectTitle),
-                                                       TranslationInput(viewBuildInformationString),
-                                                       TranslationInput(developerModeString)],
+                                                       TranslationInput(viewBuildInformationString)],
                                                  languagePair: LanguagePair(from: "en",
-                                                                            to: RuntimeStorage.languageCode!),
+                                                                            to: "en" /*RuntimeStorage.languageCode!*/),
                                                  requiresHUD: false,
                                                  using: .google) { (returnedTranslations,
                                                                     errorDescriptors) in
             guard let translations = returnedTranslations else {
+                Core.hud.hide()
                 Logger.log(errorDescriptors?.keys.joined(separator: "\n") ?? "An unknown error occurred.",
                            metadata: [#file, #function, #line])
                 return
@@ -90,22 +110,28 @@ public class BuildInfoOverlayViewModel: ObservableObject {
             
             let viewBuildInformationAction = UIAlertAction(title: translations.first(where: { $0.input.value() == viewBuildInformationString })?.output ?? viewBuildInformationString,
                                                            style: .default) { _ in
+                self.willPresentDisclaimerAlert = false
                 self.presentBuildInformationAlert()
             }
             
-            let developerModeAction = UIAlertAction(title: translations.first(where: { $0.input.value() == developerModeString })?.output ?? developerModeString,
+            let developerModeAction = UIAlertAction(title: developerModeString,
                                                     style: enableOrDisable == "Enable" ? .default : .destructive) { _ in
+                self.willPresentDisclaimerAlert = false
                 DevModeService.promptToToggle()
+            }
+            
+            let dismissAction = UIAlertAction(title: Localizer.preLocalizedString(for: .dismiss,
+                                                                                  language: "en" /*RuntimeStorage.languageCode!*/), style: .cancel) { _ in
+                self.willPresentDisclaimerAlert = false
             }
             
             alertController.addAction(viewBuildInformationAction)
             alertController.addAction(developerModeAction)
-            alertController.addAction(UIAlertAction(title: LocalizedString.dismiss,
-                                                    style: .cancel,
-                                                    handler: nil))
+            alertController.addAction(dismissAction)
             
             guard Build.timebombActive else {
                 alertController.message = translations.first(where: { $0.input.value() == messageToDisplay })?.output.removingOccurrences(of: ["*"]) ?? messageToDisplay.removingOccurrences(of: ["*"])
+                hasPresented = true
                 Core.ui.politelyPresent(viewController: alertController)
                 
                 return
@@ -130,6 +156,7 @@ public class BuildInfoOverlayViewModel: ObservableObject {
                                                 alternateAttributeRange: [dateComponent])
             alertController.setValue(attributed, forKey: "attributedMessage")
             
+            hasPresented = true
             Core.ui.politelyPresent(viewController: alertController)
         }
     }
@@ -139,6 +166,8 @@ public class BuildInfoOverlayViewModel: ObservableObject {
     /* MARK: - Send Feedback Action Sheet */
     
     public func presentSendFeedbackActionSheet() {
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+        
         let sendFeedbackAction = AKAction(title: "Send Feedback", style: .default)
         let reportBugAction = AKAction(title: "Report a Bug", style: .default)
         

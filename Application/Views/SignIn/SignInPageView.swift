@@ -100,6 +100,7 @@ public struct SignInPageView: View {
                     }
                     
                     Button {
+                        //                        DispatchQueue.main.async { self.}
                         pressedContinue = true
                         
                         if verified {
@@ -148,17 +149,17 @@ public struct SignInPageView: View {
     private func authenticateUser() {
         viewModel.authenticateUser(identifier: verificationIdentifier,
                                    verificationCode: verificationCode) { (userID, returnedError) in
-            self.pressedContinue = false
-            
             guard let identifier = userID else {
                 let error = returnedError == nil ? Exception(metadata: [#file, #function, #line]) : Exception(returnedError!, metadata: [#file, #function, #line])
                 Logger.log(error, with: .errorAlert)
+                self.pressedContinue = false
                 return
             }
             
             RuntimeStorage.store(identifier, as: .currentUserID)
             viewRouter.currentPage = .conversations
             AnalyticsService.logEvent(.logIn)
+            // self.pressedContinue = false
         }
     }
     
@@ -170,8 +171,6 @@ public struct SignInPageView: View {
                                       callingCode: RuntimeStorage.callingCodeDictionary![selectedRegion]!)
         
         PhoneNumberService.verifyUser(phoneNumber: phoneNumber) { _, exception, hasAccount in
-            self.pressedContinue = false
-            
             guard hasAccount else {
                 let alert = AKAlert(message: "There is no account registered with this phone number. Please sign up instead.", actions: [AKAction(title: "Sign Up", style: .preferred)])
                 
@@ -179,8 +178,11 @@ public struct SignInPageView: View {
                     guard actionID == -1 else {
                         RuntimeStorage.store(phoneNumberString, as: .numberFromSignIn)
                         viewRouter.currentPage = .signUp_selectLanguage
+                        self.pressedContinue = false
                         return
                     }
+                    
+                    self.pressedContinue = false
                 }
                 
                 return
@@ -193,11 +195,13 @@ public struct SignInPageView: View {
                 guard let identifier else {
                     let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
                     Logger.log(exception, with: .errorAlert)
+                    self.pressedContinue = false
                     return
                 }
                 
                 verificationIdentifier = identifier
                 RuntimeStorage.remove(.selectedRegionCode)
+                self.pressedContinue = false
             }
         }
     }

@@ -80,6 +80,9 @@ public class NewChatPageViewModel: ObservableObject {
                 RuntimeStorage.store(pairs, as: .contactPairs)
                 self.state = .loaded(translations: translations,
                                      contactPairs: pairs)
+                
+                guard StateProvider.shared.showNewChatPageForGrantedContactAccess else { return }
+                Core.gcd.after(seconds: 1) { StateProvider.shared.showNewChatPageForGrantedContactAccess = false }
             }
         }
     }

@@ -68,6 +68,8 @@ public struct VerifyNumberPageView: View {
                     }
                     
                     Button {
+                        pressedContinue = true
+                        
                         RuntimeStorage.store(selectedRegion, as: .selectedRegionCode)
                         let callingCode = RegionDetailServer.getCallingCode(forRegion: selectedRegion)
                         let compiledNumber = "\(RuntimeStorage.callingCodeDictionary![selectedRegion]!)\(phoneNumberString.digits)"
@@ -77,8 +79,6 @@ public struct VerifyNumberPageView: View {
                                                       formattedString: phoneNumberString,
                                                       callingCode: callingCode!)
                         verifyUser(phoneNumber: phoneNumber)
-                        
-                        pressedContinue = true
                     } label: {
                         Text(translations["continue"]!.output)
                             .bold()
@@ -115,8 +115,6 @@ public struct VerifyNumberPageView: View {
         PhoneNumberService.verifyUser(phoneNumber: phoneNumber) { (identifier,
                                                                    exception,
                                                                    hasAccount) in
-            self.pressedContinue = false
-            
             guard !hasAccount else {
                 let alert = AKAlert(message: "It appears you already have an account. Please sign in instead.", actions: [AKAction(title: "Sign In", style: .preferred)])
                 
@@ -124,8 +122,11 @@ public struct VerifyNumberPageView: View {
                     guard actionID == -1 else {
                         viewRouter.currentPage = .signIn(phoneNumber: phoneNumberString.partiallyFormatted(for: selectedRegion),
                                                          fromSignUp: true)
+                        self.pressedContinue = false
                         return
                     }
+                    
+                    self.pressedContinue = false
                 }
                 
                 return
@@ -134,6 +135,7 @@ public struct VerifyNumberPageView: View {
             guard let identifier else {
                 Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
                            with: .errorAlert)
+                self.pressedContinue = false
                 return
             }
             
@@ -141,6 +143,7 @@ public struct VerifyNumberPageView: View {
                                                       phoneNumber: phoneNumberString.digits,
                                                       region: RuntimeStorage.selectedRegionCode ?? selectedRegion)
             RuntimeStorage.remove(.selectedRegionCode)
+            self.pressedContinue = false
         }
     }
 }

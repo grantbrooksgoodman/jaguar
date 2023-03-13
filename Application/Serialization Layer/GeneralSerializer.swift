@@ -36,7 +36,7 @@ public enum GeneralSerializer {
         }
     }
     
-    public static var environment: Environment = .development
+    public static var environment: Environment = .production
     
     //==================================================//
     

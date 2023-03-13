@@ -21,10 +21,11 @@ public class StateProvider: ObservableObject {
     public static let shared = StateProvider()
     
     // Custom
+    @Published public var developerModeEnabled = Build.developerModeEnabled
     @Published public var hasDisappeared = false
-    
-    @Published public var tappedSelectContactButton = false
+    @Published public var showNewChatPageForGrantedContactAccess = false
     @Published public var tappedDone = false
+    @Published public var tappedSelectContactButton = false
     @Published public var wantsToInvite = false
 }
 
@@ -62,6 +63,8 @@ public enum RuntimeStorage {
         
         case mismatchedHashes
         case acknowledgedAudioMessagesUnsupported
+        
+        case didResetForFirstRun
         
         // MARK: BuildInfoOverlayView
         case currentFile
@@ -159,6 +162,8 @@ public extension RuntimeStorage {
     static var selectedRegionCode: String? { get { retrieve(.selectedRegionCode) as? String } }
     static var mismatchedHashes: [String]? { get { retrieve(.mismatchedHashes) as? [String] } }
     static var acknowledgedAudioMessagesUnsupported: Bool? { get { retrieve(.acknowledgedAudioMessagesUnsupported) as? Bool } }
+    
+    static var didResetForFirstRun: Bool? { get { retrieve(.didResetForFirstRun) as? Bool } }
     
     // MARK: BuildInfoOverlayView
     static var currentFile: String? { get { retrieve(.currentFile) as? String } }
