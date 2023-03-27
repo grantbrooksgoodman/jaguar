@@ -47,6 +47,11 @@ class NotificationService: UNNotificationServiceExtension {
             bestAttemptContent.title = "\(bestAttemptContent.title)"
         }
         
+        if let isAudioMessage = bestAttemptContent.userInfo["isAudioMessage"] as? Bool,
+           isAudioMessage {
+            bestAttemptContent.body = "🔊 \(LocalizedString.audioMessage)"
+        }
+        
         defaults.set(bestAttemptContent.userInfo, forKey: "NOTIF_DATA")
         contentHandler(bestAttemptContent)
     }

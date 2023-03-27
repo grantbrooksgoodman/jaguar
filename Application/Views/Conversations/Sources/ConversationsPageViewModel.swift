@@ -32,6 +32,11 @@ public class ConversationsPageViewModel: ObservableObject {
     
     /* MARK: - Properties */
     
+    // Booleans
+    private var shouldReloadForGlobalStateChange: Bool { get { getShouldReloadForGlobalStateChange() } }
+    private var shouldReloadForUpdatedHashes: Bool { get { getShouldReloadForUpdatedHashes() } }
+    
+    // Other
     public let inputs = ["done": Translator.TranslationInput("Done", alternate: "Finish"),
                          "messages": Translator.TranslationInput("Messages")]
     
@@ -42,14 +47,10 @@ public class ConversationsPageViewModel: ObservableObject {
     
     /* MARK: - Initializer Method */
     
-    public func load(silent: Bool? = nil,
+    public func load(silent: Bool = false,
                      completion: @escaping() -> Void = { }) {
         RuntimeStorage.store(self, as: .conversationsPageViewModel)
-        
-        let silent = silent ?? false
-        if !silent {
-            state = .loading
-        }
+        state = silent ? state : .loading
         
         Core.ui.resetNavigationBarAppearance()
         
@@ -59,52 +60,20 @@ public class ConversationsPageViewModel: ObservableObject {
             return
         }
         
-        if RuntimeStorage.shouldUpdateReadState! ||
-            RuntimeStorage.receivedNotification! ||
-            (RuntimeStorage.becameActive ?? false) {
-            if (RuntimeStorage.becameActive ?? false) {
-                print("reloading because became active")
-            }
-            
-            if silent {
-                if let globalConversationKey = RuntimeStorage.globalConversation?.identifier.key {
-                    ConversationArchiver.removeFromArchive(withKey: globalConversationKey)
-                } else {
-                    ConversationArchiver.clearArchive()
-                }
-            }
-            
-            RuntimeStorage.store(false, as: .shouldUpdateReadState)
-            RuntimeStorage.store(false, as: .receivedNotification)
-            if RuntimeStorage.becameActive != nil {
-                RuntimeStorage.store(false, as: .becameActive)
-            }
-        }
+        respondToGlobalStateChange(silent)
+        setGlobalKeys()
         
-        setPushApiKey()
-        setRedirectionKey()
-        RuntimeStorage.remove(.globalConversation)
-        
-        UserSerializer.shared.getUser(withIdentifier: currentUserID) { (returnedUser,
-                                                                        exception) in
-            guard let user = returnedUser else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
+        instantiateCurrentUser(currentUserID) { user, exception in
+            guard let user else {
+                self.state = .failed(exception ?? Exception(metadata: [#file, #function, #line]))
                 completion()
                 return
             }
             
-            UserDefaults.standard.setValue(currentUserID, forKey: "currentUserID")
-            
-            RuntimeStorage.store(user, as: .currentUser)
-            
-            RuntimeStorage.store(user.languageCode!, as: .languageCode)
-            AKCore.shared.setLanguageCode(user.languageCode)
-            
             RuntimeStorage.topWindow?.isUserInteractionEnabled = false
-            user.deSerializeConversations { (returnedConversations,
-                                             exception) in
-                guard let conversations = returnedConversations else {
+            
+            self.retrieveConversations(for: user) { conversations, exception in
+                guard let conversations else {
                     self.state = .failed(exception ?? Exception(metadata: [#file, #function, #line]))
                     RuntimeStorage.topWindow?.isUserInteractionEnabled = true
                     completion()
@@ -115,22 +84,6 @@ public class ConversationsPageViewModel: ObservableObject {
                 //                    self.setUpObserver(for: conversation)
                 //                }
                 
-                if !RuntimeStorage.updatedPushToken! {
-                    user.updatePushTokens { exception in
-                        guard let exception else {
-                            Logger.log("Successfully updated push tokens!",
-                                       verbose: true,
-                                       metadata: [#file, #function, #line])
-                            RuntimeStorage.store(true, as: .updatedPushToken)
-                            
-                            return
-                        }
-                        
-                        Logger.log(exception,
-                                   verbose: true)
-                    }
-                }
-                
                 RuntimeStorage.topWindow?.isUserInteractionEnabled = true
                 self.translateAndLoad(conversations: conversations) {
                     self.requestNotificationPermissionIfNeeded()
@@ -138,6 +91,25 @@ public class ConversationsPageViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Computed Property Getters */
+    
+    private func getShouldReloadForGlobalStateChange() -> Bool {
+        let becameActive = RuntimeStorage.becameActive ?? false
+        let receivedNotification = RuntimeStorage.receivedNotification!
+        let shouldReloadForFirstConversation = RuntimeStorage.shouldReloadForFirstConversation!
+        let shouldUpdateReadState = RuntimeStorage.shouldUpdateReadState!
+        return becameActive || receivedNotification || shouldReloadForFirstConversation || shouldUpdateReadState
+    }
+    
+    private func getShouldReloadForUpdatedHashes() -> Bool {
+        guard let previousHashes = UserDefaults.standard.object(forKey: "previousHashes") as? [String],
+              let currentHashes = RuntimeStorage.currentUser?.openConversations?.hashes(),
+              previousHashes != currentHashes else { return false }
+        return true
     }
     
     //==================================================//
@@ -214,6 +186,178 @@ public class ConversationsPageViewModel: ObservableObject {
                 }
             }
         }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Data Fetching */
+    
+    private func instantiateCurrentUser(_ id: String,
+                                        completion: @escaping(_ user: User?,
+                                                              _ exception: Exception?) -> Void) {
+        func updatePushTokensIfNeeded(for user: User) {
+            guard !RuntimeStorage.updatedPushToken! else { return }
+            
+            user.updatePushTokens { exception in
+                guard let exception else {
+                    RuntimeStorage.store(true, as: .updatedPushToken)
+                    return
+                }
+                
+                Logger.log(exception, verbose: true)
+            }
+        }
+        
+        UserSerializer.shared.getUser(withIdentifier: id) { user, exception in
+            guard let user else {
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            UserDefaults.standard.setValue(user.identifier, forKey: "currentUserID")
+            RuntimeStorage.store(user, as: .currentUser)
+            
+            RuntimeStorage.store(user.languageCode!, as: .languageCode)
+            AKCore.shared.setLanguageCode(user.languageCode)
+            
+            updatePushTokensIfNeeded(for: user)
+            completion(user, nil)
+        }
+    }
+    
+    private func retrieveConversations(for user: User,
+                                       completion: @escaping(_ conversations: [Conversation]?,
+                                                             _ exception: Exception?) -> Void) {
+        user.deSerializeConversations { conversations, exception in
+            guard let conversations else {
+                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(conversations, nil)
+        }
+    }
+    
+    private func setGlobalKeys() {
+        setPushApiKey { exception in
+            guard let exception else { return }
+            Logger.log(exception)
+        }
+        
+        setRedirectionKey { exception in
+            guard let exception else { return }
+            Logger.log(exception)
+        }
+    }
+    
+    private func translateAndLoad(conversations: [Conversation],
+                                  completion: @escaping() -> Void = { }) {
+        let dataModel = PageViewDataModel(inputs: self.inputs)
+        
+        dataModel.translateStrings { (returnedTranslations,
+                                      returnedException) in
+            guard let translations = returnedTranslations else {
+                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
+                Logger.log(exception)
+                
+                self.state = .failed(exception)
+                completion()
+                return
+            }
+            
+            self.translations = translations
+            
+            RuntimeStorage.currentUser?.openConversations = conversations
+            
+#if !EXTENSION
+            UIApplication.shared.applicationIconBadgeNumber = RuntimeStorage.currentUser!.badgeNumber
+#endif
+            
+            self.state = .loaded(translations: translations,
+                                 conversations: conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }))
+            
+            completion()
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Global Key Setters */
+    
+    private func setPushApiKey(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        guard RuntimeStorage.pushApiKey == nil else {
+            completion(nil)
+            return
+        }
+        
+        if let pushApiKey = UserDefaults.standard.value(forKey: "pushApiKey") as? String {
+            RuntimeStorage.store(pushApiKey, as: .pushApiKey)
+            completion(nil)
+        } else {
+            GeneralSerializer.getPushApiKey { key, exception in
+                guard let key else {
+                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                RuntimeStorage.store(key, as: .pushApiKey)
+                UserDefaults.standard.set(RuntimeStorage.pushApiKey!, forKey: "pushApiKey")
+                completion(nil)
+            }
+        }
+    }
+    
+    private func setRedirectionKey(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        guard RuntimeStorage.redirectionKey == nil else {
+            completion(nil)
+            return
+        }
+        
+        if let redirectionKey = UserDefaults.standard.value(forKey: "redirectionKey") as? String {
+            RuntimeStorage.store(redirectionKey, as: .redirectionKey)
+            completion(nil)
+        } else {
+            GeneralSerializer.getRedirectionKey { urlString, exception in
+                guard let urlString else {
+                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                    return
+                }
+                
+                RuntimeStorage.store(urlString, as: .redirectionKey)
+                UserDefaults.standard.set(RuntimeStorage.redirectionKey!, forKey: "redirectionKey")
+                completion(nil)
+            }
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Global State Changes */
+    
+    private func resetGlobalStateChangeVariables() {
+        RuntimeStorage.store(false, as: .receivedNotification)
+        RuntimeStorage.store(false, as: .shouldReloadForFirstConversation)
+        RuntimeStorage.store(false, as: .shouldUpdateReadState)
+        
+        guard RuntimeStorage.becameActive != nil else { return }
+        RuntimeStorage.store(false, as: .becameActive)
+    }
+    
+    private func respondToGlobalStateChange(_ silent: Bool) {
+        defer { RuntimeStorage.remove(.globalConversation) }
+        guard shouldReloadForGlobalStateChange else { return }
+        defer { resetGlobalStateChangeVariables() }
+        
+        guard silent else { return }
+        
+        guard let globalConversationKey = RuntimeStorage.globalConversation?.identifier.key else {
+            ConversationArchiver.clearArchive()
+            return
+        }
+        
+        ConversationArchiver.removeFromArchive(withKey: globalConversationKey)
+        RuntimeStorage.remove(.globalConversation)
+        resetGlobalStateChangeVariables()
     }
     
     //==================================================//
@@ -306,56 +450,6 @@ public class ConversationsPageViewModel: ObservableObject {
     
     //==================================================//
     
-    /* MARK: - Global Key Setters */
-    
-    private func setPushApiKey(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
-        guard RuntimeStorage.pushApiKey == nil else {
-            completion(nil)
-            return
-        }
-        
-        if let pushApiKey = UserDefaults.standard.value(forKey: "pushApiKey") as? String {
-            RuntimeStorage.store(pushApiKey, as: .pushApiKey)
-            completion(nil)
-        } else {
-            GeneralSerializer.getPushApiKey { key, exception in
-                guard let key else {
-                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
-                    return
-                }
-                
-                RuntimeStorage.store(key, as: .pushApiKey)
-                UserDefaults.standard.set(RuntimeStorage.pushApiKey!, forKey: "pushApiKey")
-                completion(nil)
-            }
-        }
-    }
-    
-    private func setRedirectionKey(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
-        guard RuntimeStorage.redirectionKey == nil else {
-            completion(nil)
-            return
-        }
-        
-        if let redirectionKey = UserDefaults.standard.value(forKey: "redirectionKey") as? String {
-            RuntimeStorage.store(redirectionKey, as: .redirectionKey)
-            completion(nil)
-        } else {
-            GeneralSerializer.getRedirectionKey { urlString, exception in
-                guard let urlString else {
-                    completion(exception ?? Exception(metadata: [#file, #function, #line]))
-                    return
-                }
-                
-                RuntimeStorage.store(urlString, as: .redirectionKey)
-                UserDefaults.standard.set(RuntimeStorage.redirectionKey!, forKey: "redirectionKey")
-                completion(nil)
-            }
-        }
-    }
-    
-    //==================================================//
-    
     /* MARK: - Miscellaneous Methods */
     
     public func reloadIfNeeded() {
@@ -363,18 +457,16 @@ public class ConversationsPageViewModel: ObservableObject {
         
         guard !RuntimeStorage.isPresentingChat! else { return }
         
-        guard let previousHashes = UserDefaults.standard.object(forKey: "previousHashes") as? [String],
-              let currentHashes = RuntimeStorage.currentUser?.openConversations?.hashes(),
-              (previousHashes != currentHashes) || RuntimeStorage.shouldUpdateReadState! || RuntimeStorage.receivedNotification! || (RuntimeStorage.becameActive ?? false) else {
+        guard (shouldReloadForGlobalStateChange || shouldReloadForUpdatedHashes),
+              RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else {
             RuntimeStorage.remove(.globalConversation)
             return
         }
         
-        UserDefaults.standard.set(currentHashes, forKey: "previousHashes")
-        
-        guard RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else {
-            RuntimeStorage.remove(.globalConversation)
-            return
+        if shouldReloadForUpdatedHashes {
+            if let currentHashes = RuntimeStorage.currentUser?.openConversations?.hashes() {
+                UserDefaults.standard.set(currentHashes, forKey: "previousHashes")
+            }
         }
         
         load(silent: true)
@@ -421,36 +513,6 @@ public class ConversationsPageViewModel: ObservableObject {
         } withCancel: { (error) in
             Logger.log(error,
                        metadata: [#file, #function, #line])
-        }
-    }
-    
-    private func translateAndLoad(conversations: [Conversation],
-                                  completion: @escaping() -> Void = { }) {
-        let dataModel = PageViewDataModel(inputs: self.inputs)
-        
-        dataModel.translateStrings { (returnedTranslations,
-                                      returnedException) in
-            guard let translations = returnedTranslations else {
-                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
-                Logger.log(exception)
-                
-                self.state = .failed(exception)
-                completion()
-                return
-            }
-            
-            self.translations = translations
-            
-            RuntimeStorage.currentUser?.openConversations = conversations
-            
-#if !EXTENSION
-            UIApplication.shared.applicationIconBadgeNumber = RuntimeStorage.currentUser!.badgeNumber
-#endif
-            
-            self.state = .loaded(translations: translations,
-                                 conversations: conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }))
-            
-            completion()
         }
     }
 }

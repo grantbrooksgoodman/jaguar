@@ -238,7 +238,7 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
     private func shouldUpload(for hashlet: String,
                               completion: @escaping(_ shouldUpload: Bool?,
                                                     _ exception: Exception?) -> Void) {
-        GeneralSerializer.getValues(atPath: "/doNotStore") { returnedValues, returnedException in
+        GeneralSerializer.getValues(atPath: "/shared/errorsExcludedFromStorage") { returnedValues, returnedException in
             guard let excludedHashlets = returnedValues as? [String] else {
                 completion(nil, returnedException ?? Exception(metadata: [#file, #function, #line]))
                 return

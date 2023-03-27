@@ -70,7 +70,7 @@ public struct InitialPageView: View {
                 RuntimeStorage.remove(.numberFromSignIn)
             }
         case .failed(let exception):
-            Text(exception.userFacingDescriptor)
+            FailureView(exception: exception) { viewModel.load() }
         }
     }
 }

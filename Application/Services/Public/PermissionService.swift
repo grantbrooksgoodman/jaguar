@@ -48,8 +48,9 @@ public struct PermissionService: PermissionServiceable {
     
     /* MARK: - Permission Requesting */
     
-    public static func requestPermission(for type: PermissionType, completion: @escaping (_ status: PermissionStatus,
-                                                                                          _ exception: Exception?) -> Void) {
+    public static func requestPermission(for type: PermissionType,
+                                         completion: @escaping (_ status: PermissionStatus,
+                                                                _ exception: Exception?) -> Void) {
         switch type {
         case .contacts:
             requestContactPermission { status, exception in

@@ -142,6 +142,8 @@ public final class ChatPageViewController: MessagesViewController,
             window.isHidden = false
         }
         
+        ChatServices.menuControllerService?.resetAllAlternates()
+        
         RuntimeStorage.store("ConversationsPageView.swift", as: .currentFile)
         RuntimeStorage.topWindow?.isUserInteractionEnabled = false
         Core.gcd.after(milliseconds: 250) { StateProvider.shared.hasDisappeared = true }
@@ -685,6 +687,24 @@ extension ChatPageViewController: ChatUIDelegate {
 
 /* MARK: UITextViewDelegate */
 extension ChatPageViewController: UITextViewDelegate {
+    
+    // MARK: - Properties
+    
+    override public var textInputMode: UITextInputMode? {
+        guard let currentUser = RuntimeStorage.currentUser else { return nil }
+        
+        var match: UITextInputMode?
+        for mode in UITextInputMode.activeInputModes {
+            guard let primaryLanguage = mode.primaryLanguage,
+                  primaryLanguage.lowercased().hasPrefix(currentUser.languageCode) else { continue }
+            match = mode
+        }
+        
+        return match
+    }
+    
+    // MARK: - Methods
+    
     public func textView(_ textView: UITextView,
                          shouldChangeTextIn range: NSRange,
                          replacementText text: String) -> Bool {

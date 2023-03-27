@@ -43,8 +43,9 @@ public enum JRException {
     case numberTooShort
     
     case cannotOpenFile
-    case noSpeechDetected
     case noAudioRecorderToStop
+    case noLocalAudioReferenceCopy
+    case noSpeechDetected
     case retry
     
     case noReadDate
@@ -103,10 +104,12 @@ public enum JRException {
             
         case .cannotOpenFile:
             return "3C14"
-        case .noSpeechDetected:
-            return "11B6"
         case .noAudioRecorderToStop:
             return "A92A"
+        case .noLocalAudioReferenceCopy:
+            return "1CD5"
+        case .noSpeechDetected:
+            return "11B6"
         case .retry:
             return "7983"
             

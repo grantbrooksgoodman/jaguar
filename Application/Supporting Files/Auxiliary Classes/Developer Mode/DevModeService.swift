@@ -70,7 +70,8 @@ public struct DevModeService {
         
         var akActions = [AKAction]()
         for action in actions {
-            akActions.append(AKAction(title: action.title, style: action.isDestructive ? .destructive : .default))
+            akActions.append(AKAction(title: action.title,
+                                      style: action.isDestructive ? .destructive : .default))
         }
         
         let actionSheet = AKActionSheet(message: "Developer Mode Options",
@@ -100,7 +101,11 @@ public struct DevModeService {
         guard Build.stage != .generalRelease else { return }
         
         let previousLanguage = RuntimeStorage.languageCode!
-        AKCore.shared.lockLanguageCode(to: "en")
+        if AKCore.shared.languageCodeIsLocked {
+            AKCore.shared.unlockLanguageCode(andSetTo: "en")
+        } else {
+            AKCore.shared.lockLanguageCode(to: "en")
+        }
         
         guard !Build.developerModeEnabled else {
             AKConfirmationAlert(title: "Disable Developer Mode",

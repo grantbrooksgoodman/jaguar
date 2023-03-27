@@ -71,7 +71,7 @@ public class BuildInfoOverlayViewModel: ObservableObject {
         var messageToDisplay = "This is a\(typeString == "alpha" ? "n" : "") \(typeString) version of *project code name \(Build.codeName)*.\(expiryString)"
         
         if Build.appStoreReleaseVersion > 0 {
-            messageToDisplay = "This is a pre-release update to \(Build.finalName).\(Build.expiryInfoString)"
+            messageToDisplay = "This is a pre-release update to \(Build.finalName). \(Build.expiryInfoString)"
         }
         
         messageToDisplay += "\n\nAll features presented here are subject to change, and any new or previously undisclosed information presented within this software is to remain strictly confidential.\n\nRedistribution of this software by unauthorized parties in any way, shape, or form is strictly prohibited.\n\nBy continuing your use of this software, you acknowledge your agreement to the above terms.\n\nAll content herein, unless otherwise stated, is copyright © \(Calendar.current.dateComponents([.year], from: Date()).year!) NEOTechnica Corporation. All rights reserved."
@@ -166,8 +166,6 @@ public class BuildInfoOverlayViewModel: ObservableObject {
     /* MARK: - Send Feedback Action Sheet */
     
     public func presentSendFeedbackActionSheet() {
-        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-        
         let sendFeedbackAction = AKAction(title: "Send Feedback", style: .default)
         let reportBugAction = AKAction(title: "Report a Bug", style: .default)
         

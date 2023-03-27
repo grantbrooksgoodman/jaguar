@@ -449,6 +449,8 @@ public class DeliveryService: ChatService {
         syncDependencies()
         ChatServices.defaultMenuControllerService?.stopSpeakingIfNeeded()
         
+        let previousConversationCount = CURRENT_USER.openConversations?.count ?? 0
+        
         createAudioMessage(inputFile: inputFile,
                            outputFile: outputFile,
                            translation: translation) { message, exception in
@@ -462,7 +464,7 @@ public class DeliveryService: ChatService {
                                         timeout: Timeout(after: 20),
                                         completion: { exception in
                 Core.hud.hide(delay: 1)
-                self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(message.translation.output)
+                self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(.audioMessage)
                 
                 ChatServices.defaultChatUIService?.setUserCancellation(enabled: true)
                 RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
@@ -471,6 +473,10 @@ public class DeliveryService: ChatService {
                 /* Don't need to call stopAnimatingDelivery() as animateDeliveryProgression()
                  will hide and destroy the timer for us by setting it to 1 */
                 self.deliveryProgress = 1
+                
+                if previousConversationCount == 0 {
+                    RuntimeStorage.store(true, as: .shouldReloadForFirstConversation)
+                }
                 
                 completion(exception)
             })
@@ -483,6 +489,8 @@ public class DeliveryService: ChatService {
         startAnimatingDelivery()
         ChatServices.defaultMenuControllerService?.stopSpeakingIfNeeded()
         
+        let previousConversationCount = CURRENT_USER.openConversations?.count ?? 0
+        
         createTextMessage(text: text) { message, exception in
             guard let message else {
                 self.stopAnimatingDelivery()
@@ -493,7 +501,7 @@ public class DeliveryService: ChatService {
             self.updateConversationData(for: message,
                                         timeout: Timeout(after: 20)) { exception in
                 Core.hud.hide(delay: 1)
-                self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(message.translation.output)
+                self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(.textMessage(content: message.translation.output))
                 
                 ChatServices.defaultChatUIService?.setUserCancellation(enabled: true)
                 RuntimeStorage.messagesVC?.messageInputBar.sendButton.stopAnimating()
@@ -502,6 +510,10 @@ public class DeliveryService: ChatService {
                 /* Don't need to call stopAnimatingDelivery() as animateDeliveryProgression()
                  will hide and destroy the timer for us by setting it to 1 */
                 self.deliveryProgress = 1
+                
+                if previousConversationCount == 0 {
+                    RuntimeStorage.store(true, as: .shouldReloadForFirstConversation)
+                }
                 
                 completion(exception)
             }

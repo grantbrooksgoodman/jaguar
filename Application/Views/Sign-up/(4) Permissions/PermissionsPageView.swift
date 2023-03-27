@@ -46,7 +46,7 @@ public struct PermissionsPageView: View {
         case .loaded(let translations):
             loadedView(translations)
         case .failed(let exception):
-            Text(exception.userFacingDescriptor)
+            FailureView(exception: exception) { viewModel.load() }
         }
     }
     

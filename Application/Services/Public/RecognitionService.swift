@@ -101,8 +101,7 @@ public struct RecognitionService {
         
         var possibleWords = 0
         for word in components {
-            guard isReal(word: word,
-                         language: code) else { continue }
+            guard isReal(word: word, language: code) else { continue }
             possibleWords += 1
         }
         

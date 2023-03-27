@@ -39,7 +39,10 @@ public extension Message {
         let fullPath = "\(pathPrefix)\(subPath)"
         
         let inputFilePath = "\(fullPath)/\(identifier!).m4a"
-        let outputFilePath = "\(fullPath)/output.m4a"
+        var outputFilePath = "\(fullPath)/output.m4a"
+        if translation.languagePair.from == translation.languagePair.to {
+            outputFilePath = inputFilePath
+        }
         
         let inputFileURL = fileManager.documentsDirectoryURL.appendingPathComponent(inputFilePath)
         let outputFileURL = fileManager.documentsDirectoryURL.appendingPathComponent(outputFilePath)

@@ -10,6 +10,8 @@
 import Foundation
 
 public enum LocalizationCase: String /* Add pre-localized strings here. */ {
+    case audioMessage
+    
     case cancel
     case dismiss
     case done
@@ -70,7 +72,11 @@ public enum LocalizationCase: String /* Add pre-localized strings here. */ {
     case settings
     
     case selectCallingCode
+    case selectLanguage
     case noResults
+    
+    case reportBug
+    case tryAgain
     
     var description: String {
         return rawValue.snakeCase()
@@ -78,6 +84,8 @@ public enum LocalizationCase: String /* Add pre-localized strings here. */ {
 }
 
 public struct LocalizedString {
+    public static var audioMessage: String { Localizer.preLocalizedString(for: .audioMessage) ?? "Audio Message" }
+    
     public static var cancel: String { Localizer.preLocalizedString(for: .cancel) ?? "Cancel" }
     public static var dismiss: String { Localizer.preLocalizedString(for: .dismiss) ?? "Dismiss" }
     public static var done: String { Localizer.preLocalizedString(for: .done) ?? "Done" }
@@ -138,7 +146,11 @@ public struct LocalizedString {
     public static var settings: String { Localizer.preLocalizedString(for: .settings) ?? "Settings..." }
     
     public static var selectCallingCode: String { Localizer.preLocalizedString(for: .selectCallingCode) ?? "Select Calling Code" }
+    public static var selectLanguage: String { Localizer.preLocalizedString(for: .selectLanguage) ?? "Select Language" }
     public static var noResults: String { Localizer.preLocalizedString(for: .noResults) ?? "No results" }
+    
+    public static var reportBug: String { Localizer.preLocalizedString(for: .reportBug) ?? "Report Bug" }
+    public static var tryAgain: String { Localizer.preLocalizedString(for: .tryAgain) ?? "Try Again" }
 }
 
 public enum Localizer {

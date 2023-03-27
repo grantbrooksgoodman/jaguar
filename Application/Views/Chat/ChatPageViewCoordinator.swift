@@ -113,6 +113,11 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             return
         }
         
+        // #warning("Should handle this more cleverly. What if someone actually wanted to send this?")
+        guard text != "START_RECORDING",
+              text != "STOP_RECORDING",
+              text != "CANCEL_RECORDING" else { return }
+        
         ChatServices.defaultChatUIService?.setUserCancellation(enabled: false)
         
         inputBar.inputTextView.text = ""
@@ -302,6 +307,7 @@ extension ChatPageViewCoordinator: MessageCellDelegate {
 extension ChatPageViewCoordinator: MessagesDataSource {
     public func cellBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
         guard let currentUser = RuntimeStorage.currentUser,
+              let otherUser = conversation.wrappedValue.otherUser,
               let messageSlice = RuntimeStorage.currentMessageSlice,
               messageSlice.count > indexPath.section else { return nil }
         
@@ -312,6 +318,7 @@ extension ChatPageViewCoordinator: MessagesDataSource {
         // #warning("DANGEROUS TO BE HANDLING AUDIO COMPONENT HERE.")
         if currentMessage.audioComponent == nil,
            translation.input.value() == translation.output,
+           currentUser.languageCode != otherUser.languageCode,
            RecognitionService.shouldMarkUntranslated(translation.output,
                                                      for: translation.languagePair) {
             let retryString = LocalizedString.holdToRetry
@@ -397,7 +404,9 @@ extension ChatPageViewCoordinator: MessagesDataSource {
 /* MARK: MessagesDisplayDelegate */
 extension ChatPageViewCoordinator: MessagesDisplayDelegate {
     public func backgroundColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
-        guard let currentUserID = RuntimeStorage.currentUserID else { return .systemBlue }
+        guard let currentUserID = RuntimeStorage.currentUserID,
+              let currentUser = RuntimeStorage.currentUser,
+              let otherUser = conversation.wrappedValue.otherUser else { return .systemBlue }
         
         var color = UIColor(hex: 0xE5E5EA)
         if UITraitCollection.current.userInterfaceStyle == .dark {
@@ -409,6 +418,7 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
               messages[index].translation.input.value() == messages[index].translation.output,
               messages[index].audioComponent == nil, // #warning("DANGEROUS TO BE HANDLING AUDIO COMPONENT HERE.")
               message.sender.senderId == currentUserID,
+              currentUser.languageCode != otherUser.languageCode,
               RecognitionService.shouldMarkUntranslated(messages[index].translation.output,
                                                         for: messages[index].translation.languagePair) else {
             return message.sender.senderId == currentUserID ? .systemBlue : color
@@ -456,6 +466,7 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
                                       at indexPath: IndexPath,
                                       in messagesCollectionView: MessagesCollectionView) -> CGFloat {
         guard let currentUser = RuntimeStorage.currentUser,
+              let otherUser = conversation.wrappedValue.otherUser,
               let messageSlice = RuntimeStorage.currentMessageSlice,
               messageSlice.count > indexPath.section else { return 0 }
         
@@ -464,6 +475,7 @@ extension ChatPageViewCoordinator: MessagesLayoutDelegate {
         
         // #warning("DANGEROUS TO BE HANDLING AUDIO COMPONENT HERE.")
         if (messageTranslation.input.value() == messageTranslation.output &&
+            currentUser.languageCode != otherUser.languageCode &&
             RecognitionService.shouldMarkUntranslated(messageTranslation.output,
                                                       for: messageTranslation.languagePair) &&
             messageSlice[indexPath.section].audioComponent == nil) ||

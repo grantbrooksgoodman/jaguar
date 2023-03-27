@@ -36,8 +36,6 @@ public class SelectLanguagePageViewModel: ObservableObject {
                           "continue": Translator.TranslationInput("Continue"),
                           "back": Translator.TranslationInput("Back", alternate: "Go back")]
     
-    private var languageNames = [String]()
-    
     @Published private(set) var state = State.idle
     
     //==================================================//
@@ -47,12 +45,7 @@ public class SelectLanguagePageViewModel: ObservableObject {
     public func load() {
         state = .loading
         
-        for name in RuntimeStorage.languageCodeDictionary!.values {
-            languageNames.append(name)
-        }
-        
         let dataModel = PageViewDataModel(inputs: inputs)
-        
         dataModel.translateStrings { (returnedTranslations,
                                       returnedException) in
             guard let translations = returnedTranslations else {

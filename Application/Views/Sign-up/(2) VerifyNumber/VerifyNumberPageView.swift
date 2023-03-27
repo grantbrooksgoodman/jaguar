@@ -103,7 +103,7 @@ public struct VerifyNumberPageView: View {
             }
             .onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let exception):
-            Text(exception.userFacingDescriptor)
+            FailureView(exception: exception) { viewModel.load() }
         }
     }
     

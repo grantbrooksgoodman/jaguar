@@ -67,13 +67,13 @@ public extension DevModeService {
     
     private static func destroyConversationDatabase() {
         let previousLanguage = RuntimeStorage.languageCode!
-        AKCore.shared.lockLanguageCode(to: "en")
+        setLanguageCode("en")
         AKConfirmationAlert(title: "Destroy Database",
                             message: "This will delete all conversations for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
                             confirmationStyle: .destructivePreferred).present { confirmed in
             AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
             guard confirmed == 1 else { return }
-            AKCore.shared.lockLanguageCode(to: "en")
+            setLanguageCode("en")
             AKConfirmationAlert(title: "Are you sure?",
                                 message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
                                 cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
@@ -96,7 +96,7 @@ public extension DevModeService {
     }
     
     private static func overrideLanguageCode() {
-        AKCore.shared.lockLanguageCode(to: "en")
+        setLanguageCode("en")
         let languageCodePrompt = AKTextFieldAlert(title: "Override Language Code",
                                                   message: "Enter the two-letter code of the language to apply:",
                                                   actions: [AKAction(title: "Done", style: .preferred)],
@@ -112,7 +112,7 @@ public extension DevModeService {
             guard actionID != -1 else { return }
             guard let returnedString,
                   returnedString.lowercasedTrimmingWhitespace != "" else {
-                AKCore.shared.lockLanguageCode(to: "en")
+                setLanguageCode("en")
                 AKConfirmationAlert(title: "Override Language Code",
                                     message: "No input was entered.\n\nWould you like to try again?",
                                     cancelConfirmTitles: (cancel: nil, confirm: "Try Again"),
@@ -128,7 +128,7 @@ public extension DevModeService {
             
             guard let languageCodes = RuntimeStorage.languageCodeDictionary,
                   languageCodes.keys.contains(returnedString.lowercasedTrimmingWhitespace) else {
-                AKCore.shared.lockLanguageCode(to: "en")
+                setLanguageCode("en")
                 AKConfirmationAlert(title: "Override Language Code",
                                     message: "The language code entered was invalid. Please try again.",
                                     cancelConfirmTitles: (cancel: nil, confirm: "Try Again"),
@@ -145,20 +145,14 @@ public extension DevModeService {
             RuntimeStorage.store(returnedString, as: .languageCode)
             RuntimeStorage.store(returnedString, as: .overriddenLanguageCode)
             
-            defer { Core.hud.showSuccess() }
-            
-            guard !AKCore.shared.languageCodeIsLocked else {
-                AKCore.shared.unlockLanguageCode(andSetTo: returnedString)
-                return
-            }
-            
-            AKCore.shared.lockLanguageCode(to: returnedString)
+            setLanguageCode(returnedString)
+            Core.hud.showSuccess()
         }
     }
     
     private static func resetPushTokens() {
         let previousLanguage = RuntimeStorage.languageCode!
-        AKCore.shared.lockLanguageCode(to: "en")
+        setLanguageCode("en")
         AKConfirmationAlert(title: "Reset Push Tokens",
                             message: "This will remove all push tokens for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
                             confirmationStyle: .destructivePreferred,
@@ -212,7 +206,7 @@ public extension DevModeService {
                                         shouldTranslate: [.none])
         
         let previousLanguage = RuntimeStorage.languageCode!
-        AKCore.shared.lockLanguageCode(to: "en")
+        setLanguageCode("en")
         actionSheet.present { actionID in
             guard actionID != -1 else {
                 AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
@@ -248,5 +242,18 @@ public extension DevModeService {
                 fatalError()
             }
         }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Helper Methods */
+    
+    private static func setLanguageCode(_ code: String) {
+        guard AKCore.shared.languageCodeIsLocked else {
+            AKCore.shared.lockLanguageCode(to: code)
+            return
+        }
+        
+        AKCore.shared.unlockLanguageCode(andSetTo: code)
     }
 }

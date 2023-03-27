@@ -246,8 +246,19 @@ public class User: Codable {
     
     /* MARK: - Push Notification Methods */
     
-    public func notifyOfNewMessage(_ text: String,
+    public enum NotificationType { case textMessage(content: String); case audioMessage }
+    public func notifyOfNewMessage(_ type: NotificationType,
                                    completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        switch type {
+        case .textMessage(content: let content):
+            notifyOfNewMessage(content) { exception in completion(exception) }
+        case .audioMessage:
+            notifyOfNewMessage() { exception in completion(exception) }
+        }
+    }
+    
+    private func notifyOfNewMessage(_ text: String? = nil,
+                                    completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         guard let pushTokens else {
             completion(Exception("User hasn't registered for push notifications!", metadata: [#file, #function, #line]))
             return
@@ -273,7 +284,7 @@ public class User: Codable {
     }
     
     private func notify(for pushToken: String,
-                        _ text: String,
+                        _ text: String? = nil,
                         completion: @escaping(_ exception: Exception?) -> Void) {
         guard let url = URL(string: "https://fcm.googleapis.com/fcm/send") else {
             completion(Exception("Couldn't generate URL.", metadata: [#file, #function, #line]))
@@ -300,9 +311,10 @@ public class User: Codable {
         var payload: [String: Any] = ["to": pushToken,
                                       "mutable_content": true]
         payload["notification"] = ["title": title,
-                                   "body": text,
+                                   "body": text ?? "AUDIO",
                                    "badge": badgeNumber]
-        payload["data"] = ["userHash": phoneNumber.digits.compressedHash]
+        payload["data"] = ["isAudioMessage": text == nil,
+                           "userHash": phoneNumber.digits.compressedHash]
         
         do {
             try request.httpBody = JSONSerialization.data(withJSONObject: payload)
@@ -579,9 +591,20 @@ public extension User {
         guard let openConversations,
               !openConversations.isEmpty else { return 0 }
         
+        func incrementForUnread(_ messages: [Message]) {
+            for message in messages {
+                guard message.readDate == nil else { continue }
+                badgeNumber += 1
+            }
+        }
+        
         for conversation in openConversations {
             guard let lastFromCurrentUser = conversation.messages.last(where: { $0.fromAccountIdentifier == identifier }),
-                  let indexOfLast = conversation.messages.firstIndex(of: lastFromCurrentUser) else { continue }
+                  let indexOfLast = conversation.messages.firstIndex(of: lastFromCurrentUser) else {
+                incrementForUnread(conversation.messages)
+                
+                continue
+            }
             
             guard conversation.messages.count > indexOfLast else { continue }
             
@@ -590,11 +613,7 @@ public extension User {
             
             let filteredSlice = slice.filter({ $0.fromAccountIdentifier != identifier })
             guard filteredSlice.count > 0 else { continue }
-            
-            for message in filteredSlice {
-                guard message.readDate == nil else { continue }
-                badgeNumber += 1
-            }
+            incrementForUnread(filteredSlice)
         }
         
         return badgeNumber

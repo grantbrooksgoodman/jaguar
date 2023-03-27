@@ -163,8 +163,7 @@ public struct PhoneNumberService {
         PhoneAuthProvider.provider().verifyPhoneNumber(string,
                                                        uiDelegate: nil) { (identifier,
                                                                            error) in
-            completion(identifier,
-                       error == nil ? nil : Exception(error!, metadata: [#file, #function, #line]))
+            completion(identifier, error == nil ? nil : Exception(error!, metadata: [#file, #function, #line]))
         }
     }
     

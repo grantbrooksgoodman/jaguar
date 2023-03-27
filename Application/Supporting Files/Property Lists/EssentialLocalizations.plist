@@ -2,6 +2,175 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>audio_message</key>
+	<dict>
+		<key>af</key>
+		<string>Oudioboodskap</string>
+		<key>ar</key>
+		<string>رسالة صوتية</string>
+		<key>az</key>
+		<string>Audio Mesaj</string>
+		<key>ba</key>
+		<string>Audio Message</string>
+		<key>be</key>
+		<string>Гукавое Паведамленне</string>
+		<key>bg</key>
+		<string>Аудио Съобщение</string>
+		<key>bn</key>
+		<string>অডিও বার্তা</string>
+		<key>bs</key>
+		<string>Audio Poruka</string>
+		<key>ca</key>
+		<string>Missatge D&apos;àudio</string>
+		<key>ceb</key>
+		<string>Mensahe sa Audio</string>
+		<key>cs</key>
+		<string>Zvuková Zpráva</string>
+		<key>cy</key>
+		<string>Neges Sain</string>
+		<key>da</key>
+		<string>Lydmeddelelse</string>
+		<key>de</key>
+		<string>Audionachricht</string>
+		<key>el</key>
+		<string>Μήνυμα Ήχου</string>
+		<key>en</key>
+		<string>Audio Message</string>
+		<key>eo</key>
+		<string>Sona Mesaĝo</string>
+		<key>es</key>
+		<string>Mensaje de audio</string>
+		<key>et</key>
+		<string>Helisõnum</string>
+		<key>eu</key>
+		<string>Audio-mezua</string>
+		<key>fa</key>
+		<string>پیام صوتی</string>
+		<key>fi</key>
+		<string>Ääniviesti</string>
+		<key>fr</key>
+		<string>Message Audio</string>
+		<key>ga</key>
+		<string>Teachtaireacht Fuaime</string>
+		<key>gd</key>
+		<string>Teachdaireachd Fuaim</string>
+		<key>gl</key>
+		<string>Mensaxe de audio</string>
+		<key>gu</key>
+		<string>ઓડિયો સંદેશ</string>
+		<key>he</key>
+		<string>הודעת שמע</string>
+		<key>hi</key>
+		<string>ऑडियो संदेश</string>
+		<key>hr</key>
+		<string>Audio Poruka</string>
+		<key>ht</key>
+		<string>Mesaj Odyo</string>
+		<key>hu</key>
+		<string>Hangüzenet</string>
+		<key>hy</key>
+		<string>Աուդիո Հաղորդագրություն</string>
+		<key>id</key>
+		<string>Pesan Audio</string>
+		<key>is</key>
+		<string>Hljóðskilaboð</string>
+		<key>it</key>
+		<string>Messaggio Audio</string>
+		<key>ja</key>
+		<string>音声メッセージ</string>
+		<key>jv</key>
+		<string>Audio Message</string>
+		<key>ka</key>
+		<string>Აუდიო Შეტყობინება</string>
+		<key>kk</key>
+		<string>Аудио Хабарлама</string>
+		<key>kn</key>
+		<string>ಆಡಿಯೋ ಸಂದೇಶ</string>
+		<key>ko</key>
+		<string>오디오 메시지</string>
+		<key>ky</key>
+		<string>Аудио Билдирүү</string>
+		<key>la</key>
+		<string>Audio Message</string>
+		<key>lt</key>
+		<string>Garso Pranešimas</string>
+		<key>mg</key>
+		<string>Hafatra Audio</string>
+		<key>mi</key>
+		<string>Karere Ororongo</string>
+		<key>mk</key>
+		<string>Аудио Порака</string>
+		<key>ml</key>
+		<string>ഓഡിയോ സന്ദേശം</string>
+		<key>mn</key>
+		<string>Аудио Мессеж</string>
+		<key>mr</key>
+		<string>ऑडिओ संदेश</string>
+		<key>ms</key>
+		<string>Mesej Audio</string>
+		<key>mt</key>
+		<string>Messaġġ Awdjo</string>
+		<key>ne</key>
+		<string>अडियो सन्देश</string>
+		<key>nl</key>
+		<string>Audio Bericht</string>
+		<key>no</key>
+		<string>Lydmelding</string>
+		<key>pa</key>
+		<string>ਆਡੀਓ ਸੁਨੇਹਾ</string>
+		<key>pl</key>
+		<string>Wiadomość Dźwiękowa</string>
+		<key>pt</key>
+		<string>Mensagem de áudio</string>
+		<key>ro</key>
+		<string>Mesaj Audio</string>
+		<key>ru</key>
+		<string>Аудио Сообщение</string>
+		<key>si</key>
+		<string>ශ්‍රව්‍ය පණිවිඩය</string>
+		<key>sk</key>
+		<string>Zvuková Správa</string>
+		<key>sl</key>
+		<string>Zvočno Sporočilo</string>
+		<key>sq</key>
+		<string>Mesazh Audio</string>
+		<key>sr</key>
+		<string>Аудио Порука</string>
+		<key>su</key>
+		<string>Pesen Audio</string>
+		<key>sv</key>
+		<string>Ljudmeddelande</string>
+		<key>sw</key>
+		<string>Ujumbe wa Sauti</string>
+		<key>ta</key>
+		<string>ஆடியோ செய்தி</string>
+		<key>te</key>
+		<string>ఆడియో సందేశం</string>
+		<key>tg</key>
+		<string>Паёми Аудио</string>
+		<key>th</key>
+		<string>ข้อความเสียง</string>
+		<key>tl</key>
+		<string>Mensahe sa Audio</string>
+		<key>tr</key>
+		<string>Sesli Mesaj</string>
+		<key>tt</key>
+		<string>Аудио Хәбәр</string>
+		<key>udm</key>
+		<string>Audio Message</string>
+		<key>uk</key>
+		<string>Звукове Повідомлення</string>
+		<key>ur</key>
+		<string>آڈیو پیغام</string>
+		<key>uz</key>
+		<string>Audio Xabar</string>
+		<key>vi</key>
+		<string>Tin nhắn thoại</string>
+		<key>yi</key>
+		<string>אַודיאָ אָנזאָג</string>
+		<key>zh</key>
+		<string>语音信息</string>
+	</dict>
 	<key>dismiss</key>
 	<dict>
 		<key>af</key>
@@ -278,7 +447,7 @@
 		<key>ms</key>
 		<string>Gagal menterjemah semula</string>
 		<key>mt</key>
-		<string>Naqas milli jerġa' jittraduċi</string>
+		<string>Naqas milli jerġa&apos; jittraduċi</string>
 		<key>ne</key>
 		<string>पुन: अनुवाद गर्न असफल भयो</string>
 		<key>nl</key>
@@ -1326,6 +1495,175 @@ Kiểm tra lại sau một thời gian cho tiềm năng cập nhật.</string>
 		<key>zh</key>
 		<string>你的语言不是目前支持。 检查后在稍后的时间供潜在的更新。</string>
 	</dict>
+	<key>report_bug</key>
+	<dict>
+		<key>af</key>
+		<string>Rapporteer &apos;n Fout</string>
+		<key>ar</key>
+		<string>الإبلاغ عن خطأ</string>
+		<key>az</key>
+		<string>Xəta bildirin</string>
+		<key>ba</key>
+		<string>Report an Error</string>
+		<key>be</key>
+		<string>Паведаміць пра Памылку</string>
+		<key>bg</key>
+		<string>Докладване за Грешка</string>
+		<key>bn</key>
+		<string>একটি ত্রুটি রিপোর্ট করুন</string>
+		<key>bs</key>
+		<string>Prijavite grešku</string>
+		<key>ca</key>
+		<string>Informa d&apos;un Error</string>
+		<key>ceb</key>
+		<string>I-report ang usa ka Sayop</string>
+		<key>cs</key>
+		<string>Nahlásit chybu</string>
+		<key>cy</key>
+		<string>Adrodd Gwall</string>
+		<key>da</key>
+		<string>Rapporter en Fejl</string>
+		<key>de</key>
+		<string>Fehler melden</string>
+		<key>el</key>
+		<string>Αναφορά σφάλματος</string>
+		<key>en</key>
+		<string>Report Bug</string>
+		<key>eo</key>
+		<string>Raportu Eraron</string>
+		<key>es</key>
+		<string>Informar de un error</string>
+		<key>et</key>
+		<string>Teata veast</string>
+		<key>eu</key>
+		<string>Eman errore Bat</string>
+		<key>fa</key>
+		<string>یک خطا را گزارش کنید</string>
+		<key>fi</key>
+		<string>Ilmoita virheestä</string>
+		<key>fr</key>
+		<string>Signaler une Erreur</string>
+		<key>ga</key>
+		<string>Tuairiscigh Earráid</string>
+		<key>gd</key>
+		<string>Dèan aithris air Mearachd</string>
+		<key>gl</key>
+		<string>Informar dun Erro</string>
+		<key>gu</key>
+		<string>ભૂલની જાણ કરો</string>
+		<key>he</key>
+		<string>דווח על שגיאה</string>
+		<key>hi</key>
+		<string>त्रुटि की रिपोर्ट करें</string>
+		<key>hr</key>
+		<string>Prijavi pogrešku</string>
+		<key>ht</key>
+		<string>Rapòte yon Erè</string>
+		<key>hu</key>
+		<string>Hiba bejelentése</string>
+		<key>hy</key>
+		<string>Հաղորդել սխալի Մասին</string>
+		<key>id</key>
+		<string>Laporkan Kesalahan</string>
+		<key>is</key>
+		<string>Tilkynna villu</string>
+		<key>it</key>
+		<string>Segnala un Errore</string>
+		<key>ja</key>
+		<string>エラーを報告する</string>
+		<key>jv</key>
+		<string>Report an Error</string>
+		<key>ka</key>
+		<string>Შეატყობინეთ შეცდომის Შესახებ</string>
+		<key>kk</key>
+		<string>Қатені хабарлау</string>
+		<key>kn</key>
+		<string>ದೋಷವನ್ನು ವರದಿ ಮಾಡಿ</string>
+		<key>ko</key>
+		<string>오류 보고</string>
+        <key>ky</key>
+        <string>Ката жөнүндө Кабарлоо</string>
+        <key>la</key>
+        <string>Report an Error</string>
+        <key>lt</key>
+        <string>Pranešti apie Klaidą</string>
+        <key>mg</key>
+        <string>Mitatitra lesoka</string>
+        <key>mi</key>
+        <string>Pūrongo he Hapa</string>
+        <key>mk</key>
+        <string>Пријавете грешка</string>
+        <key>ml</key>
+        <string>ഒരു പിശക് റിപ്പോർട്ട് ചെയ്യുക</string>
+        <key>mn</key>
+        <string>Алдаа мэдээлэх</string>
+        <key>mr</key>
+        <string>त्रुटी नोंदवा</string>
+        <key>ms</key>
+        <string>Laporkan Ralat</string>
+        <key>mt</key>
+        <string>Irrapporta Żball</string>
+        <key>ne</key>
+        <string>त्रुटि रिपोर्ट गर्नुहोस्</string>
+        <key>nl</key>
+        <string>Meld een Fout</string>
+        <key>no</key>
+        <string>Rapporter en Feil</string>
+        <key>pa</key>
+        <string>ਇੱਕ ਗਲਤੀ ਦੀ ਰਿਪੋਰਟ ਕਰੋ</string>
+        <key>pl</key>
+        <string>Zgłoś błąd</string>
+        <key>pt</key>
+        <string>Informar um Erro</string>
+        <key>ro</key>
+        <string>Raportați o Eroare</string>
+        <key>ru</key>
+        <string>Сообщить об Ошибке</string>
+        <key>si</key>
+        <string>දෝෂයක් වාර්තා කරන්න</string>
+        <key>sk</key>
+        <string>Nahlásiť chybu</string>
+        <key>sl</key>
+        <string>Prijavi napako</string>
+        <key>sq</key>
+        <string>Raportoni një Gabim</string>
+        <key>sr</key>
+        <string>Пријавите грешку</string>
+        <key>su</key>
+        <string>Ngalaporkeun Kasalahan</string>
+        <key>sv</key>
+        <string>Rapportera ett Fel</string>
+        <key>sw</key>
+        <string>Ripoti Hitilafu</string>
+        <key>ta</key>
+        <string>ஒரு பிழையைப் புகாரளிக்கவும்</string>
+        <key>te</key>
+        <string>లోపాన్ని నివేదించండి</string>
+        <key>tg</key>
+        <string>Дар бораи хато хабар диҳед</string>
+        <key>th</key>
+        <string>รายงานข้อผิดพลาด</string>
+        <key>tl</key>
+        <string>Mag-ulat ng Error</string>
+        <key>tr</key>
+        <string>Hata Bildir</string>
+        <key>tt</key>
+        <string>Хата турында хәбәр итегез</string>
+        <key>udm</key>
+        <string>Report an Error</string>
+        <key>uk</key>
+        <string>Повідомити про Помилку</string>
+        <key>ur</key>
+        <string>غلطی کی اطلاع دیں۔</string>
+        <key>uz</key>
+        <string>Xato haqida xabar berish</string>
+        <key>vi</key>
+        <string>Báo lỗi</string>
+        <key>yi</key>
+        <string>באריכט אַ טעות</string>
+        <key>zh</key>
+        <string>报告错误</string>
+	</dict>
 	<key>send_feedback</key>
 	<dict>
 		<key>af</key>
@@ -1494,6 +1832,175 @@ Kiểm tra lại sau một thời gian cho tiềm năng cập nhật.</string>
 		<string>שיקן באַמערקונגען</string>
 		<key>zh</key>
 		<string>发送反馈</string>
+	</dict>
+	<key>try_again</key>
+	<dict>
+		<key>af</key>
+		<string>Probeer Weer</string>
+		<key>ar</key>
+		<string>حاول ثانية</string>
+		<key>az</key>
+		<string>Yenidən cəhd elə</string>
+		<key>ba</key>
+		<string>Andramo indray mandeha</string>
+		<key>be</key>
+		<string>Паспрабуй Яшчэ</string>
+		<key>bg</key>
+		<string>Опитай Пак</string>
+		<key>bn</key>
+		<string>আবার চেষ্টা কর</string>
+		<key>bs</key>
+		<string>Pokušaj Ponovo</string>
+		<key>ca</key>
+		<string>Torna-ho a provar</string>
+		<key>ceb</key>
+		<string>Sulayi Pag-usab</string>
+		<key>cs</key>
+		<string>Zkus to znovu</string>
+		<key>cy</key>
+		<string>Ceisio Eto</string>
+		<key>da</key>
+		<string>Prøv Igen</string>
+		<key>de</key>
+		<string>Versuchen Sie es erneut</string>
+		<key>el</key>
+		<string>Προσπάθησε Ξανά</string>
+		<key>en</key>
+		<string>Try Again</string>
+		<key>eo</key>
+		<string>Provu Denove</string>
+		<key>es</key>
+		<string>Intentar otra vez</string>
+		<key>et</key>
+		<string>Proovi Uuesti</string>
+		<key>eu</key>
+		<string>Saiatu Berriro</string>
+		<key>fa</key>
+		<string>دوباره امتحان کنید</string>
+		<key>fi</key>
+		<string>Yritä Uudelleen</string>
+		<key>fr</key>
+		<string>Essayer à nouveau</string>
+		<key>ga</key>
+		<string>Déan iarracht arís</string>
+		<key>gd</key>
+		<string>Feuch A-rithist</string>
+		<key>gl</key>
+		<string>Téntao de novo</string>
+		<key>gu</key>
+		<string>ફરીથી પ્રયત્ન કરો</string>
+		<key>he</key>
+		<string>נסה שוב</string>
+		<key>hi</key>
+		<string>पुनः प्रयास करें</string>
+		<key>hr</key>
+		<string>Pokušajte Ponovno</string>
+		<key>ht</key>
+		<string>Eseye Anko</string>
+		<key>hu</key>
+		<string>Próbáld Újra</string>
+		<key>hy</key>
+		<string>Կրկին Փորձեք</string>
+		<key>id</key>
+		<string>Coba Lagi</string>
+		<key>is</key>
+		<string>Reyndu Aftur</string>
+		<key>it</key>
+		<string>Riprova</string>
+		<key>ja</key>
+		<string>再試行する</string>
+		<key>jv</key>
+		<string>Andramo indray mandeha</string>
+		<key>ka</key>
+		<string>Კიდევ Სცადე</string>
+		<key>kk</key>
+		<string>Қайтадан байқап көріңіз</string>
+		<key>kn</key>
+		<string>ಮತ್ತೆ ಪ್ರಯತ್ನಿಸು</string>
+		<key>ko</key>
+		<string>다시 시도하십시오</string>
+		<key>ky</key>
+		<string>Кайра аракет кыл</string>
+		<key>la</key>
+		<string>Iterum Conare</string>
+		<key>lt</key>
+		<string>Bandyk iš naujo</string>
+		<key>mg</key>
+		<string>Andramo indray mandeha</string>
+		<key>mi</key>
+		<string>Ngana Ano</string>
+		<key>mk</key>
+		<string>Обиди се повторно</string>
+		<key>ml</key>
+		<string>വീണ്ടും ശ്രമിക്കുക</string>
+		<key>mn</key>
+		<string>Дахин Оролд</string>
+		<key>mr</key>
+		<string>पुन्हा प्रयत्न करा</string>
+		<key>ms</key>
+		<string>Cuba Lagi</string>
+		<key>mt</key>
+		<string>Erġa &apos;pprova</string>
+		<key>ne</key>
+		<string>फेरि प्रयास गर्नुहोस्</string>
+		<key>nl</key>
+		<string>Probeer het nog eens</string>
+		<key>no</key>
+		<string>Prøv Igjen</string>
+		<key>pa</key>
+		<string>ਫਿਰ ਕੋਸ਼ਿਸ਼ ਕਰੋ</string>
+		<key>pl</key>
+		<string>Spróbuj Ponownie</string>
+		<key>pt</key>
+		<string>Tente Novamente</string>
+		<key>ro</key>
+		<string>Încearcă din nou</string>
+		<key>ru</key>
+		<string>Попробуйте еще раз</string>
+		<key>si</key>
+		<string>නැවත උත්සාහ කරන්න</string>
+		<key>sk</key>
+		<string>Skúste Znova</string>
+		<key>sl</key>
+		<string>Poskusi Ponovno</string>
+		<key>sq</key>
+		<string>Provo Përsëri</string>
+		<key>sr</key>
+		<string>Покушајте Поново</string>
+		<key>su</key>
+		<string>Cobian Deui</string>
+		<key>sv</key>
+		<string>Försök Igen</string>
+		<key>sw</key>
+		<string>Jaribu Tena</string>
+		<key>ta</key>
+		<string>மீண்டும் முயற்சி செய்</string>
+		<key>te</key>
+		<string>మళ్లీ ప్రయత్నించండి</string>
+		<key>tg</key>
+		<string>Як бори дигар санҷед</string>
+		<key>th</key>
+		<string>ลองอีกครั้ง</string>
+		<key>tl</key>
+		<string>Subukan Muli</string>
+		<key>tr</key>
+		<string>Tekrar Deneyin</string>
+		<key>tt</key>
+		<string>Кабатларга</string>
+		<key>udm</key>
+		<string>Try Again</string>
+		<key>uk</key>
+		<string>Спробуйте Знову</string>
+		<key>ur</key>
+		<string>دوبارہ کوشش کریں</string>
+		<key>uz</key>
+		<string>Qayta urinib ko&apos;ring</string>
+		<key>vi</key>
+		<string>Thử Lại</string>
+		<key>yi</key>
+		<string>פּרוּווט ווידער</string>
+		<key>zh</key>
+		<string>再试一次</string>
 	</dict>
 	<key>new_message</key>
 	<dict>
@@ -6392,6 +6899,175 @@ Vui lòng xác minh rằng ứng dụng e-mail của bạn đã được thiết
 		<string>טעקסט קאַפּיד</string>
 		<key>zh</key>
 		<string>文本已复制</string>
+	</dict>
+	<key>select_language</key>
+	<dict>
+		<key>af</key>
+		<string>Kies Taal</string>
+		<key>ar</key>
+		<string>اختار اللغة</string>
+		<key>az</key>
+		<string>Dil Seçin</string>
+		<key>ba</key>
+		<string>Select Language</string>
+		<key>be</key>
+		<string>Выберыце Мову</string>
+		<key>bg</key>
+		<string>Избери Език</string>
+		<key>bn</key>
+		<string>ভাষা নির্বাচন কর</string>
+		<key>bs</key>
+		<string>Odaberite Jezik</string>
+		<key>ca</key>
+		<string>Escolliu L&apos;idioma</string>
+		<key>ceb</key>
+		<string>Pilia ang Pinulongan</string>
+		<key>cs</key>
+		<string>Zvolte Jazyk</string>
+		<key>cy</key>
+		<string>Dewiswch Iaith</string>
+		<key>da</key>
+		<string>Vælg Sprog</string>
+		<key>de</key>
+		<string>Sprache Auswählen</string>
+		<key>el</key>
+		<string>Επιλέξτε Γλώσσα</string>
+		<key>en</key>
+		<string>Select Language</string>
+		<key>eo</key>
+		<string>Elektu Lingvon</string>
+		<key>es</key>
+		<string>Seleccione el idioma</string>
+		<key>et</key>
+		<string>Vali Keel</string>
+		<key>eu</key>
+		<string>Hautatu Hizkuntza</string>
+		<key>fa</key>
+		<string>زبان را انتخاب کنید</string>
+		<key>fi</key>
+		<string>Valitse Kieli</string>
+		<key>fr</key>
+		<string>Choisir la langue</string>
+		<key>ga</key>
+		<string>Roghnaigh Teanga</string>
+		<key>gd</key>
+		<string>Tagh Cànan</string>
+		<key>gl</key>
+		<string>Seleccione Idioma</string>
+		<key>gu</key>
+		<string>ભાષા પસંદ કરો</string>
+		<key>he</key>
+		<string>בחר שפה</string>
+		<key>hi</key>
+		<string>भाषा चुने</string>
+		<key>hr</key>
+		<string>Izaberi Jezik</string>
+		<key>ht</key>
+		<string>Chwazi Lang</string>
+		<key>hu</key>
+		<string>Válasszon Nyelvet</string>
+		<key>hy</key>
+		<string>Ընտրել Լեզուն</string>
+		<key>id</key>
+		<string>Pilih Bahasa</string>
+		<key>is</key>
+		<string>Veldu Tungumál</string>
+		<key>it</key>
+		<string>Seleziona la lingua</string>
+		<key>ja</key>
+		<string>言語を選択する</string>
+		<key>jv</key>
+		<string>Select Language</string>
+		<key>ka</key>
+		<string>Აირჩიეთ Ენა</string>
+		<key>kk</key>
+		<string>Тіл Таңдаңыз</string>
+		<key>kn</key>
+		<string>ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ</string>
+		<key>ko</key>
+		<string>언어 선택</string>
+		<key>ky</key>
+		<string>Тил Тандаңыз</string>
+		<key>la</key>
+		<string>Linguae Selectae</string>
+		<key>lt</key>
+		<string>Pasirinkite Kalbą</string>
+		<key>mg</key>
+		<string>Select Language</string>
+		<key>mi</key>
+		<string>Tīpakohia te Reo</string>
+		<key>mk</key>
+		<string>Одбери Јазик</string>
+		<key>ml</key>
+		<string>ഭാഷ തിരഞ്ഞെടുക്കുക</string>
+		<key>mn</key>
+		<string>Хэл Сонгох</string>
+		<key>mr</key>
+		<string>भाषा निवडा</string>
+		<key>ms</key>
+		<string>Pilih Bahasa</string>
+		<key>mt</key>
+		<string>Agħżel Lingwa</string>
+		<key>ne</key>
+		<string>भाषा छनोट गर्नुस</string>
+		<key>nl</key>
+		<string>Selecteer Taal</string>
+		<key>no</key>
+		<string>Velg Språk</string>
+		<key>pa</key>
+		<string>ਭਾਸ਼ਾ ਚੁਣੋ</string>
+		<key>pl</key>
+		<string>Wybierz Język</string>
+		<key>pt</key>
+		<string>Selecione o idioma</string>
+		<key>ro</key>
+		<string>Selecteaza Limba</string>
+		<key>ru</key>
+		<string>Выберите Язык</string>
+		<key>si</key>
+		<string>භාෂාව තෝරන්න</string>
+		<key>sk</key>
+		<string>Zvoľ Jazyk</string>
+		<key>sl</key>
+		<string>Izberi Jezik</string>
+		<key>sq</key>
+		<string>Zgjidh Gjuhen</string>
+		<key>sr</key>
+		<string>Изаберите Језик</string>
+		<key>su</key>
+		<string>Pilih Basa</string>
+		<key>sv</key>
+		<string>Välj Språk</string>
+		<key>sw</key>
+		<string>Chagua Lugha</string>
+		<key>ta</key>
+		<string>மொழியை தேர்ந்தெடுங்கள்</string>
+		<key>te</key>
+		<string>భాషను ఎంచుకోండి</string>
+		<key>tg</key>
+		<string>Забонро интихоб кунед</string>
+		<key>th</key>
+		<string>เลือกภาษา</string>
+		<key>tl</key>
+		<string>Piliin ang Wika</string>
+		<key>tr</key>
+		<string>Dil Seçin</string>
+		<key>tt</key>
+		<string>Телне Сайлагыз</string>
+		<key>udm</key>
+		<string>Select Language</string>
+		<key>uk</key>
+		<string>Оберіть Мову</string>
+		<key>ur</key>
+		<string>زبان منتخب کریں۔</string>
+		<key>uz</key>
+		<string>Tilni Tanlang</string>
+		<key>vi</key>
+		<string>Chọn ngôn ngữ</string>
+		<key>yi</key>
+		<string>אויסקלייַבן שפּראַך</string>
+		<key>zh</key>
+		<string>选择语言</string>
 	</dict>
 	<key>speak</key>
 	<dict>

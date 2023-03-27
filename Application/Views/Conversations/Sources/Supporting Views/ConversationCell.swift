@@ -202,6 +202,10 @@ public struct ConversationCell: View {
     /* MARK: - Private Methods */
     
     private func getCellSubtitle(forMessage: Message) -> String {
+        guard forMessage.audioComponent == nil else {
+            return "🔊 \(LocalizedString.audioMessage)"
+        }
+        
         var textToUse = ""
         
         if forMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! {

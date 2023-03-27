@@ -323,7 +323,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
                 return
             }
             
-            self.generateOutputFile(for: translation) { outputFile, exception in
+            self.retrieveOutputFile(for: translation) { outputFile, exception in
                 guard let outputFile else {
                     completion(nil, nil, exception ?? Exception(metadata: [#file, #function, #line]))
                     return
@@ -357,6 +357,27 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         }
     }
     
+    private func retrieveOutputFile(for translation: Translator.Translation,
+                                    completion: @escaping(_ outputFile: AudioFile?,
+                                                          _ exception: Exception?) -> Void) {
+        AudioMessageSerializer.shared.getPreRecordedOutputFile(for: translation) { outputFile, exception in
+            guard let outputFile else {
+                self.generateOutputFile(for: translation) { outputFile, exception in
+                    guard let outputFile else {
+                        completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+                        return
+                    }
+                    
+                    completion(outputFile, nil)
+                }
+                
+                return
+            }
+            
+            completion(outputFile, nil)
+        }
+    }
+    
     private func transcribeAndTranslate(forInputFile atURL: URL,
                                         languagePair: Translator.LanguagePair,
                                         progressHandler: @escaping() -> Void?,
@@ -365,7 +386,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         syncDependencies()
         
         SpeechService.shared.transcribeAudio(url: atURL,
-                                             languageCode: "en" /*languagePair.from*/) { transcription, exception in
+                                             languageCode: languagePair.from) { transcription, exception in
             guard let transcription else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
@@ -472,7 +493,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
     private func presentCTA(forRecording: Bool) {
         syncDependencies()
         
-        delegate.messageInputBar.sendButton.isEnabled = false
+        DispatchQueue.main.async { self.delegate.messageInputBar.sendButton.isEnabled = false }
         Core.gcd.after(milliseconds: 500) {
             let shouldShowKeyboard = self.delegate.messageInputBar.inputTextView.isFirstResponder
             PermissionService.presentCTA(for: forRecording ? .recording : .transcription,

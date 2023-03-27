@@ -105,7 +105,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
                    .developerModeEnabled: developerModeEnabled,
                    .dmyFirstCompileDateString: "23042022",
                    .finalName: "Hello",
-                   .loggingEnabled: true,
+                   .loggingEnabled: false,
                    .stage: Build.Stage.releaseCandidate,
                    .timebombActive: true])
         
@@ -165,6 +165,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         RuntimeStorage.store(false, as: .isSendingMessage)
         RuntimeStorage.store(false, as: .receivedNotification)
         RuntimeStorage.store(false, as: .shouldReloadData)
+        RuntimeStorage.store(false, as: .shouldReloadForFirstConversation)
         RuntimeStorage.store(false, as: .shouldUpdateReadState)
         RuntimeStorage.store(false, as: .updatedPushToken)
         RuntimeStorage.store(false, as: .wantsToInvite)
@@ -183,6 +184,12 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     }
     
     private func setEnvironment(to environment: GeneralSerializer.Environment? = nil) {
+        guard Build.stage != .generalRelease else {
+            GeneralSerializer.environment = .production
+            UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
+            return
+        }
+        
         guard let environment else {
             if let environmentString = UserDefaults.standard.string(forKey: "firebaseEnvironment"),
                let environment = environmentString.asEnvironment {
@@ -356,6 +363,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
 #if !EXTENSION
         switch UIApplication.shared.applicationState {
         case .background, .inactive:
+            UIApplication.shared.applicationIconBadgeNumber += 1
             completionHandler([[.banner, .sound, .badge]])
         case .active:
             //            let userInfo = notification.request.content.userInfo
@@ -368,6 +376,7 @@ extension AppDelegate: UNUserNotificationCenterDelegate {
             AudioServicesPlaySystemSound(SystemSoundID(kSystemSoundID_Vibrate))
             RuntimeStorage.conversationsPageViewModel?.reloadIfNeeded()
         @unknown default:
+            UIApplication.shared.applicationIconBadgeNumber += 1
             completionHandler([[.banner, .sound, .badge]])
         }
 #endif

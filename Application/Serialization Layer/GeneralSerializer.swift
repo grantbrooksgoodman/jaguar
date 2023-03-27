@@ -121,7 +121,7 @@ public enum GeneralSerializer {
     
     public static func getAppShareLink(completion: @escaping(_ link: URL?,
                                                              _ exception: Exception?) -> Void) {
-        getValues(atPath: "/appShareLink") { values, exception in
+        getValues(atPath: "/shared/appShareLink") { values, exception in
             guard let linkString = values as? String,
                   let url = URL(string: linkString) else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
@@ -134,7 +134,7 @@ public enum GeneralSerializer {
     
     public static func getPushApiKey(completion: @escaping(_ key: String?,
                                                            _ exception: Exception?) -> Void) {
-        getValues(atPath: "/pushApiKey") { values, exception in
+        getValues(atPath: "/shared/pushApiKey") { values, exception in
             guard let key = values as? String else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
@@ -146,7 +146,7 @@ public enum GeneralSerializer {
     
     public static func getRedirectionKey(completion: @escaping(_ key: String?,
                                                                _ exception: Exception?) -> Void) {
-        getValues(atPath: "/redirectionKey") { values, exception in
+        getValues(atPath: "/shared/redirectionKey") { values, exception in
             guard let key = values as? String else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return

@@ -112,6 +112,19 @@ public class MenuControllerService: NSObject, ChatService {
         menuController.showMenu(from: delegate.messagesCollectionView, rect: frame)
     }
     
+    public func resetAllAlternates() {
+        syncDependencies()
+        
+        for message in CURRENT_MESSAGE_SLICE {
+            guard message.isDisplayingAlternate else { continue }
+            
+            let originalInput = message.translation.input
+            message.translation.input = TranslationInput(message.translation.output)
+            message.translation.output = originalInput.value()
+            message.isDisplayingAlternate = false
+        }
+    }
+    
     public func stopSpeakingIfNeeded() {
         guard speechSynthesizer.isSpeaking else { return }
         speechSynthesizer.stopSpeaking(at: .immediate)
@@ -298,6 +311,8 @@ public class MenuControllerService: NSObject, ChatService {
             menuItems.append(getAudioMessageMenuItem(title: LocalizedString.viewAsAudio))
             return menuItems
         }
+        
+        guard translation.languagePair.from != translation.languagePair.to else { return menuItems }
         
         if translation.input.value() == translation.output,
            RecognitionService.shouldMarkUntranslated(translation.output,

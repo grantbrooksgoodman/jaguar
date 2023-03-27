@@ -67,7 +67,10 @@ public struct Logger {
     public static func log(_ exception: Exception,
                            with: AlertType? = .none,
                            verbose: Bool? = nil) {
-        guard Build.loggingEnabled else { return }
+        guard Build.loggingEnabled else {
+            showAlertIfNeeded()
+            return
+        }
         
         if let verbose = verbose,
            verbose, exposureLevel != .verbose {
@@ -93,34 +96,36 @@ public struct Logger {
         
         currentTimeLastCalled = Date()
         
-        guard let alertType = with else {
-            return
-        }
+        showAlertIfNeeded()
         
-        Core.hud.hide()
-        
-        switch alertType {
-        case .errorAlert:
-            let sugarCoatedDescriptor = Exception("", metadata: [#file, #function, #line]).userFacingDescriptor
-            let translateDescriptor = (exception.userFacingDescriptor != exception.descriptor) || (exception.userFacingDescriptor == sugarCoatedDescriptor)
+        func showAlertIfNeeded() {
+            guard let alertType = with else { return }
             
-            AKErrorAlert(message: exception.userFacingDescriptor,
-                         error: exception.asAkError(),
-                         shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
-                                                                          .cancelButtonTitle]).present()
-        case .fatalAlert:
-            AKCore.shared.present(.fatalErrorAlert,
-                                  with: [exception.descriptor!,
-                                         Build.stage != .generalRelease,
-                                         exception.metadata!])
+            Core.hud.hide()
             
-        case let .toast(icon):
-            Core.gcd.after(seconds: 1) { Core.hud.flash(exception.userFacingDescriptor, image: icon) }
-            
-        case .normalAlert:
-            AKAlert(message: exception.userFacingDescriptor,
-                    cancelButtonTitle: "OK",
-                    shouldTranslate: [.title, .message]).present()
+            switch alertType {
+            case .errorAlert:
+                let sugarCoatedDescriptor = Exception("", metadata: [#file, #function, #line]).userFacingDescriptor
+                let translateDescriptor = (exception.userFacingDescriptor != exception.descriptor) || (exception.userFacingDescriptor == sugarCoatedDescriptor)
+                
+                AKErrorAlert(message: exception.userFacingDescriptor,
+                             error: exception.asAkError(),
+                             shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
+                                                                              .cancelButtonTitle]).present()
+            case .fatalAlert:
+                AKCore.shared.present(.fatalErrorAlert,
+                                      with: [exception.descriptor!,
+                                             Build.stage != .generalRelease,
+                                             exception.metadata!])
+                
+            case let .toast(icon):
+                Core.gcd.after(seconds: 1) { Core.hud.flash(exception.userFacingDescriptor, image: icon) }
+                
+            case .normalAlert:
+                AKAlert(message: exception.userFacingDescriptor,
+                        cancelButtonTitle: "OK",
+                        shouldTranslate: [.title, .message]).present()
+            }
         }
     }
     
@@ -128,8 +133,6 @@ public struct Logger {
                            with: AlertType? = .none,
                            verbose: Bool? = nil,
                            metadata: [Any]) {
-        guard Build.loggingEnabled else { return }
-        
         if let verbose = verbose,
            verbose, exposureLevel != .verbose {
             return
@@ -144,6 +147,11 @@ public struct Logger {
         let functionName = (metadata[1] as! String).components(separatedBy: "(")[0]
         let lineNumber = metadata[2] as! Int
         
+        guard Build.loggingEnabled else {
+            showAlertIfNeeded(fileName: fileName, functionName: functionName, lineNumber: lineNumber)
+            return
+        }
+        
         guard !streamOpen else {
             logToStream(text, line: lineNumber)
             return
@@ -153,38 +161,42 @@ public struct Logger {
         
         currentTimeLastCalled = Date()
         
-        guard let alertType = with else {
-            return
-        }
+        showAlertIfNeeded(fileName: fileName, functionName: functionName, lineNumber: lineNumber)
         
-        Core.hud.hide()
-        
-        switch alertType {
-        case .errorAlert:
-            let exception = Exception(text,
-                                      metadata: [fileName, functionName, lineNumber])
+        func showAlertIfNeeded(fileName: String,
+                               functionName: String,
+                               lineNumber: Int) {
+            guard let alertType = with else { return }
             
-            let sugarCoatedDescriptor = Exception("", metadata: [#file, #function, #line]).userFacingDescriptor
-            let translateDescriptor = (exception.userFacingDescriptor != exception.descriptor) || (exception.userFacingDescriptor == sugarCoatedDescriptor)
+            Core.hud.hide()
             
-            AKErrorAlert(message: exception.userFacingDescriptor,
-                         error: exception.asAkError(),
-                         shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
-                                                                          .cancelButtonTitle]).present()
-        case .fatalAlert:
-            AKCore.shared.present(.fatalErrorAlert,
-                                  with: [text,
-                                         Build.stage != .generalRelease,
-                                         [fileName, functionName, lineNumber]])
-            
-        case let .toast(icon):
-            Core.gcd.after(seconds: 1) { Core.hud.flash(text, image: icon) }
-            
-        case .normalAlert:
-            AKAlert(message: Exception(text,
-                                       metadata: [fileName, functionName, lineNumber]).userFacingDescriptor,
-                    cancelButtonTitle: "OK",
-                    shouldTranslate: [.title, .message]).present()
+            switch alertType {
+            case .errorAlert:
+                let exception = Exception(text,
+                                          metadata: [fileName, functionName, lineNumber])
+                
+                let sugarCoatedDescriptor = Exception("", metadata: [#file, #function, #line]).userFacingDescriptor
+                let translateDescriptor = (exception.userFacingDescriptor != exception.descriptor) || (exception.userFacingDescriptor == sugarCoatedDescriptor)
+                
+                AKErrorAlert(message: exception.userFacingDescriptor,
+                             error: exception.asAkError(),
+                             shouldTranslate: translateDescriptor ? [.all] : [.actions(indices: nil),
+                                                                              .cancelButtonTitle]).present()
+            case .fatalAlert:
+                AKCore.shared.present(.fatalErrorAlert,
+                                      with: [text,
+                                             Build.stage != .generalRelease,
+                                             [fileName, functionName, lineNumber]])
+                
+            case let .toast(icon):
+                Core.gcd.after(seconds: 1) { Core.hud.flash(text, image: icon) }
+                
+            case .normalAlert:
+                AKAlert(message: Exception(text,
+                                           metadata: [fileName, functionName, lineNumber]).userFacingDescriptor,
+                        cancelButtonTitle: "OK",
+                        shouldTranslate: [.title, .message]).present()
+            }
         }
     }
     
@@ -253,38 +265,43 @@ public struct Logger {
     
     private static func fallbackLog(_ text: String,
                                     with: AlertType? = .none) {
-        guard Build.loggingEnabled else { return }
+        guard Build.loggingEnabled else {
+            showAlertIfNeeded()
+            return
+        }
         
         print("\n--------------------------------------------------\n[IMPROPERLY FORMATTED METADATA]\n\(text)\n--------------------------------------------------\n")
         
         currentTimeLastCalled = Date()
         
-        guard let alertType = with else {
-            return
-        }
+        showAlertIfNeeded()
         
-        Core.hud.hide()
-        
-        switch alertType {
-        case .errorAlert:
-            let exception = Exception(text,
-                                      metadata: [#file, #function, #line])
-            AKErrorAlert(error: exception.asAkError(),
-                         shouldTranslate: [.actions(indices: nil),
-                                           .cancelButtonTitle]).present()
-        case .fatalAlert:
-            AKCore.shared.present(.fatalErrorAlert,
-                                  with: [text,
-                                         Build.stage != .generalRelease,
-                                         [#file, #function, #line]])
+        func showAlertIfNeeded() {
+            guard let alertType = with else { return }
             
-        case let .toast(icon):
-            Core.gcd.after(seconds: 1) { Core.hud.flash(text, image: icon) }
+            Core.hud.hide()
             
-        case .normalAlert:
-            AKAlert(message: text,
-                    cancelButtonTitle: "OK",
-                    shouldTranslate: [.title, .message]).present()
+            switch alertType {
+            case .errorAlert:
+                let exception = Exception(text,
+                                          metadata: [#file, #function, #line])
+                AKErrorAlert(error: exception.asAkError(),
+                             shouldTranslate: [.actions(indices: nil),
+                                               .cancelButtonTitle]).present()
+            case .fatalAlert:
+                AKCore.shared.present(.fatalErrorAlert,
+                                      with: [text,
+                                             Build.stage != .generalRelease,
+                                             [#file, #function, #line]])
+                
+            case let .toast(icon):
+                Core.gcd.after(seconds: 1) { Core.hud.flash(text, image: icon) }
+                
+            case .normalAlert:
+                AKAlert(message: text,
+                        cancelButtonTitle: "OK",
+                        shouldTranslate: [.title, .message]).present()
+            }
         }
     }
     

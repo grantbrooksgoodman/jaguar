@@ -22,13 +22,13 @@ public struct SelectLanguagePageView: View {
     
     /* MARK: - Properties */
     
-    public var languages = Array(RuntimeStorage.languageCodeDictionary!.values).sorted()
+    @State private var languages = Array(RuntimeStorage.localizedLanguageCodeDictionary!.values).sorted()
     
     @StateObject public var viewModel: SelectLanguagePageViewModel
     @StateObject public var viewRouter: ViewRouter
     
     @State private var pressedContinue = false
-    @State private var selectedLanguage: String = RuntimeStorage.languageCodeDictionary![RuntimeStorage.languageCode!]!
+    @State private var selectedLanguage: String = RuntimeStorage.localizedLanguageCodeDictionary![RuntimeStorage.languageCode!]!
     
     //==================================================//
     
@@ -42,6 +42,9 @@ public struct SelectLanguagePageView: View {
                                      as: .languageCode)
                 AKCore.shared.setLanguageCode(Locale.preferredLanguages[0].components(separatedBy: "-")[0])
                 viewModel.load()
+                
+                languages = Array(RuntimeStorage.localizedLanguageCodeDictionary!.values).sorted()
+                selectedLanguage = RuntimeStorage.localizedLanguageCodeDictionary![RuntimeStorage.languageCode!]!
             }
         case .loading:
             ProgressView("" /*"Loading..."*/)
@@ -65,11 +68,10 @@ public struct SelectLanguagePageView: View {
                     .padding(.horizontal, 30)
                     
                     Button {
-                        let selectedLanguageCode = RuntimeStorage.languageCodeDictionary!.allKeys(forValue: selectedLanguage).first!
+                        guard let selectedLanguageCode = RuntimeStorage.localizedLanguageCodeDictionary!.allKeys(forValue: selectedLanguage).first else { return }
                         
                         RegionDetailServer.clearCache()
-                        RuntimeStorage.store(selectedLanguageCode,
-                                             as: .languageCode)
+                        RuntimeStorage.store(selectedLanguageCode, as: .languageCode)
                         AKCore.shared.setLanguageCode(selectedLanguageCode)
                         
                         viewRouter.currentPage = .signUp_verifyNumber
@@ -96,7 +98,7 @@ public struct SelectLanguagePageView: View {
                 Spacer()
             }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
         case .failed(let exception):
-            Text(exception.userFacingDescriptor)
+            FailureView(exception: exception) { viewModel.load() }
         }
     }
 }

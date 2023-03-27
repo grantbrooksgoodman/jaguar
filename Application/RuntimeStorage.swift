@@ -27,6 +27,7 @@ public class StateProvider: ObservableObject {
     @Published public var tappedDone = false
     @Published public var tappedSelectContactButton = false
     @Published public var wantsToInvite = false
+    @Published public var showingInviteLanguagePicker = false
 }
 
 public enum RuntimeStorage {
@@ -54,6 +55,7 @@ public enum RuntimeStorage {
         
         case languageCode
         case languageCodeDictionary
+        case localizedLanguageCodeDictionary
         
         case overriddenLanguageCode
         case selectedRegionCode
@@ -85,6 +87,7 @@ public enum RuntimeStorage {
         case shouldReloadData
         case typingIndicator
         
+        case invitationLanguageCode
         case wantsToInvite
         
         // MARK: ConversationsPageView
@@ -95,6 +98,7 @@ public enum RuntimeStorage {
         case becameActive
         case conversationsPageViewModel
         case receivedNotification
+        case shouldReloadForFirstConversation
         case shouldUpdateReadState
         
         // MARK: SceneDelegate
@@ -128,6 +132,38 @@ public enum RuntimeStorage {
     public static func store(_ object: Any, as: StoredItem) {
         storedItems[`as`.description] = object
     }
+    
+    //==================================================//
+    
+    /* MARK: - Private Methods */
+    
+    private static func getLocalizedLanguageCodeDictionary() -> [String: String]? {
+        guard let languageCode,
+              let languageCodeDictionary else { return nil }
+        
+        let locale = Locale(identifier: languageCode)
+        
+        var localizedNames = [String: String]()
+        for (code, name) in languageCodeDictionary {
+            guard let localizedName = locale.localizedString(forLanguageCode: code) else {
+                localizedNames[code] = name
+                continue
+            }
+            
+            let components = name.components(separatedBy: "(")
+            guard components.count == 2 else {
+                let suffix = localizedName.lowercased() == name.lowercased() ? "" : "(\(name))"
+                localizedNames[code] = "\(localizedName.firstUppercase) \(suffix)"
+                continue
+            }
+            
+            let endonym = components[1]
+            let suffix = localizedName.lowercased() == endonym.lowercased().dropSuffix() ? "" : "(\(endonym)"
+            localizedNames[code] = "\(localizedName.firstUppercase) \(suffix)"
+        }
+        
+        return localizedNames
+    }
 }
 
 //==================================================//
@@ -155,6 +191,7 @@ public extension RuntimeStorage {
     
     static var languageCode: String? { get { guard let overridden = retrieve(.overriddenLanguageCode) as? String else { return retrieve(.languageCode) as? String }; return overridden } }
     static var languageCodeDictionary: [String: String]? { get { retrieve(.languageCodeDictionary) as? [String: String] } }
+    static var localizedLanguageCodeDictionary: [String: String]? { get { getLocalizedLanguageCodeDictionary() } }
     
     static var pushToken: String? { get { retrieve(.pushToken) as? String } }
     static var updatedPushToken: Bool? { get { retrieve(.updatedPushToken) as? Bool } }
@@ -184,6 +221,7 @@ public extension RuntimeStorage {
     static var shouldReloadData: Bool? { get { retrieve(.shouldReloadData) as? Bool } }
     static var typingIndicator: Bool? { get { retrieve(.typingIndicator) as? Bool } }
     
+    static var invitationLanguageCode: String? { get { retrieve(.invitationLanguageCode) as? String } }
     static var wantsToInvite: Bool? { get { retrieve(.wantsToInvite) as? Bool } }
     
     // MARK: ConversationsPageView
@@ -196,6 +234,7 @@ public extension RuntimeStorage {
     static var conversationsPageViewModel: ConversationsPageViewModel? { get { retrieve(.conversationsPageViewModel) as? ConversationsPageViewModel } }
 #endif
     static var receivedNotification: Bool? { get { retrieve(.receivedNotification) as? Bool } }
+    static var shouldReloadForFirstConversation: Bool? { get { retrieve(.shouldReloadForFirstConversation) as? Bool } }
     static var shouldUpdateReadState: Bool? { get { retrieve(.shouldUpdateReadState) as? Bool } }
     
     // MARK: SceneDelegate

@@ -84,6 +84,7 @@ public struct BuildInfoOverlayView: View {
     
     private var sendFeedbackButton: some View {
         Button(action: {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
             viewModel.presentSendFeedbackActionSheet()
         }, label: {
             Text(LocalizedString.sendFeedback)

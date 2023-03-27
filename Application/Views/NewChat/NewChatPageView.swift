@@ -50,10 +50,7 @@ public struct NewChatPageView: View {
         case .failed(let exception):
             Color.clear.onAppear {
                 isPresenting = false
-                
-                Core.gcd.after(seconds: 1) {
-                    AKErrorAlert(error: exception.asAkError()).present()
-                }
+                Core.gcd.after(seconds: 1) { AKErrorAlert(error: exception.asAkError()).present() }
             }
         }
     }
@@ -130,10 +127,19 @@ public struct NewChatPageView: View {
                   let recipientBar = messagesVC.recipientBar else { return }
             recipientBar.handleContactSelected(with: pair)
         } else if RuntimeStorage.wantsToInvite! {
-            isPresenting = false
-            Core.gcd.after(seconds: 2) {
-                viewModel.presentInvitation()
-                RuntimeStorage.store(false, as: .wantsToInvite)
+            InviteService.askToTranslate { shouldTranslate in
+                guard let shouldTranslate else { return }
+                isPresenting = false
+                
+                Core.gcd.after(milliseconds: 1500) {
+                    if shouldTranslate {
+                        stateProvider.showingInviteLanguagePicker = true
+                    } else {
+                        InviteService.composeInvitation()
+                    }
+                    
+                    RuntimeStorage.store(false, as: .wantsToInvite)
+                }
             }
         } else {
             guard let messagesVC = RuntimeStorage.messagesVC,

@@ -7,7 +7,7 @@
 		<string>synchronizeContacts</string>
 	</array>
 	<key>CFBuildDate</key>
-	<string>1678672752</string>
+	<string>1679888344</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -23,9 +23,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleReleaseVersion</key>
-	<string>9470</string>
+	<string>9634</string>
 	<key>CFBundleShortVersionString</key>
-	<string>0.63.189</string>
+	<string>0.64.192</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>
@@ -46,7 +46,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>9470</string>
+	<string>9634</string>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
 	<false/>
 	<key>LSApplicationQueriesSchemes</key>
@@ -59,7 +59,7 @@
 	<key>NSAllowsArbitraryLoads</key>
 	<true/>
 	<key>NSContactsUsageDescription</key>
-	<string>Hello needs access to your contacts.</string>
+	<string>Hello needs access to your contacts to find friends with accounts.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Hello needs access to your microphone for speech recognition.</string>
 	<key>NSPhotoLibraryUsageDescription</key>

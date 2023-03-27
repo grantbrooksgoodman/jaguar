@@ -162,10 +162,10 @@ public struct UserSerializer {
     /* MARK: - Retrieval by Identifier */
     
     public func getUser(withIdentifier: String,
-                        completion: @escaping(_ returnedUser: User?,
+                        completion: @escaping(_ user: User?,
                                               _ exception: Exception?) -> Void) {
-        Database.database().reference().child(GeneralSerializer.environment.shortString).child("users").child(withIdentifier).observeSingleEvent(of: .value, with: { (returnedSnapshot) in
-            guard let snapshot = returnedSnapshot.value as? NSDictionary,
+        Database.database().reference().child(GeneralSerializer.environment.shortString).child("users").child(withIdentifier).observeSingleEvent(of: .value, with: { snapshot in
+            guard let snapshot = snapshot.value as? NSDictionary,
                   var data = snapshot as? [String: Any] else {
                 completion(nil, Exception("No user exists with the provided identifier.",
                                           extraParams: ["UserID": withIdentifier],
@@ -175,9 +175,9 @@ public struct UserSerializer {
             
             data["identifier"] = withIdentifier
             
-            self.deSerializeUser(fromData: data) { (returnedUser,
+            self.deSerializeUser(fromData: data) { (user,
                                                     exception) in
-                guard let user = returnedUser else {
+                guard let user else {
                     completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
@@ -185,8 +185,7 @@ public struct UserSerializer {
                 completion(user, nil)
             }
         }) { (error) in
-            completion(nil, Exception(error,
-                                      metadata: [#file, #function, #line]))
+            completion(nil, Exception(error, metadata: [#file, #function, #line]))
         }
     }
     

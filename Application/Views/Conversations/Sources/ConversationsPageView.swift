@@ -23,7 +23,8 @@ public struct ConversationsPageView: View {
     @State private var composeButtonEnabled = true
     @State private var hasRecordedInitialYOrigin = false
     @State private var settingsButtonEnabled = true
-    @State private var showingPopover = false
+    @State private var showingInviteLanguagePickerSheet = false
+    @State private var showingNewChatSheet = false
     
     // CGFloats
     @State private var currentYOrigin: CGFloat = 0.0
@@ -33,6 +34,7 @@ public struct ConversationsPageView: View {
     @StateObject public var viewModel: ConversationsPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
+    @Environment(\.colorScheme) private var colorScheme
     @State private var forceAppearanceUpdate = UUID()
     @ObservedObject private var stateProvider = StateProvider.shared
     
@@ -50,14 +52,8 @@ public struct ConversationsPageView: View {
                      let conversations):
             loadedView(translations: translations,
                        conversations: conversations)
-            .onAppear {
-                UserTestingSerializer.shared.resetPushTokensForAllUsers { exception in
-                    guard let exception else { return }
-                    Logger.log(exception)
-                }
-            }
         case .failed(let exception):
-            Text(exception.userFacingDescriptor)
+            FailureView(exception: exception) { viewModel.load() }
         }
     }
     
@@ -70,9 +66,9 @@ public struct ConversationsPageView: View {
                 .onFrameChange { frame in respondToListFrameChange(frame) }
             }
             .id(forceAppearanceUpdate)
-            .sheet(isPresented: $showingPopover) {
+            .sheet(isPresented: $showingNewChatSheet) {
                 NewChatPageView(viewModel: NewChatPageViewModel(),
-                                isPresenting: $showingPopover)
+                                isPresenting: $showingNewChatSheet)
                 .onAppear {
                     ContactNavigationRouter.currentlySelectedUser = nil
                 }
@@ -82,6 +78,19 @@ public struct ConversationsPageView: View {
                     
                     AnalyticsService.logEvent(.dismissNewChatPage)
                 }
+            }
+            .sheet(isPresented: $showingInviteLanguagePickerSheet) {
+                LanguagePickerView(isPresenting: $showingInviteLanguagePickerSheet)
+                    .onAppear {
+                        let backgroundColor = UIColor(hex: colorScheme == .dark ? 0x2A2A2C : 0xF8F8F8)
+                        let titleColor: UIColor = colorScheme == .dark ? .white : .black
+                        Core.ui.setNavigationBarAppearance(backgroundColor: backgroundColor, titleColor: titleColor)
+                    }
+                    .onDisappear {
+                        Core.ui.resetNavigationBarAppearance()
+                        guard RuntimeStorage.invitationLanguageCode != nil else { return }
+                        InviteService.composeInvitation()
+                    }
             }
         }
         .onChange(of: stateProvider.hasDisappeared, perform: { newValue in
@@ -104,7 +113,12 @@ public struct ConversationsPageView: View {
         })
         .onChange(of: stateProvider.showNewChatPageForGrantedContactAccess, perform: { newValue in
             guard newValue else { return }
-            showingPopover = true
+            showingNewChatSheet = true
+        })
+        .onChange(of: stateProvider.showingInviteLanguagePicker, perform: { newValue in
+            guard newValue else { return }
+            showingInviteLanguagePickerSheet = true
+            stateProvider.showingInviteLanguagePicker = false
         })
         .onAppear {
             RuntimeStorage.store(#file, as: .currentFile)
@@ -120,7 +134,7 @@ public struct ConversationsPageView: View {
     private var composeButton: some ToolbarContent {
         ToolbarItem(placement: .navigationBarTrailing) {
             Button(action: {
-                showingPopover = true
+                showingNewChatSheet = true
                 composeButtonEnabled = false
             }) {
                 Label("Compose", systemImage: "square.and.pencil")
@@ -156,6 +170,14 @@ public struct ConversationsPageView: View {
     //==================================================//
     
     /* MARK: - Other Views */
+    
+    private var appearanceBasedBackgroundColor: some View {
+        guard colorScheme == .dark else {
+            return Color(uiColor: UIColor(hex: 0xF8F8F8))
+        }
+        
+        return Color(uiColor: UIColor(hex: 0x2A2A2C))
+    }
     
     private func listView(conversations: [Conversation],
                           messagesTranslation: String) -> some View {
@@ -202,8 +224,9 @@ public struct ConversationsPageView: View {
     private func settingsButtonAction() {
         settingsButtonEnabled = false
         
-        var preferenceActions = [AKAction(title: "Log Out", style: .default),
-                                 AKAction(title: "Clear Caches", style: .default)]
+        var preferenceActions = [AKAction(title: "Clear Caches", style: .default),
+                                 AKAction(title: LocalizedString.sendFeedback, style: .default),
+                                 AKAction(title: "Log Out", style: .destructive)]
         
         if Build.developerModeEnabled,
            let currentUser = RuntimeStorage.currentUser,
@@ -215,7 +238,7 @@ public struct ConversationsPageView: View {
             preferenceActions.append(AKAction(title: overrideOrRestore, style: .default))
         }
         
-        var translationKeys: [AKTranslationOptionKey] = [.actions(indices: [0, 1, 3])]
+        var translationKeys: [AKTranslationOptionKey] = [.actions(indices: [0, 2])]
         var message = "Preferences"
         
         if Build.developerModeEnabled {
@@ -244,10 +267,12 @@ public struct ConversationsPageView: View {
             
             switch actionID {
             case preferenceActions[0].identifier:
-                viewModel.confirmSignOut(viewRouter)
-            case preferenceActions[1].identifier:
                 viewModel.confirmClearCaches()
+            case preferenceActions[1].identifier:
+                BuildInfoOverlayViewModel().presentSendFeedbackActionSheet()
             case preferenceActions[2].identifier:
+                viewModel.confirmSignOut(viewRouter)
+            case preferenceActions[3].identifier:
                 viewModel.overrideLanguageCode()
             default:
                 return

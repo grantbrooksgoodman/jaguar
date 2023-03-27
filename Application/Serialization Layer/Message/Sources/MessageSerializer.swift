@@ -288,12 +288,13 @@ public struct MessageSerializer {
                 }
                 
                 AudioMessageSerializer.shared.retrieveAudioReference(for: deSerializedMessage) { newMessage, exception in
-                    guard exception == nil else {
-                        completion(nil, exception!)
+                    guard let exception,
+                          !exception.isEqual(to: .noLocalAudioReferenceCopy) else {
+                        completion(newMessage, nil)
                         return
                     }
                     
-                    completion(newMessage, nil)
+                    completion(newMessage, exception)
                 }
             }
             
@@ -314,12 +315,13 @@ public struct MessageSerializer {
         }
         
         AudioMessageSerializer.shared.retrieveAudioReference(for: deSerializedMessage) { newMessage, exception in
-            guard exception == nil else {
-                completion(nil, exception!)
+            guard let exception,
+                  !exception.isEqual(to: .noLocalAudioReferenceCopy) else {
+                completion(newMessage, nil)
                 return
             }
             
-            completion(newMessage, nil)
+            completion(newMessage, exception)
         }
     }
 }
