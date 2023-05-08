@@ -8,6 +8,7 @@
 
 /* First-party Frameworks */
 import Foundation
+import UIKit
 
 /* Third-party Frameworks */
 import Translator
@@ -15,6 +16,23 @@ import Translator
 public extension Message {
     
     // MARK: Properties
+    
+    var backgroundColor: UIColor {
+        let isFromCurrentUser = fromAccountIdentifier == RuntimeStorage.currentUserID
+        
+        guard let currentUser = RuntimeStorage.currentUser,
+              let otherUser = RuntimeStorage.coordinator?.conversation.wrappedValue.otherUser,
+              translation.input.value() == translation.output,
+              audioComponent == nil,
+              sender.senderId == RuntimeStorage.currentUserID,
+              currentUser.languageCode != otherUser.languageCode,
+              RecognitionService.shouldMarkUntranslated(translation.output,
+                                                        for: translation.languagePair) else {
+            return isFromCurrentUser ? .senderMessageBubbleColor : .receiverMessageBubbleColor
+        }
+        
+        return .untranslatedMessageBubbleColor
+    }
     
     var hash: String {
         do {

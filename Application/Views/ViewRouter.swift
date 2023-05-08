@@ -25,8 +25,7 @@ public enum Page {
                             region: String,
                             userID: String)
     
-    case signIn(phoneNumber: String?,
-                fromSignUp: Bool) // Add region for sign in from sign up flow
+    case signIn(phoneNumber: String?) // Add region for sign in from sign up flow
     case conversations
 }
 
@@ -91,12 +90,10 @@ public struct RouterView: View {
                                 userID: userID)
             .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
             .zIndex(1)
-        case .signIn(let phoneNumber,
-                     let fromSignUp):
+        case .signIn(let phoneNumber):
             SignInPageView(viewModel: SignInPageViewModel(),
                            viewRouter: viewRouter,
-                           phoneNumberString: phoneNumber ?? "",
-                           fromSignUp: fromSignUp)
+                           phoneNumberString: phoneNumber ?? "")
             .transition(AnyTransition.opacity.animation(.easeIn(duration: 0.2)))
             .zIndex(1)
         case .conversations:

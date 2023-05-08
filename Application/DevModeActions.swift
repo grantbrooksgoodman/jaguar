@@ -63,8 +63,7 @@ public extension DevModeService {
         var actions = [AKAction]()
         var actionIDs = [Int: String]()
         
-        for theme in AppThemes.list {
-            guard theme.name != ThemeService.currentTheme.name else { continue }
+        for theme in AppThemes.list where theme.name != ThemeService.currentTheme.name {
             let action = AKAction(title: theme.name, style: .default)
             actions.append(action)
             actionIDs[action.identifier] = theme.name
@@ -82,12 +81,7 @@ public extension DevModeService {
     }
     
     private static func clearCaches() {
-        ContactArchiver.clearArchive()
-        ContactService.clearCache()
-        ConversationArchiver.clearArchive()
-        RecognitionService.clearCache()
-        RegionDetailServer.clearCache()
-        TranslationArchiver.clearArchive()
+        Core.clearCaches()
         Core.hud.showSuccess(text: "Cleared Caches")
     }
     

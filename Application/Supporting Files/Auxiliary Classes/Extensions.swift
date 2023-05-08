@@ -21,14 +21,14 @@ public extension Array {
         return self[Int(arc4random_uniform(UInt32(count)))]
     }
     
-    var shuffledValue: [Element] {
-        var arrayElements = self
+    var shuffled: [Element] {
+        var elements = self
         
-        for individualIndex in 0 ..< arrayElements.count {
-            arrayElements.swapAt(individualIndex, Int(arc4random_uniform(UInt32(arrayElements.count - individualIndex))) + individualIndex)
+        for index in 0 ..< elements.count {
+            elements.swapAt(index, Int(arc4random_uniform(UInt32(elements.count - index))) + index)
         }
         
-        return arrayElements
+        return elements
     }
 }
 
@@ -139,42 +139,6 @@ public extension Array where Element == Translation {
 
 //==================================================//
 
-/* MARK: - CharacterSet Extensions */
-
-public extension CharacterSet {
-    func characters() -> [Character] {
-        return codePoints().compactMap { UnicodeScalar($0) }.map { Character($0) }.unique()
-    }
-    
-    func codePoints() -> [Int] {
-        var result: [Int] = []
-        var plane = 0
-        
-        for (i, w) in bitmapRepresentation.enumerated() {
-            let k = i % 0x2001
-            
-            if k == 0x2000 {
-                // plane index byte
-                plane = Int(w) << 13
-                continue
-            }
-            
-            let base = (plane + k) << 3
-            for j in 0 ..< 8 where w & 1 << j != 0 {
-                result.append(base + j)
-            }
-        }
-        
-        return result
-    }
-    
-    func strings() -> [String] {
-        return characters().map { String($0) }
-    }
-}
-
-//==================================================//
-
 /* MARK: - Date Extensions */
 
 public extension Date {
@@ -205,21 +169,23 @@ public extension Date {
     
     ///Function that gets a nicely formatted date string from a provided Date.
     func formattedString() -> String {
-        let differenceBetweenDates = Core.currentCalendar!.startOfDay(for: Date()).distance(to: Core.currentCalendar!.startOfDay(for: self))
+        let differenceBetweenDates = Date().comparator.distance(to: self.comparator)
         
         let stylizedDateFormatter = DateFormatter()
+        stylizedDateFormatter.locale = RuntimeStorage.languageCode == "en" ? .current : Locale(identifier: RuntimeStorage.languageCode!)
         stylizedDateFormatter.dateStyle = .short
         
         if differenceBetweenDates == 0 {
             return DateFormatter.localizedString(from: self, dateStyle: .none, timeStyle: .short)
         } else if differenceBetweenDates == -86400 {
-            return "Yesterday"
+            return LocalizedString.yesterday
         } else if differenceBetweenDates >= -604_800 {
-            if self.dayOfWeek != Date().dayOfWeek {
-                return self.dayOfWeek ?? ""
-            } else {
+            guard let dayOfWeek,
+                  dayOfWeek == Date().dayOfWeek else {
                 return stylizedDateFormatter.string(from: self)
             }
+            
+            return dayOfWeek
         }
         
         return stylizedDateFormatter.string(from: self)
@@ -546,8 +512,19 @@ public extension String {
         return components[0]
     }
     
+    var localizedLanguageName: String? {
+        guard let localizedName = RegionDetailServer.localizedLanguageName(for: self) else { return nil }
+        let components = localizedName.components(separatedBy: " (")
+        guard !components.isEmpty else { return localizedName }
+        return components[0].trimmingTrailingWhitespace
+    }
+    
     var lowercasedTrimmingWhitespace: String {
         return trimmingCharacters(in: .whitespacesAndNewlines).lowercased().trimmingWhitespace
+    }
+    
+    var sanitized: String {
+        removingOccurrences(of: ["*", "⌘"])
     }
     
     var trimmingBorderedWhitespace: String {
@@ -796,12 +773,35 @@ public extension UIView {
         addSubview(blurEffectView)
         
         if withActivityIndicator {
-            let activityIndicatorView = UIActivityIndicatorView(style: .large)
+            let activityIndicatorView = UIActivityIndicatorView(style: .medium)
             activityIndicatorView.center = center
+            activityIndicatorView.color = .white
             activityIndicatorView.startAnimating()
             activityIndicatorView.tag = Core.ui.nameTag(for: "BLUR_INDICATOR")
             addSubview(activityIndicatorView)
         }
+    }
+    
+    func addOverlay(alpha: CGFloat = 1,
+                    color: UIColor? = nil,
+                    showsActivityIndicator: Bool = false,
+                    tag: Int? = nil) {
+        let overlayView = UIView(frame: bounds)
+        overlayView.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        overlayView.backgroundColor = color ?? .black
+        overlayView.tag = tag ?? Core.ui.nameTag(for: "OVERLAY_VIEW")
+        overlayView.alpha = alpha
+        
+        addSubview(overlayView)
+        
+        guard showsActivityIndicator else { return }
+        
+        let indicatorView = UIActivityIndicatorView(style: .large)
+        indicatorView.center = center
+        indicatorView.color = .white
+        indicatorView.startAnimating()
+        indicatorView.tag = Core.ui.nameTag(for: "ACTIVITY_INDICATOR")
+        addSubview(indicatorView)
     }
     
     /**
@@ -841,6 +841,24 @@ public extension UIView {
                 }) { _ in
                     indivdualSubview.removeFromSuperview()
                 }
+            }
+        }
+    }
+    
+    func removeOverlay(tag: Int? = nil, animated: Bool = true) {
+        let tag = tag ?? Core.ui.nameTag(for: "OVERLAY_VIEW")
+        let activityIndicatorTag = Core.ui.nameTag(for: "ACTIVITY_INDICATOR")
+        
+        guard let overlayView = subview(tag),
+              let activityIndicatorView = subview(activityIndicatorTag) else { return }
+        
+        DispatchQueue.main.async {
+            UIView.animate(withDuration: 0.2) {
+                overlayView.alpha = 0
+                activityIndicatorView.alpha = 0
+            } completion: { _ in
+                overlayView.removeFromSuperview()
+                activityIndicatorView.removeFromSuperview()
             }
         }
     }

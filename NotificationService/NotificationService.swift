@@ -27,8 +27,14 @@ class NotificationService: UNNotificationServiceExtension {
         self.contentHandler = contentHandler
         bestAttemptContent = (request.content.mutableCopy() as? UNMutableNotificationContent)
         
-        guard let bestAttemptContent,
-              let defaults = UserDefaults(suiteName: "group.us.neotechnica.notificationextension"),
+        guard let bestAttemptContent else { return }
+        
+        if let isAudioMessage = bestAttemptContent.userInfo["isAudioMessage"] as? Bool,
+           isAudioMessage {
+            bestAttemptContent.body = "🔊 \(LocalizedString.audioMessage)"
+        }
+        
+        guard let defaults = UserDefaults(suiteName: "group.us.neotechnica.notificationextension"),
               let contactData = defaults.object(forKey: "contactArchive") as? Data else { return }
         
         var contactArchive = [ContactPair]()
@@ -45,11 +51,6 @@ class NotificationService: UNNotificationServiceExtension {
             bestAttemptContent.title = "\(match.contact.firstName) \(match.contact.lastName)"
         } else {
             bestAttemptContent.title = "\(bestAttemptContent.title)"
-        }
-        
-        if let isAudioMessage = bestAttemptContent.userInfo["isAudioMessage"] as? Bool,
-           isAudioMessage {
-            bestAttemptContent.body = "🔊 \(LocalizedString.audioMessage)"
         }
         
         defaults.set(bestAttemptContent.userInfo, forKey: "NOTIF_DATA")

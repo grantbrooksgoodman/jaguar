@@ -68,24 +68,6 @@ public class Conversation: Codable, Equatable {
         return identifierArray
     }
     
-    public func sortedFilteredMessages(_ for: [Message]? = nil) -> [Message] {
-        let messagesToUse = `for` == nil ? messages : `for`!
-        
-        var filteredMessages = [Message]()
-        
-        // Filters for duplicates and blank messages.
-        for message in messagesToUse! {
-            if !filteredMessages.contains(where: { $0.identifier == message.identifier }),
-               message.identifier != "!",
-               message.identifier != "NEW" {
-                filteredMessages.append(message)
-            }
-        }
-        
-        // Sorts by «sentDate».
-        return filteredMessages.sorted(by: { $0.sentDate < $1.sentDate })
-    }
-    
     //==================================================//
     
     /* MARK: - Message Slicing Methods */
@@ -368,6 +350,21 @@ public extension Array where Element == Conversation {
         }
         
         return visible
+    }
+}
+
+public extension Array where Element == Message {
+    var filteredAndSorted: [Message] {
+        var filtered = [Message]()
+        
+        for message in self {
+            guard !filtered.contains(where: { $0.identifier == message.identifier }),
+                  message.identifier != "!",
+                  message.identifier != "NEW" else { continue }
+            filtered.append(message)
+        }
+        
+        return filtered.sorted(by: { $0.sentDate < $1.sentDate })
     }
 }
 

@@ -132,12 +132,14 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         
         /* MARK: AlertKit Setup */
         
+        let connectionAlertDelegate = ConnectionAlertDelegate()
         let expiryAlertDelegate = ExpiryAlertDelegate()
         let reportDelegate = ReportDelegate()
         let translationDelegate = TranslationDelegate()
         
         AKCore.shared.setLanguageCode(RuntimeStorage.languageCode!)
-        AKCore.shared.register(expiryAlertDelegate: expiryAlertDelegate,
+        AKCore.shared.register(connectionAlertDelegate: connectionAlertDelegate,
+                               expiryAlertDelegate: expiryAlertDelegate,
                                reportDelegate: reportDelegate,
                                translationDelegate: translationDelegate)
         
@@ -177,10 +179,12 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         RuntimeStorage.store(false, as: .acknowledgedAudioMessagesUnsupported)
         RuntimeStorage.store(false, as: .isFirstLaunchFromSetup)
         RuntimeStorage.store(false, as: .isPresentingChat)
+        RuntimeStorage.store(false, as: .isPreviewingChat)
         RuntimeStorage.store(false, as: .isSendingMessage)
         RuntimeStorage.store(false, as: .receivedNotification)
         RuntimeStorage.store(false, as: .shouldReloadData)
-        RuntimeStorage.store(false, as: .shouldReloadForFirstConversation)
+        RuntimeStorage.store(false, as: .shouldReloadForFirstOrNewConversation)
+        RuntimeStorage.store(false, as: .shouldShowMenuForFirstMessage)
         RuntimeStorage.store(false, as: .shouldUpdateReadState)
         RuntimeStorage.store(false, as: .updatedPushToken)
         RuntimeStorage.store(false, as: .wantsToInvite)

@@ -35,7 +35,7 @@ public struct LanguagePickerView: View {
     }
     
     private var bodyView: some View {
-        withNavigationBarAppearance(NavigationView {
+        NavigationView {
             ScrollViewReader { _ in
                 SearchBar(query: $query)
                     .background(Color.navigationBarBackgroundColor)
@@ -56,12 +56,8 @@ public struct LanguagePickerView: View {
                 .interactiveDismissDisabled(true)
             }
             .background(Color.navigationBarBackgroundColor)
-        })
-    }
-    
-    private func withNavigationBarAppearance(_ view: some View) -> some View {
-        guard #available(iOS 16.0, *) else { return AnyView(view) }
-        return AnyView(view.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar))
+        }
+        .toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar)
     }
     
     //==================================================//
@@ -148,8 +144,7 @@ public struct LanguagePickerView: View {
         guard query != "" else { return languageNames }
         
         var matches = [String]()
-        for name in languageNames {
-            guard name.lowercasedTrimmingWhitespace.contains(query.lowercasedTrimmingWhitespace) else { continue }
+        for name in languageNames where name.lowercasedTrimmingWhitespace.contains(query.lowercasedTrimmingWhitespace) {
             matches.append(name)
         }
         
@@ -157,25 +152,10 @@ public struct LanguagePickerView: View {
     }
     
     private func localizedLanguageNames() -> [String] {
-        let locale = Locale(identifier: RuntimeStorage.languageCode!)
-        
         var localizedNames = [String]()
-        for (code, name) in RuntimeStorage.languageCodeDictionary! {
-            guard let localizedName = locale.localizedString(forLanguageCode: code) else {
-                localizedNames.append(name)
-                continue
-            }
-            
-            let components = name.components(separatedBy: "(")
-            guard components.count == 2 else {
-                let suffix = localizedName.lowercased() == name.lowercased() ? "" : "(\(name))"
-                localizedNames.append("\(localizedName.firstUppercase) \(suffix)")
-                continue
-            }
-            
-            let endonym = components[1]
-            let suffix = localizedName.lowercased() == endonym.lowercased().dropSuffix() ? "" : "(\(endonym)"
-            localizedNames.append("\(localizedName.firstUppercase) \(suffix)")
+        for code in RuntimeStorage.languageCodeDictionary!.keys {
+            guard let localizedName = RegionDetailServer.localizedLanguageName(for: code) else { continue }
+            localizedNames.append(localizedName)
         }
         
         return localizedNames.sorted()

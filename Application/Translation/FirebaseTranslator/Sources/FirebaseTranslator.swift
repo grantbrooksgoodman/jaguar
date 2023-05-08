@@ -31,10 +31,8 @@ public struct FirebaseTranslator: Translatorable {
             var translations = [Translator.Translation]()
             
             for input in inputs {
-                let processedInput = TranslationInput(input.original/*.removingOccurrences(of: ["*"])*/,
-                                                      alternate: input.alternate/*?.removingOccurrences(of: ["*"])*/)
-                let translation = Translation(input: processedInput,
-                                              output: processedInput.original,
+                let translation = Translation(input: input,
+                                              output: input.original,
                                               languagePair: languagePair)
                 translations.append(translation)
             }

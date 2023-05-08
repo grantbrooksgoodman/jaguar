@@ -60,15 +60,17 @@ public class AudioPlaybackController {
         let pathToPlayFrom = isFromCurrentUser ? audioFilePaths.inputPathURL : audioFilePaths.outputPathURL
         
         cell.playButton.isSelected = true
-        playAudio(url: pathToPlayFrom)
+        cell.progressView.progressTintColor = isFromCurrentUser ? .white : .primaryAccentColor
         
+        playAudio(url: pathToPlayFrom)
         playingCell = cell
         playingMessage = message
         
+        UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         startPlaybackTimer()
     }
     
-    public static func stopPlayback() {
+    public static func stopPlayback(playNext: Bool = false) {
         player.removeAllItems()
         
         guard let playingCell,
@@ -84,6 +86,13 @@ public class AudioPlaybackController {
         
         resetVariables()
         stopPlaybackForAllVisibleCells()
+        
+        guard playNext else {
+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
+            return
+        }
+        
+        playNextMessage(for: playingCell)
     }
     
     // MARK: Private
@@ -131,6 +140,21 @@ public class AudioPlaybackController {
         return messages[indexPath.section]
     }
     
+    private static func playNextMessage(for cell: AudioMessageCell) {
+        guard let indexPath = RuntimeStorage.messagesVC?.messagesCollectionView.indexPath(for: cell),
+              let messages = RuntimeStorage.currentMessageSlice,
+              !messages.isEmpty,
+              indexPath.section + 1 < messages.count else { return }
+        
+        let nextIndexPath = IndexPath(row: 0, section: indexPath.section + 1)
+        
+        guard messages[indexPath.section + 1].audioComponent != nil,
+              !messages[indexPath.section + 1].isDisplayingAlternate,
+              let nextCell = RuntimeStorage.messagesVC?.messagesCollectionView.cellForItem(at: nextIndexPath) as? AudioMessageCell else { return }
+        
+        startPlayback(for: nextCell)
+    }
+    
     private static func properAudioFile(for message: Message) -> AudioFile? {
         guard let audioComponent = message.audioComponent,
               let currentUserID = RuntimeStorage.currentUserID,
@@ -168,7 +192,7 @@ public class AudioPlaybackController {
               let messageAtCurrentIndexPath = message(for: playingCell),
               playingMessage.identifier == messageAtCurrentIndexPath.identifier,
               let currentItem = player.currentItem else {
-            stopPlayback()
+            stopPlayback(playNext: true)
             return
         }
         

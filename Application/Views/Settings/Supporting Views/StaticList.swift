@@ -25,7 +25,7 @@ public struct StaticList: View {
     public var body: some View {
         ScrollViewReader { proxy in
             VStack(alignment: .center, spacing: 0) {
-                withScrollDisabled(List {
+                List {
                     ForEach(0..<items.count, id: \.self, content: { index in
                         Button {
                             items[index].action()
@@ -46,18 +46,14 @@ public struct StaticList: View {
                             }
                         }
                     })
-                })
+                }
+                .scrollDisabled(true)
                 .onAppear {
                     proxy.scrollTo(0, anchor: .top)
                 }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: (36.0 * CGFloat(items.count)) + (10 * CGFloat(items.count)))
-    }
-    
-    private func withScrollDisabled(_ view: some View) -> some View {
-        guard #available(iOS 16.0, *) else { return AnyView(view) }
-        return AnyView(view.scrollDisabled(true))
     }
 }
 

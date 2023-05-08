@@ -140,8 +140,7 @@ public final class SpeechService: NSObject {
         let voices = AVSpeechSynthesisVoice.speechVoices()
         var applicableVoices = [AVSpeechSynthesisVoice]()
         
-        for voice in voices {
-            guard voice.language.lowercased().hasPrefix(languageCode.lowercased()) else { continue }
+        for voice in voices where voice.language.lowercased().hasPrefix(languageCode.lowercased()) {
             applicableVoices.append(voice)
         }
         

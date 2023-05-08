@@ -162,11 +162,17 @@ public struct UserSerializer {
     /* MARK: - Retrieval by Identifier */
     
     public func getUser(withIdentifier: String,
+                        timeout: Timeout? = nil,
                         completion: @escaping(_ user: User?,
                                               _ exception: Exception?) -> Void) {
+        let timeout = timeout ?? Timeout(after: 10, {
+            completion(nil, Exception.timedOut([#file, #function, #line]))
+        })
+        
         Database.database().reference().child(GeneralSerializer.environment.shortString).child("users").child(withIdentifier).observeSingleEvent(of: .value, with: { snapshot in
             guard let snapshot = snapshot.value as? NSDictionary,
                   var data = snapshot as? [String: Any] else {
+                timeout.cancel()
                 completion(nil, Exception("No user exists with the provided identifier.",
                                           extraParams: ["UserID": withIdentifier],
                                           metadata: [#file, #function, #line]))
@@ -178,13 +184,16 @@ public struct UserSerializer {
             self.deSerializeUser(fromData: data) { (user,
                                                     exception) in
                 guard let user else {
+                    timeout.cancel()
                     completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                     return
                 }
                 
+                timeout.cancel()
                 completion(user, nil)
             }
         }) { (error) in
+            timeout.cancel()
             completion(nil, Exception(error, metadata: [#file, #function, #line]))
         }
     }

@@ -49,7 +49,7 @@ public final class ChatPageViewCoordinator {
 extension ChatPageViewCoordinator: DeliveryDelegate {
     public func setConversation(_ conversation: Conversation) {
         var mutableConversation = conversation
-        mutableConversation.messages = mutableConversation.sortedFilteredMessages()
+        mutableConversation.messages = mutableConversation.messages.filteredAndSorted
         
         self.conversation = Binding(get: { mutableConversation },
                                     set: { mutableConversation = $0 })
@@ -95,7 +95,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     public func inputBar(_ inputBar: InputBarAccessoryView,
                          didPressSendButtonWith text: String) {
         guard Build.isOnline else {
-            AKCore.presentOfflineAlert()
+            AKCore.shared.connectionAlertDelegate()?.presentConnectionAlert()
             return
         }
         
@@ -116,7 +116,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         // #warning("Should handle this more cleverly. What if someone actually wanted to send this?")
         guard text != "START_RECORDING",
               text != "STOP_RECORDING",
-              text != "CANCEL_RECORDING" else { return }
+              text != "CANCEL_RECORDING",
+              text.lowercasedTrimmingWhitespace != "" else { return }
         
         ChatServices.defaultChatUIService?.setUserCancellation(enabled: false)
         
@@ -129,6 +130,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         
         ChatServices.defaultDeliveryService?.sendTextMessage(text: text, completion: { exception in
             RuntimeStorage.store(false, as: .isSendingMessage)
+            ChatServices.defaultChatUIService?.showMenuForFirstMessageIfNeeded()
             
             guard let exception else { return }
             Logger.log(exception)
@@ -197,6 +199,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
     private enum RecordButtonCommand { case startRecording; case stopRecording; case cancelRecording }
     private func handleRecordButtonTapped(_ inputBar: InputBarAccessoryView,
                                           command: RecordButtonCommand) {
+        RuntimeStorage.store(true, as: .isSendingMessage)
+        
         switch command {
         case .startRecording:
             AudioPlaybackController.stopPlayback()
@@ -207,6 +211,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 guard let exception else { return }
                 Logger.log(exception)
+                RuntimeStorage.store(false, as: .isSendingMessage)
             }
         case .stopRecording:
             stopRecording {
@@ -216,15 +221,16 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             } completion: { inputFile, outputFile, translation, exception in
                 guard let inputFile, let outputFile, let translation else {
                     self.handleStopRecordingException(exception ?? Exception(metadata: [#file, #function, #line]))
+                    RuntimeStorage.store(false, as: .isSendingMessage)
                     return
                 }
                 
-                RuntimeStorage.store(true, as: .isSendingMessage)
                 ChatServices.defaultDeliveryService?.sendAudioMessage(inputFile: inputFile,
                                                                       outputFile: outputFile,
                                                                       translation: translation,
                                                                       completion: { exception in
                     RuntimeStorage.store(false, as: .isSendingMessage)
+                    ChatServices.defaultChatUIService?.showMenuForFirstMessageIfNeeded()
                     
                     guard let exception else { return }
                     Logger.log(exception)
@@ -232,6 +238,7 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             }
         case .cancelRecording:
             cancelRecording { exception in
+                RuntimeStorage.store(false, as: .isSendingMessage)
                 guard let exception else { return }
                 Logger.log(exception, verbose: exception.isEqual(to: .noAudioRecorderToStop))
             }
@@ -301,6 +308,21 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
 
 /* MARK: MessageCellDelegate */
 extension ChatPageViewCoordinator: MessageCellDelegate {
+    public func didSelectDate(_ date: Date) {
+        let interval = date.timeIntervalSinceReferenceDate
+        guard let url = URL(string: "calshow:\(interval)") else { return }
+        Core.open(url)
+    }
+    
+    public func didSelectPhoneNumber(_ phoneNumber: String) {
+        guard let url = URL(string: "tel://\(phoneNumber.digits)") else { return }
+        Core.open(url)
+    }
+    
+    public func didSelectURL(_ url: URL) {
+        Core.open(url)
+    }
+    
     public func didTapPlayButton(in cell: AudioMessageCell) {
         AudioPlaybackController.startPlayback(for: cell)
     }
@@ -365,10 +387,16 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     public func configureAudioCell(_ cell: AudioMessageCell, message: MessageType) {
         guard let message = message as? Message else { return }
         cell.playButton.isEnabled = message.identifier != "NEW"
-        guard message.fromAccountIdentifier != RuntimeStorage.currentUser?.identifier else { return }
+        
+        guard message.fromAccountIdentifier != RuntimeStorage.currentUser?.identifier else {
+            guard ThemeService.currentTheme == AppThemes.default else { return }
+            cell.progressView.trackTintColor = message.backgroundColor.darker(by: 6)?.withAlphaComponent(0.8)
+            return
+        }
         
         cell.playButton.tintColor = .primaryAccentColor
         cell.progressView.progressTintColor = .primaryAccentColor
+        cell.progressView.trackTintColor = nil
         cell.durationLabel.textColor = .primaryAccentColor
     }
     
@@ -418,22 +446,9 @@ extension ChatPageViewCoordinator: MessagesDataSource {
 /* MARK: MessagesDisplayDelegate */
 extension ChatPageViewCoordinator: MessagesDisplayDelegate {
     public func backgroundColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
-        guard let currentUserID = RuntimeStorage.currentUserID,
-              let currentUser = RuntimeStorage.currentUser,
-              let otherUser = conversation.wrappedValue.otherUser else { return .senderMessageBubbleColor }
-        
-        let index = indexPath.section
-        guard let messages = RuntimeStorage.currentMessageSlice,
-              messages[index].translation.input.value() == messages[index].translation.output,
-              messages[index].audioComponent == nil, // #warning("DANGEROUS TO BE HANDLING AUDIO COMPONENT HERE.")
-              message.sender.senderId == currentUserID,
-              currentUser.languageCode != otherUser.languageCode,
-              RecognitionService.shouldMarkUntranslated(messages[index].translation.output,
-                                                        for: messages[index].translation.languagePair) else {
-            return message.sender.senderId == currentUserID ? .senderMessageBubbleColor : .receiverMessageBubbleColor
-        }
-        
-        return .untranslatedMessageBubbleColor
+        guard let messages = RuntimeStorage.currentMessageSlice else { return .senderMessageBubbleColor }
+        let currentMessage = messages[indexPath.section]
+        return currentMessage.backgroundColor
     }
     
     public func configureAvatarView(_ avatarView: AvatarView,
@@ -461,6 +476,22 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
         } else {
             showGenericAvatar()
         }
+    }
+    
+    public func detectorAttributes(for detector: DetectorType, and message: MessageType, at indexPath: IndexPath) -> [NSAttributedString.Key : Any] {
+        let isFromCurrentUser = message.sender.senderId == RuntimeStorage.currentUserID
+        let isDarkMode = ColorProvider.shared.interfaceStyle == .dark || ThemeService.currentTheme.style == .dark
+        let colorToUse = isFromCurrentUser ? UIColor.white : (isDarkMode ? .white : .black)
+        var attributes: [NSAttributedString.Key: Any] = [.foregroundColor: colorToUse,
+                                                         .underlineStyle: NSUnderlineStyle.single.rawValue]
+        
+        guard let cell = RuntimeStorage.messagesVC?.messagesCollectionView.cellForItem(at: indexPath) as? TextMessageCell else { return attributes }
+        attributes[.font] = cell.messageLabel.font
+        return attributes
+    }
+    
+    public func enabledDetectors(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> [DetectorType] {
+        return [.date, .phoneNumber, .url]
     }
     
     public func messageStyle(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageStyle {

@@ -18,19 +18,9 @@ public enum JRException {
     case emptyContactList
     
     case conversationAlreadyExists
-    case conversationWithYourself
-    
-    case failedToRetranslate
-    case operationTimedOut
-    
-    case invalidVerificationCode
-    case verificationCodeExpired
     
     case noCallingCodesForNumber
     case noHashesForNumber
-    
-    case noContactArchive
-    case noTranslationsForLanguagePair
     
     case mismatchedHashAndCallingCode
     case noUserWithCallingCode
@@ -38,22 +28,16 @@ public enum JRException {
     case noUserWithPhoneNumber
     case noUsersForContacts
     
-    case numberInvalidFormat
-    case numberTooLong
-    case numberTooShort
-    
     case cannotOpenFile
     case noAudioRecorderToStop
     case noLocalAudioReferenceCopy
     case noSpeechDetected
     case retry
     
-    case noReadDate
-    
     var description: String {
         switch self {
         case .cnContactStoreAccessDenied:
-            return "0865"
+            return "F6E6"
         case .contactAccessDenied:
             return "8F6D"
         case .emptyContactList:
@@ -61,28 +45,11 @@ public enum JRException {
             
         case .conversationAlreadyExists:
             return "CE84"
-        case .conversationWithYourself:
-            return "F8E5"
-            
-        case .failedToRetranslate:
-            return "1BC2"
-        case .operationTimedOut:
-            return "DE75"
-            
-        case .invalidVerificationCode:
-            return "0A84"
-        case .verificationCodeExpired:
-            return "F623"
             
         case .noCallingCodesForNumber:
             return "0BD7"
         case .noHashesForNumber:
             return "452A"
-            
-        case .noContactArchive:
-            return "897E"
-        case .noTranslationsForLanguagePair:
-            return "7CDC"
             
         case .mismatchedHashAndCallingCode:
             return "7592"
@@ -95,26 +62,16 @@ public enum JRException {
         case .noUsersForContacts:
             return "6544"
             
-        case .numberInvalidFormat:
-            return "470A"
-        case .numberTooLong:
-            return "B5B4"
-        case .numberTooShort:
-            return "3E46"
-            
         case .cannotOpenFile:
-            return "3C14"
+            return "3C14"; #warning("NEEDS REGENERATION")
         case .noAudioRecorderToStop:
             return "A92A"
         case .noLocalAudioReferenceCopy:
             return "1CD5"
         case .noSpeechDetected:
-            return "11B6"
+            return "91C7"
         case .retry:
-            return "7983"
-            
-        case .noReadDate:
-            return "947F"
+            return "B386"
         }
     }
 }
@@ -137,7 +94,7 @@ public extension Exception {
             return "You already have an open conversation with this user."
             
         case "Invalid format.", "The format of the phone number provided is incorrect. Please enter the phone number in a format that can be parsed into E.164 format. E.164 phone numbers are written in the format [+][country code][subscriber number including area code].", "TOO_SHORT", "TOO_LONG":
-            return "The format of the phone number provided is incorrect.\n\nPlease verify that you have fully entered your phone number, including the area code."
+            return "The format of the phone number provided is incorrect.\n\nPlease verify that you haven't included the country code."
             
         case "No conversation exists with the provided identifier.":
             return "We were unable to retrieve one or more of your conversations.\n\nPlease report this error and try again later."

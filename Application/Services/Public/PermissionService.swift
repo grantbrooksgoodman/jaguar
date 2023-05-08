@@ -197,10 +197,7 @@ public struct PermissionService: PermissionServiceable {
         }
 #endif
         
-        var message = withMessage
-        message = RuntimeStorage.languageCode == "en" ? message.removingOccurrences(of: ["*"]) : message
-        
-        let ctaAlert = AKAlert(message: message,
+        let ctaAlert = AKAlert(message: withMessage,
                                actions: actions.isEmpty ? nil : actions,
                                cancelButtonTitle: LocalizedString.dismiss,
                                sender: sender,

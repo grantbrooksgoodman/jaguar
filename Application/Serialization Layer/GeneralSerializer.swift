@@ -46,13 +46,22 @@ public enum GeneralSerializer {
      Gets values on the server for a given path.
      
      - Parameter atPath: The server path at which to retrieve values.
+     - Parameter timeout: An optional `Timeout` for the operation; defaults to 10 seconds.
      - Parameter completion: Returns the Firebase snapshot value.
      */
-    public static func getValues(atPath: String, completion: @escaping (_ values: Any?,
-                                                                        _ exception: Exception?) -> Void) {
+    public static func getValues(atPath: String,
+                                 timeout: Timeout? = nil,
+                                 completion: @escaping(_ values: Any?,
+                                                       _ exception: Exception?) -> Void) {
+        let timeout = timeout ?? Timeout(after: 10, {
+            completion(nil, Exception.timedOut([#file, #function, #line]))
+        })
+        
         Database.database().reference().child(atPath).observeSingleEvent(of: .value) { snapshot in
+            timeout.cancel()
             completion(snapshot.value, nil)
         } withCancel: { error in
+            timeout.cancel()
             completion(nil, Exception(error, metadata: [#file, #function, #line]))
         }
     }
@@ -63,15 +72,22 @@ public enum GeneralSerializer {
     
     public static func queryValues(atPath: String,
                                    limit: Int,
+                                   timeout: Timeout? = nil,
                                    completion: @escaping (_ values: Any?,
                                                           _ exception: Exception?) -> Void) {
+        let timeout = timeout ?? Timeout(after: 10, {
+            completion(nil, Exception.timedOut([#file, #function, #line]))
+        })
+        
         Database.database().reference().child(atPath).queryLimited(toFirst: UInt(limit)).getData { (error, snapshot) in
             guard let snapshot, let value = snapshot.value else {
                 let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
+                timeout.cancel()
                 completion(nil, exception)
                 return
             }
             
+            timeout.cancel()
             completion(value, nil)
         }
     }
@@ -82,13 +98,20 @@ public enum GeneralSerializer {
     
     public static func setValue(_ value: Any,
                                 forKey key: String,
+                                timeout: Timeout? = nil,
                                 completion: @escaping(_ exception: Exception?) -> Void) {
+        let timeout = timeout ?? Timeout(after: 10, {
+            completion(Exception.timedOut([#file, #function, #line]))
+        })
+        
         Database.database().reference().child(key).setValue(value) { error, _ in
             guard let error else {
+                timeout.cancel()
                 completion(nil)
                 return
             }
             
+            timeout.cancel()
             completion(Exception(error, metadata: [#file, #function, #line]))
         }
     }
@@ -103,13 +126,20 @@ public enum GeneralSerializer {
      */
     public static func updateChildValues(forKey key: String,
                                          with data: [String: Any],
+                                         timeout: Timeout? = nil,
                                          completion: @escaping(_ exception: Exception?) -> Void) {
+        let timeout = timeout ?? Timeout(after: 10, {
+            completion(Exception.timedOut([#file, #function, #line]))
+        })
+        
         Database.database().reference().child(key).updateChildValues(data, withCompletionBlock: { error, _ in
             guard let error else {
+                timeout.cancel()
                 completion(nil)
                 return
             }
             
+            timeout.cancel()
             completion(Exception(error, metadata: [#file, #function, #line]))
         })
     }

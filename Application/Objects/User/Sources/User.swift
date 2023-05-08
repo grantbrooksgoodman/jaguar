@@ -592,8 +592,7 @@ public extension User {
               !openConversations.isEmpty else { return 0 }
         
         func incrementForUnread(_ messages: [Message]) {
-            for message in messages {
-                guard message.readDate == nil else { continue }
+            for message in messages where message.readDate == nil {
                 badgeNumber += 1
             }
         }

@@ -20,6 +20,7 @@ public class ObserverService: ChatService {
     
     public var serviceType: ChatServiceType = .observer
     
+    private var CURRENT_MESSAGE_SLICE: [Message]!
     private var GLOBAL_CONVERSATION: Conversation!
     
     //==================================================//
@@ -32,7 +33,10 @@ public class ObserverService: ChatService {
     
     @discardableResult
     private func syncDependencies() -> Bool {
-        guard let globalConversation = RuntimeStorage.globalConversation else { return false }
+        guard let currentMessageSlice = RuntimeStorage.currentMessageSlice,
+              let globalConversation = RuntimeStorage.globalConversation else { return false }
+        
+        CURRENT_MESSAGE_SLICE = currentMessageSlice
         GLOBAL_CONVERSATION = globalConversation
         
         return true
@@ -43,12 +47,11 @@ public class ObserverService: ChatService {
     /* MARK: - Observer Methods */
     
     public func setUpNewMessageObserver() {
-        syncDependencies()
-        
         let pathPrefix = "\(GeneralSerializer.environment.shortString)/conversations/"
-        Database.database().reference().child("\(pathPrefix)\(GLOBAL_CONVERSATION.identifier!.key!)/messages").observe(.childAdded) { (returnedSnapshot) in
+        Database.database().reference().child("\(pathPrefix)\(GLOBAL_CONVERSATION.identifier!.key!)/messages").observe(.childAdded) { snapshot in
+            self.syncDependencies()
             
-            guard let identifier = returnedSnapshot.value as? String,
+            guard let identifier = snapshot.value as? String,
                   !self.GLOBAL_CONVERSATION.messages.contains(where: { $0.identifier == identifier }) else { return }
             
             guard RuntimeStorage.coordinator?.conversation.wrappedValue.identifier.key == self.GLOBAL_CONVERSATION.identifier.key else {
@@ -72,15 +75,15 @@ public class ObserverService: ChatService {
                 
                 print("Appending message with ID: \(message.identifier!)")
                 self.GLOBAL_CONVERSATION.messages.append(message)
-                self.GLOBAL_CONVERSATION.messages = self.GLOBAL_CONVERSATION.sortedFilteredMessages()
+                self.GLOBAL_CONVERSATION.messages = self.GLOBAL_CONVERSATION.messages.filteredAndSorted
                 
                 self.GLOBAL_CONVERSATION.identifier.hash = self.GLOBAL_CONVERSATION.hash
                 
                 RuntimeStorage.store(self.GLOBAL_CONVERSATION!, as: .globalConversation)
-                RuntimeStorage.store(RuntimeStorage.globalConversation!.get(.last,
-                                                                            messages: 10,
-                                                                            offset: RuntimeStorage.messageOffset!),
-                                     as: .currentMessageSlice)
+                
+                var messageSlice = self.CURRENT_MESSAGE_SLICE!
+                messageSlice.append(message)
+                RuntimeStorage.store(messageSlice.filteredAndSorted, as: .currentMessageSlice)
                 
                 print("Adding to archive \(self.GLOBAL_CONVERSATION.identifier.key!) | \(self.GLOBAL_CONVERSATION.identifier.hash!)")
                 ConversationArchiver.addToArchive(self.GLOBAL_CONVERSATION)
@@ -95,13 +98,13 @@ public class ObserverService: ChatService {
     
     public func setUpReadDateObserver() {
         // #warning("Such a broad observer isn't great for efficiency, but it may be the only way to do this with the current database scheme.") // correlate read date with last active date
-        
-        syncDependencies()
         Database.database().reference().child(GeneralSerializer.environment.shortString).child("/messages").observe(.childChanged) { returnedSnapshot, _ in
-            guard let lastMessage = self.GLOBAL_CONVERSATION.sortedFilteredMessages().last else {
+            self.syncDependencies()
+            
+            guard let lastMessage = self.GLOBAL_CONVERSATION.messages.filteredAndSorted.last else {
                 let exception = Exception("Couldn't get last message.",
                                           extraParams: ["UnsortedMessageCount": self.GLOBAL_CONVERSATION.messages.count,
-                                                        "SortedMessageCount": self.GLOBAL_CONVERSATION.sortedFilteredMessages().count],
+                                                        "SortedMessageCount": self.GLOBAL_CONVERSATION.messages.filteredAndSorted.count],
                                           metadata: [#file, #function, #line])
                 Logger.log(exception)
                 return

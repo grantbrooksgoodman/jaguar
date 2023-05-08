@@ -38,6 +38,11 @@ public class NewChatPageViewModel: ObservableObject {
     public func load() {
         state = .loading
         
+        let timeout = Timeout(after: 30) {
+            self.state = .failed(.timedOut([#file, #function, #line]))
+            return
+        }
+        
         ContactService.loadContacts { contactPairs, exception in
             guard let pairs = contactPairs else {
                 let error = exception ?? Exception(metadata: [#file, #function, #line])
@@ -49,18 +54,21 @@ public class NewChatPageViewModel: ObservableObject {
                         error.isEqual(to: .noUserWithPhoneNumber) ||
                         error.isEqual(to: .noUsersForContacts) else {
                     Logger.log(error)
+                    timeout.cancel()
                     self.state = .failed(error)
                     
                     return
                 }
                 
                 RuntimeStorage.store([], as: .contactPairs)
+                timeout.cancel()
                 self.state = .loaded(contactPairs: [])
                 
                 return
             }
             
             RuntimeStorage.store(pairs, as: .contactPairs)
+            timeout.cancel()
             self.state = .loaded(contactPairs: pairs)
             
             guard StateProvider.shared.showNewChatPageForGrantedContactAccess else { return }

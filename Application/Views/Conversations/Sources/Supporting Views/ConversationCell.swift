@@ -43,21 +43,49 @@ public struct ConversationCell: View {
         let conversationBinding = Binding(get: { mutableConversation },
                                           set: { mutableConversation = $0 })
         
-        let cellTitle = conversation.otherUser!.cellTitle
-        let lastMessage = conversation.sortedFilteredMessages().last
-        let lastMessageFromOtherUser = conversation.sortedFilteredMessages().filter({ $0.fromAccountIdentifier != RuntimeStorage.currentUserID! }).last
+        let lastMessage = conversation.messages.filteredAndSorted.last
+        let lastMessageFromOtherUser = conversation.messages.filteredAndSorted.filter({ $0.fromAccountIdentifier != RuntimeStorage.currentUserID! }).last
         
+        var isUnread = false
+        if let lastMessageFromOtherUser,
+           lastMessageFromOtherUser.readDate == nil {
+            isUnread = true
+        }
+        
+        let cellTitle = conversation.otherUser!.cellTitle
         let contactImage = cellTitle.hasPrefix("+") ? nil : (ContactService.fetchContactThumbnail(forUser: conversation.otherUser!) ?? nil)
         
-        return NavigationLink(destination: chatPageView(conversation: conversationBinding,
-                                                        title: cellTitle)) {
+        return withContextMenu(ZStack {
+            NavigationLink(destination: chatPageView(conversation: conversationBinding,
+                                                     title: cellTitle)) {
+                EmptyView()
+            }.buttonStyle(PlainButtonStyle())
+                .frame(width: 0)
+                .opacity(0)
+            
+            cellView(isUnread: isUnread,
+                     contactImage: contactImage,
+                     userTitle: cellTitle,
+                     lastMessage: lastMessage)
+        }, conversationBinding: conversationBinding, navigationTitle: cellTitle)
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Supporting Views */
+    
+    private func cellView(isUnread: Bool,
+                          contactImage: UIImage?,
+                          userTitle: String,
+                          lastMessage: Message?) -> some View {
+        Group {
             HStack {
                 Circle()
                     .foregroundColor(.blue)
                     .frame(width: 10, height: 10, alignment: .center)
                     .offset(x: -10,
                             y: 7)
-                    .opacity(lastMessageFromOtherUser == nil ? 0 : lastMessageFromOtherUser!.readDate == nil ? 1 : 0)
+                    .opacity(isUnread ? 1 : 0)
                     .padding(.trailing, -15)
                 
                 AvatarImageView(uiImage: contactImage == nil ? nil : contactImage == UIImage() ? nil : contactImage)
@@ -65,39 +93,53 @@ public struct ConversationCell: View {
                 ZStack {
                     VStack(alignment: .leading) {
                         HStack {
-                            Text(cellTitle)
-                                .bold()
-                                .padding(.bottom, 0.01)
-                                .foregroundColor(.titleTextColor)
+                            HStack {
+                                Text(userTitle)
+                                    .bold()
+                                    .padding(.bottom, 0.01)
+                                    .foregroundColor(.titleTextColor)
+                                    .font(.system(size: 500))
+                                    .minimumScaleFactor(0.01)
+                                
+                                Rectangle()
+                                    .overlay(dualIdentifierBadge, alignment: .center)
+                                    .frame(maxWidth: 50, maxHeight: 20)
+                                    .foregroundColor(Color(uiColor: UIColor(hex: colorScheme == .dark ? 0x27252A : 0xE5E5EA)))
+                                    .cornerRadius(3, corners: [.allCorners])
+                            }
                             
-                            Rectangle()
-                                .overlay(dualIdentifierBadge, alignment: .center)
-                                .frame(maxWidth: 50, maxHeight: 20)
-                                .foregroundColor(Color(uiColor: UIColor(hex: colorScheme == .dark ? 0x27252A : 0xE5E5EA)))
-                                .cornerRadius(3, corners: [.allCorners])
+                            Spacer()
+                            
+                            HStack(alignment: .center, spacing: 0) {
+                                Text(lastMessage?.sentDate.formattedString() ?? "12:00")
+                                    .font(.system(size: 14))
+                                    .foregroundColor(.subtitleTextColor)
+                                    .padding(.trailing, 6)
+                                
+                                let colorToUse = ColorProvider.shared.interfaceStyle == .dark || ThemeService.currentTheme.style == .dark ? UIColor.subtitleTextColor.darker(by: 10)! : UIColor.subtitleTextColor.lighter(by: 30)!
+                                
+                                Image(systemName: "chevron.forward")
+                                    .font(.system(size: 14, weight: .semibold))
+                                    .foregroundColor(Color(uiColor: colorToUse))
+                            }
                         }
                         
                         let textToUse = lastMessage == nil ? "" : getCellSubtitle(forMessage: lastMessage!)
                         
                         Text(textToUse)
-                            .foregroundColor(.subtitleTextColor)
-                            .font(Font.system(size: 12))
-                            .lineLimit(2)
+                            .foregroundColor(Color(uiColor: .subtitleTextColor.lighter(by: 6)!))
+                            .font(Font.system(size: 14))
+                            .lineLimit(2, reservesSpace: true)
+                            .offset(x: 1.5, y: -3)
                     }
-                    .padding(.top, 5)
                 }
             }
-            .padding(.bottom, 8)
         }
     }
     
-    //==================================================//
-    
-    /* MARK: - Supporting Views */
-    
-    public func chatPageView(conversation: Binding<Conversation>,
-                             title: String) -> some View {
-        withNavigationBarAppearance(ChatPageView(conversation: conversation)
+    private func chatPageView(conversation: Binding<Conversation>,
+                              title: String) -> some View {
+        ChatPageView(conversation: conversation)
             .onAppear {
                 guard let conversations = RuntimeStorage.currentUser?.openConversations else { return }
                 UserDefaults.standard.set(conversations.hashes(), forKey: "previousHashes")
@@ -110,11 +152,12 @@ public struct ConversationCell: View {
             .navigationBarTitleDisplayMode(.inline)
             .navigationBarColor(backgroundColor: .navigationBarBackgroundColor,
                                 titleColor: .navigationBarTitleColor)
-                .background(ThemeService.currentTheme != AppThemes.default ? .navigationBarBackgroundColor : Color.clear)
-                .onDisappear {
-                    RuntimeStorage.messagesVC?.resignFirstResponder()
-                    Core.ui.resetNavigationBarAppearance()
-                })
+            .background(ThemeService.currentTheme != AppThemes.default ? .navigationBarBackgroundColor : Color.clear)
+            .toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar)
+            .onDisappear {
+                RuntimeStorage.messagesVC?.resignFirstResponder()
+                Core.ui.resetNavigationBarAppearance()
+            }
     }
     
     private var dualIdentifierBadge: some View {
@@ -136,7 +179,14 @@ public struct ConversationCell: View {
             
             let userID = otherUser.identifier!
             presentingAlert = true
-            AKAlert(title: "\(otherUser.cellTitle)\n(\(otherUser.compiledPhoneNumber.phoneNumberFormatted))",
+            
+            var title = otherUser.cellTitle
+            let formattedNumber = otherUser.compiledPhoneNumber.phoneNumberFormatted
+            if formattedNumber != title {
+                title = "\(title)\n(\(formattedNumber))"
+            }
+            
+            AKAlert(title: title,
                     message: message,
                     actions: [AKAction(title: "Set to Current User", style: .preferred)],
                     shouldTranslate: [.message]).present { actionID in
@@ -187,13 +237,27 @@ public struct ConversationCell: View {
         .disabled(presentingAlert)
     }
     
-    //==================================================//
-    
-    /* MARK: - View Configuration Helpers */
-    
-    private func withNavigationBarAppearance(_ chatPageView: some View) -> some View {
-        guard #available(iOS 16.0, *) else { return AnyView(chatPageView) }
-        return AnyView(chatPageView.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar))
+    private func withContextMenu(_ cellView: some View,
+                                 conversationBinding: Binding<Conversation>,
+                                 navigationTitle: String) -> some View {
+        guard ThemeService.currentTheme == AppThemes.default else { return AnyView(cellView) }
+        return AnyView(cellView.contextMenu(menuItems: {
+            Button(role: .destructive) {
+                Core.gcd.after(milliseconds: 200) {
+                    RuntimeStorage.conversationsPageViewModel?.deleteConversation(conversation)
+                }
+            } label: {
+                Label(LocalizedString.delete, systemImage: "trash")
+            }
+        }, preview: {
+            chatPageView(conversation: conversationBinding, title: navigationTitle)
+                .onAppear {
+                    RuntimeStorage.store(true, as: .isPreviewingChat)
+                }
+                .onDisappear {
+                    RuntimeStorage.store(false, as: .isPreviewingChat)
+                }
+        }))
     }
     
     //==================================================//
@@ -212,14 +276,12 @@ public struct ConversationCell: View {
         let localizedRegionName = RegionDetailServer.getLocalizedRegionString(forRegionCode: regionCode)
         
         let code = languageCode == "ua" ? "uk" : languageCode
-        let languageName = "\(code.languageName ?? code.uppercased()) *(\(code.uppercased()))*"
-        
-        var compiledString = "Language*:* \(languageName)\nRegion*:* \(localizedRegionName)"
-        if RuntimeStorage.languageCode == "en" {
-            compiledString = compiledString.removingOccurrences(of: ["*"])
+        var languageName = "\(code.uppercased())"
+        if let localizedName = code.localizedLanguageName {
+            languageName = "\(localizedName) *(\(code.uppercased()))*"
         }
         
-        return compiledString
+        return "Language*: \(languageName)\n*Region*: \(localizedRegionName)*"
     }
     
     private func getRegionImage() -> UIImage {

@@ -38,6 +38,7 @@ public struct FailureView: View {
             .font(Font.custom("SFUIText-Semibold", size: 17))
             .foregroundColor(Color(uiColor: .secondaryLabel))
             .padding(.vertical, 5)
+            .multilineTextAlignment(.center)
         
         if retryHandler != nil {
             Button {
@@ -51,6 +52,11 @@ public struct FailureView: View {
         }
         
         Button {
+            guard Build.isOnline else {
+                AKCore.shared.connectionAlertDelegate()?.presentConnectionAlert()
+                return
+            }
+            
             AKCore.shared.reportDelegate().fileReport(error: exception.asAkError())
             reportedBug = true
         } label: {

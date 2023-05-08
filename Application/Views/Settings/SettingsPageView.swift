@@ -62,7 +62,7 @@ public struct SettingsPageView: View {
     
     public func bodyView(translations: [String: Translator.Translation],
                          contact: CNContact?) -> some View {
-        withNavigationBarAppearance(NavigationView {
+        NavigationView {
             ScrollViewReader { _ in
                 VStack {
                     if let contact {
@@ -107,7 +107,8 @@ public struct SettingsPageView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(Color.listViewBackgroundColor)
-        })
+        }
+        .toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar)
     }
     
     //==================================================//
@@ -192,11 +193,6 @@ public struct SettingsPageView: View {
         .padding(.top, 30)
         .padding(.bottom, 20)
         .padding(.horizontal, 20)
-    }
-    
-    private func withNavigationBarAppearance(_ view: some View) -> some View {
-        guard #available(iOS 16.0, *) else { return AnyView(view) }
-        return AnyView(view.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar))
     }
     
     //==================================================//

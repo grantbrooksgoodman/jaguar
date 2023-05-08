@@ -13,14 +13,7 @@ import Foundation
 import InputBarAccessoryView
 import MessageKit
 
-public typealias ChatUIDelegate = ObjCChatUIDelegate & SwiftChatUIDelegate
-
-@objc
-public protocol ObjCChatUIDelegate {
-    func toggleDoneButton()
-}
-
-public protocol SwiftChatUIDelegate {
+public protocol ChatUIDelegate {
     // MARK: Properties
     var isUserCancellationEnabled: Bool { get }
     var shouldShowRecordButton: Bool { get }
@@ -29,6 +22,7 @@ public protocol SwiftChatUIDelegate {
     func configureInputBar(forRecord: Bool)
     func hideNewChatControls()
     func setUserCancellation(enabled: Bool)
+    func showMenuForFirstMessageIfNeeded()
 }
 
 public class ChatUIService: ChatService {
@@ -57,12 +51,6 @@ public class ChatUIService: ChatService {
     
     /* MARK: - Delegate Methods */
     
-    public func setUserCancellation(enabled: Bool) {
-        DispatchQueue.main.async {
-            self.delegate.setUserCancellation(enabled: enabled)
-        }
-    }
-    
     public func configureInputBar(forRecord: Bool) {
         delegate.configureInputBar(forRecord: forRecord)
     }
@@ -71,8 +59,13 @@ public class ChatUIService: ChatService {
         delegate.hideNewChatControls()
     }
     
-    @objc
-    public func toggleDoneButton() {
-        delegate.toggleDoneButton()
+    public func setUserCancellation(enabled: Bool) {
+        DispatchQueue.main.async {
+            self.delegate.setUserCancellation(enabled: enabled)
+        }
+    }
+    
+    public func showMenuForFirstMessageIfNeeded() {
+        delegate.showMenuForFirstMessageIfNeeded()
     }
 }

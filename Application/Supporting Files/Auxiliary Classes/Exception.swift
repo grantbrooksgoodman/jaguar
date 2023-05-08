@@ -78,6 +78,7 @@ public struct Exception: Equatable {
         
         var params: [String: Any] = error.userInfo.filter({ $0.key != "NSLocalizedDescription" })
         params["NSErrorCode"] = error.code
+        params["NSErrorDomain"] = error.domain
         
         if let extraParams = extraParams,
            !extraParams.isEmpty {
@@ -90,7 +91,7 @@ public struct Exception: Equatable {
         
         self.extraParams = params.withCapitalizedKeys
         
-        self.hashlet = getHashlet(for: self.descriptor)
+        self.hashlet = getHashlet(for: error.staticIdentifier)
         self.metaID = getMetaID(for: metadata)
         
         self.underlyingExceptions = underlyingExceptions?.unique().filter({ $0 != self })
@@ -148,8 +149,7 @@ public struct Exception: Equatable {
         var hashlet = ""
         
         let stripWords = ["a", "an", "is", "that", "the", "this", "was"]
-        for word in descriptor.components(separatedBy: " ") {
-            guard !stripWords.contains(word.lowercased()) else { continue }
+        for word in descriptor.components(separatedBy: " ") where !stripWords.contains(word.lowercased()) {
             hashlet.append("\(word)\(word.lowercased() == "not" ? "" : " ")")
         }
         
@@ -331,6 +331,21 @@ public extension Dictionary where Key == String, Value == Any {
     }
 }
 
+/* MARK: - Error */
+public extension Error {
+    var staticIdentifier: String {
+        let nsError = self as NSError
+        
+        var underlyingIDs = ["[\(nsError.domain):\(nsError.code)]"]
+        for error in nsError.underlyingErrors {
+            let underlyingNsError = error as NSError
+            underlyingIDs.append("[\(underlyingNsError.domain):\(underlyingNsError.code)]")
+        }
+        
+        return underlyingIDs.joined(separator: "+")
+    }
+}
+
 /* MARK: - Exception */
 public extension Exception {
     // #warning("This is better, but might still be wonky. Think about the recursion...")
@@ -377,11 +392,18 @@ public extension Exception {
     }
     
     func isEqual(toAny in: [JRException]) -> Bool {
-        for exception in `in` {
-            guard hashlet == exception.description else { continue }
+        for exception in `in` where hashlet == exception.description {
             return true
         }
         
         return false
+    }
+    
+    static func timedOut(_ metadata: [Any]) -> Exception {
+        let exception = Exception("The operation timed out. Please try again later.",
+                                  isReportable: false,
+                                  extraParams: ["UserFacingDescriptor": LocalizedString.timedOut!],
+                                  metadata: metadata)
+        return exception
     }
 }

@@ -1,20 +1,18 @@
 //
-//  AKCore+Extensions.swift
-//  Jaguar
+//  ConnectionAlertDelegate.swift
 //
-//  Created by Grant Brooks Goodman on 26/02/2023.
-//  Copyright © 2013-2023 NEOTechnica Corporation. All rights reserved.
+//  Created by Grant Brooks Goodman.
+//  Copyright © NEOTechnica Corporation. All rights reserved.
 //
 
 /* First-party Frameworks */
-import Foundation
 import UIKit
 
 /* Third-party Frameworks */
 import AlertKit
 
-public extension AKCore {
-    static func presentOfflineAlert() {
+public class ConnectionAlertDelegate: AKConnectionAlertDelegate {
+    public func presentConnectionAlert() {
         let exception = Exception("The internet connection is offline.",
                                   isReportable: false,
                                   extraParams: ["IsConnected": Build.isOnline],
@@ -50,7 +48,7 @@ public extension AKCore {
         }
     }
     
-    private static func massageRedirectionKey(_ string: String) -> String {
+    private func massageRedirectionKey(_ string: String) -> String {
         var lowercasedString = string.lowercased().ciphered(by: 12)
         lowercasedString = lowercasedString.replacingOccurrences(of: "g", with: "-")
         lowercasedString = lowercasedString.replacingOccurrences(of: "n", with: ":")

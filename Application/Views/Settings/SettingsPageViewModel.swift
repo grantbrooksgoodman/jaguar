@@ -84,8 +84,7 @@ public class SettingsPageViewModel: ObservableObject {
         var actions = [AKAction]()
         var actionIDs = [Int: String]()
         
-        for theme in AppThemes.list {
-            guard theme.name != ThemeService.currentTheme.name else { continue }
+        for theme in AppThemes.list where theme.name != ThemeService.currentTheme.name {
             let action = AKAction(title: theme.name, style: .default)
             actions.append(action)
             actionIDs[action.identifier] = theme.name
@@ -113,8 +112,7 @@ public class SettingsPageViewModel: ObservableObject {
     }
     
     public func confirmSignOut(_ viewRouter: ViewRouter) {
-        AKActionSheet(message: "Log Out",
-                      actions: [AKAction(title: "Log Out", style: .destructivePreferred)]).present { actionID in
+        AKActionSheet(actions: [AKAction(title: "Log Out", style: .destructivePreferred)]).present { actionID in
             guard actionID != -1 else { return }
             self.signOut(viewRouter)
         }
@@ -209,6 +207,10 @@ public class SettingsPageViewModel: ObservableObject {
         RuntimeStorage.remove(.currentUserID)
         
         Core.restoreDeviceLanguageCode()
+        
+#if !EXTENSION
+        UIApplication.shared.applicationIconBadgeNumber = 0
+#endif
         
         viewRouter.currentPage = .initial
     }

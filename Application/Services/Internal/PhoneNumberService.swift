@@ -29,10 +29,6 @@ public struct PhoneNumberService {
         return callingCodesForNumberLength
     }
     
-    public static func containsCallingCode(number: String) -> Bool {
-        return matchingCountryCodes(for: number) != nil
-    }
-    
     // For numbers WITH a calling code already
     /* THIS FUNCTION WILL ONLY WORK WHEN THE NUMBER HAS A CALLING CODE */
     /// Determines if the provided number's prefix matches any country codes.
@@ -43,9 +39,7 @@ public struct PhoneNumberService {
         let callingCodes = dictionary.values
         var matches = [String]()
         
-        for code in Array(callingCodes).unique() {
-            guard number.hasPrefix(code) else { continue }
-            
+        for code in Array(callingCodes).unique() where number.hasPrefix(code) {
             let rawNumberLengthString = String(number.dropPrefix(code.count).count)
             guard let callingCodesForNumberLength = lookupTables[rawNumberLengthString],
                   callingCodesForNumberLength.contains(code) else { continue }
@@ -59,13 +53,13 @@ public struct PhoneNumberService {
     }
     
     public static func possibleCallingCodes(for number: String) -> [String]? {
-        guard containsCallingCode(number: number) else {
+        guard let countryCodes = matchingCountryCodes(for: number) else {
             /* Now we KNOW there's no calling code prefixed to this number.
              This means there's no reason for us to chop the string */
             return callingCodes(for: number)
         }
         
-        return matchingCountryCodes(for: number)
+        return countryCodes
     }
     
     //==================================================//
@@ -75,8 +69,7 @@ public struct PhoneNumberService {
     public static func possibleHashes(for number: String) -> [String]? {
         var hashes = [String]()
         
-        if containsCallingCode(number: number) {
-            guard let countryCodes = matchingCountryCodes(for: number) else { return nil }
+        if let countryCodes = matchingCountryCodes(for: number) {
             for code in countryCodes {
                 hashes.append(number.dropPrefix(code.count).compressedHash)
             }
@@ -128,8 +121,7 @@ public struct PhoneNumberService {
         let digits = number.digits
         let fallbackFormatted = useFailsafe ? failsafeFormat(digits) : digits
         
-        guard containsCallingCode(number: digits),
-              let callingCodes = matchingCountryCodes(for: digits),
+        guard let callingCodes = matchingCountryCodes(for: digits),
               callingCodes.count == 1 else { return fallbackFormatted }
         
         let callingCode = callingCodes[0]

@@ -113,7 +113,7 @@ public class DeliveryService: ChatService {
         
         conversation.messages.removeAll(where: { $0.identifier == "NEW" })
         conversation.messages.append(newMessage)
-        conversation.messages = conversation.sortedFilteredMessages()
+        conversation.messages = conversation.messages.filteredAndSorted
         
         conversation.updateHash { exception in
             timeout?.cancel()
@@ -475,7 +475,8 @@ public class DeliveryService: ChatService {
                 self.deliveryProgress = 1
                 
                 if previousConversationCount == 0 {
-                    RuntimeStorage.store(true, as: .shouldReloadForFirstConversation)
+                    RuntimeStorage.store(true, as: .shouldReloadForFirstOrNewConversation)
+                    RuntimeStorage.store(true, as: .shouldShowMenuForFirstMessage)
                 }
                 
                 completion(exception)
@@ -512,7 +513,8 @@ public class DeliveryService: ChatService {
                 self.deliveryProgress = 1
                 
                 if previousConversationCount == 0 {
-                    RuntimeStorage.store(true, as: .shouldReloadForFirstConversation)
+                    RuntimeStorage.store(true, as: .shouldReloadForFirstOrNewConversation)
+                    RuntimeStorage.store(true, as: .shouldShowMenuForFirstMessage)
                 }
                 
                 completion(exception)

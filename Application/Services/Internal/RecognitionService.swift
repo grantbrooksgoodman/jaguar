@@ -100,8 +100,7 @@ public struct RecognitionService {
         guard !components.isEmpty else { return 0.0 }
         
         var possibleWords = 0
-        for word in components {
-            guard isReal(word: word, language: code) else { continue }
+        for word in components where isReal(word: word, language: code) {
             possibleWords += 1
         }
         

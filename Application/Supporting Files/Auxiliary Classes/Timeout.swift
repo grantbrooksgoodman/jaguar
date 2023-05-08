@@ -20,7 +20,7 @@ public class Timeout {
     
     //==================================================//
     
-    /* MARK: - Constructors */
+    /* MARK: - Object Lifecycle */
     
     public init(after: Double,
                 _ callback: @escaping () -> Void = {}) {
@@ -43,6 +43,10 @@ public class Timeout {
                                           selector: #selector(presentTimeoutAlert),
                                           userInfo: nil,
                                           repeats: false)
+    }
+    
+    deinit {
+        cancel()
     }
     
     //==================================================//
@@ -69,11 +73,7 @@ public class Timeout {
     @objc private func presentTimeoutAlert() {
         callback?()
         
-        let message = LocalizedString.timedOut ?? "The operation timed out. Please try again later."
-        let exception = Exception(message,
-                                  metadata: metadata!)
-        
-        AKErrorAlert(error: exception.asAkError(),
+        AKErrorAlert(error: Exception.timedOut(metadata!).asAkError(),
                      shouldTranslate: [Build.isOnline ? .actions(indices: nil) : .none]).present()
     }
 }

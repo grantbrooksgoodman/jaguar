@@ -25,7 +25,6 @@ public final class ChatPageViewController: MessagesViewController,
     private var configureInputBarForText: Bool { getConfigureInputBarForText() }
     private var delegatesHaveBeenSet: Bool { getDelegatesHaveBeenSet() }
     private var isLastCellVisible: Bool { getIsLastCellVisible() }
-    private var otherUser: User? { getOtherUser() }
     
     // Timers
     private var reloadTimer: Timer?
@@ -36,6 +35,7 @@ public final class ChatPageViewController: MessagesViewController,
     public var recipientBar: RecipientBar?
     
     private var lastLoadedMoreMessages: Date! = Date().addingTimeInterval(-10)
+    private var otherUser: User? { getOtherUser() }
     
     //==================================================//
     
@@ -82,6 +82,12 @@ public final class ChatPageViewController: MessagesViewController,
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
+        guard !RuntimeStorage.isPreviewingChat! else {
+            guard self.delegatesHaveBeenSet else { return }
+            self.messagesCollectionView.scrollToLastItem(animated: false)
+            return
+        }
+        
         becomeFirstResponder()
         
         Core.gcd.after(seconds: 3) { self.configureTimers() }
@@ -125,6 +131,7 @@ public final class ChatPageViewController: MessagesViewController,
         Database.database().reference().removeAllObservers()
         
         ChatServices.menuControllerService?.stopSpeakingIfNeeded()
+        ChatServices.menuControllerService?.stopListeningForCellMiscoloration()
         ChatServices.audioMessageService?.removeRecordingUI()
         
         RuntimeStorage.store(false, as: .isPresentingChat)
@@ -249,17 +256,12 @@ public final class ChatPageViewController: MessagesViewController,
     private func showMenu(_ recognizer: UIGestureRecognizer) {
         messageInputBar.tag = 86
         
-        guard !messageInputBar.inputTextView.isFirstResponder else {
-            messageInputBar.inputTextView.resignFirstResponder()
-            ChatServices.menuControllerService?.hideMenuIfNeeded()
-            return
-        }
-        
         let point = recognizer.location(in: messagesCollectionView)
         
         guard let indexPath = messagesCollectionView.indexPathForItem(at: point),
               let selectedCell = messagesCollectionView.cellForItem(at: indexPath) as? MessageContentCell,
-              !RuntimeStorage.isSendingMessage! else { return }
+              !RuntimeStorage.isSendingMessage!,
+              !RuntimeStorage.shouldReloadData! else { return }
         
         ChatServices.menuControllerService?.presentMenu(at: point, on: selectedCell)
     }
@@ -539,7 +541,7 @@ public final class ChatPageViewController: MessagesViewController,
         guard currentMessage.isDisplayingAlternate else { return textCell }
         textCell.messageLabel.font = textCell.messageLabel.font.withTraits(traits: .traitItalic)
         
-        guard textCell.messageContainerView.frame.size.height < 40 else { return textCell }
+        guard textCell.messageLabel.maxNumberOfLines <= 1 else { return textCell }
         textCell.messageContainerView.frame.size.width = textCell.messageLabel.intrinsicContentSize.width
         textCell.messageLabel.frame.size.width = textCell.messageLabel.intrinsicContentSize.width
         
@@ -672,7 +674,6 @@ extension ChatPageViewController: ChatUIDelegate {
     
     public func hideNewChatControls() {
         DispatchQueue.main.async {
-            // #warning("Do we want to couple these guard conditions?")
             guard let pair = self.recipientBar?.selectedContactPair else { return }
             
             self.recipientBar?.removeFromSuperview()
@@ -686,7 +687,7 @@ extension ChatPageViewController: ChatUIDelegate {
             let doneButton = UIBarButtonItem(title: LocalizedString.done,
                                              style: .done,
                                              target: self,
-                                             action: #selector(ChatServices.chatUIService?.toggleDoneButton))
+                                             action: #selector(self.toggleDoneButton))
             doneButton.tag = Core.ui.nameTag(for: "doneButton")
             doneButton.isEnabled = false
             parent.navigationItem.rightBarButtonItems = [doneButton]
@@ -699,7 +700,8 @@ extension ChatPageViewController: ChatUIDelegate {
         parent.navigationController?.navigationBar.isUserInteractionEnabled = enabled
         parent.navigationController?.interactivePopGestureRecognizer?.isEnabled = enabled
         
-        guard recipientBar != nil else { return }
+        guard let recipientBar else { return }
+        recipientBar.isUserInteractionEnabled = enabled
         
         let barButton: UIBarButtonItem!
         
@@ -714,7 +716,7 @@ extension ChatPageViewController: ChatUIDelegate {
             barButton = UIBarButtonItem(title: LocalizedString.cancel,
                                         style: .plain,
                                         target: self,
-                                        action: #selector(self.toggleDoneButton))
+                                        action: #selector(self.toggleCancelButton))
             barButton.tintColor = .primaryAccentColor
             barButton.tag = Core.ui.nameTag(for: "cancelButton")
             return
@@ -728,8 +730,30 @@ extension ChatPageViewController: ChatUIDelegate {
         barButton.tag = Core.ui.nameTag(for: "doneButton")
     }
     
+    public func showMenuForFirstMessageIfNeeded() {
+        guard RuntimeStorage.shouldShowMenuForFirstMessage! else { return }
+        Core.gcd.after(milliseconds: 1500) {
+            guard let cell = self.messagesCollectionView.cellForItem(at: IndexPath(row: 0, section: 0)) as? MessageContentCell,
+                  !RuntimeStorage.isSendingMessage!,
+                  !RuntimeStorage.shouldReloadData! else { return }
+            
+            ChatServices.menuControllerService?.presentMenu(at: cell.messageContainerView.center, on: cell)
+        }
+        
+        RuntimeStorage.store(false, as: .shouldShowMenuForFirstMessage)
+    }
+    
     @objc
-    public func toggleDoneButton() {
+    private func toggleCancelButton() {
+        toggleDoneButton(cancelling: true)
+    }
+    
+    @objc
+    private func toggleDoneButton(cancelling: Bool = false) {
+        if !cancelling {
+            RuntimeStorage.store(true, as: .shouldReloadForFirstOrNewConversation)
+        }
+        
         messageInputBar.inputTextView.resignFirstResponder()
         StateProvider.shared.tappedDone = true
     }
@@ -775,8 +799,9 @@ extension ChatPageViewController: UITextViewDelegate {
             self.messagesCollectionView.scrollToLastItem(animated: true)
         }
         
-        UIMenuController.shared.menuItems = nil
+        ChatServices.menuControllerService?.resetMenuItems()
         ChatServices.menuControllerService?.hideMenuIfNeeded()
+        ChatServices.menuControllerService?.startListeningForCellMiscoloration()
         
         guard let recipientBar = recipientBar else { return }
         recipientBar.deselectContact(animated: true)
@@ -784,5 +809,9 @@ extension ChatPageViewController: UITextViewDelegate {
     
     public func textViewDidChange(_ textView: UITextView) {
         configureInputBar(forRecord: textView.text == nil)
+    }
+    
+    public func textViewDidEndEditing(_ textView: UITextView) {
+        ChatServices.menuControllerService?.stopListeningForCellMiscoloration()
     }
 }

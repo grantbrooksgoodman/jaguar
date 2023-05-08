@@ -27,12 +27,7 @@ public struct Capabilities {
     public static func transcriptionSupported(for inputLanguage: String) -> Bool {
         var supported = [String]()
         for locale in SFSpeechRecognizer.supportedLocales() {
-            var languageCode: String?
-            if #available(iOS 16.0, *) {
-                languageCode = locale.language.languageCode?.identifier
-            } else {
-                languageCode = locale.languageCode
-            }
+            let languageCode = locale.language.languageCode?.identifier
             guard let languageCode else { continue }
             supported.append(languageCode.lowercased())
         }

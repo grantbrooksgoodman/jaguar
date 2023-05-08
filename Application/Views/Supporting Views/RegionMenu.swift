@@ -178,8 +178,7 @@ struct RegionPicker: View {
         guard query != "" else { return regionTitles }
         
         var matches = [String]()
-        for title in regionTitles {
-            guard title.lowercasedTrimmingWhitespace.contains(query.lowercasedTrimmingWhitespace) else { continue }
+        for title in regionTitles where title.lowercasedTrimmingWhitespace.contains(query.lowercasedTrimmingWhitespace) {
             matches.append(title)
         }
         

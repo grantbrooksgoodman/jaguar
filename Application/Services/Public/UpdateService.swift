@@ -215,10 +215,7 @@ public struct UpdateService {
     private static func presentForcedUpdateCTA(_ url: URL, completion: @escaping() -> Void) {
         RuntimeStorage.topWindow?.isUserInteractionEnabled = true
         
-        var message = "This version of *Hello* is no longer supported. To continue, please download and install the most recent update."
-        if RuntimeStorage.languageCode == "en" {
-            message = message.removingOccurrences(of: ["*"])
-        }
+        let message = "This version of *Hello* is no longer supported. To continue, please download and install the most recent update."
         
         AKAlert(title: "Update Required",
                 message: message,
@@ -233,7 +230,7 @@ public struct UpdateService {
             
             RuntimeStorage.topWindow?.isUserInteractionEnabled = false
             
-            open(url)
+            Core.open(url)
             
             buildNumberWhenLastForcedToUpdate = Build.buildNumber
             
@@ -246,10 +243,7 @@ public struct UpdateService {
     }
     
     private static func presentNormalUpdateCTA(_ url: URL, completion: @escaping() -> Void) {
-        var message = "A new version of *Hello* is available in the *App Store*. Would you like to update now?"
-        if RuntimeStorage.languageCode == "en" {
-            message = message.removingOccurrences(of: ["*"])
-        }
+        let message = "A new version of *Hello* is available in the *App Store*. Would you like to update now?"
         
         AKAlert(title: "Update Available",
                 message: message,
@@ -265,21 +259,11 @@ public struct UpdateService {
                 return
             }
             
-            open(url)
+            Core.open(url)
             
             firstPostponedUpdate = nil
             relaunchesSinceLastPostponed = 0
             completion()
         }
-    }
-    
-    //==================================================//
-    
-    /* MARK: - Helper Methods */
-    
-    private static func open(_ url: URL) {
-#if !EXTENSION
-        UIApplication.shared.open(url)
-#endif
     }
 }

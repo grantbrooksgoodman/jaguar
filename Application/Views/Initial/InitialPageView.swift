@@ -60,8 +60,7 @@ public struct InitialPageView: View {
                 .foregroundColor(.blue)
                 
                 Button {
-                    viewRouter.currentPage = .signIn(phoneNumber: nil,
-                                                     fromSignUp: false)
+                    viewRouter.currentPage = .signIn(phoneNumber: nil)
                 } label: {
                     Text(translations["alreadyUse"]!.output)
                 }
@@ -71,6 +70,7 @@ public struct InitialPageView: View {
             .onAppear {
                 RuntimeStorage.store(#file, as: .currentFile)
                 RuntimeStorage.remove(.numberFromSignIn)
+                RuntimeStorage.remove(.selectedRegionCode)
             }
         case .failed(let exception):
             FailureView(exception: exception) { viewModel.load() }

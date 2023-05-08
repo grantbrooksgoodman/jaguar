@@ -71,6 +71,26 @@ public enum RegionDetailServer {
     
     //==================================================//
     
+    /* MARK: - Language Names */
+    
+    public static func localizedLanguageName(for code: String) -> String? {
+        let locale = Locale(identifier: RuntimeStorage.languageCode!)
+        guard let name = RuntimeStorage.languageCodeDictionary![code] else { return nil }
+        guard let localizedName = locale.localizedString(forLanguageCode: code) else { return name }
+        
+        let components = name.components(separatedBy: "(")
+        guard components.count == 2 else {
+            let suffix = localizedName.lowercased() == name.lowercased() ? "" : "(\(name))"
+            return "\(localizedName.firstUppercase) \(suffix)"
+        }
+        
+        let endonym = components[1]
+        let suffix = localizedName.lowercased() == endonym.lowercased().dropSuffix() ? "" : "(\(endonym)"
+        return "\(localizedName.firstUppercase) \(suffix)"
+    }
+    
+    //==================================================//
+    
     /* MARK: - Region Codes */
     
     public static func getRegionCode(forCallingCode: String) -> String {
@@ -109,13 +129,8 @@ public enum RegionDetailServer {
     /* MARK: - Region Titles */
     
     public static func getLocalizedRegionString(forRegionCode: String) -> String {
-        guard localizedRegionStringsForRegionCodes[forRegionCode] == nil else {
-            return localizedRegionStringsForRegionCodes[forRegionCode]!
-        }
-        
-        guard RuntimeStorage.callingCodeDictionary![forRegionCode] != nil else {
-            return ""
-        }
+        guard localizedRegionStringsForRegionCodes[forRegionCode] == nil else { return localizedRegionStringsForRegionCodes[forRegionCode]! }
+        guard RuntimeStorage.callingCodeDictionary![forRegionCode] != nil else { return forRegionCode }
         
         let currentLocale = Locale(identifier: RuntimeStorage.languageCode!)
         let regionName = currentLocale.localizedString(forRegionCode: forRegionCode)

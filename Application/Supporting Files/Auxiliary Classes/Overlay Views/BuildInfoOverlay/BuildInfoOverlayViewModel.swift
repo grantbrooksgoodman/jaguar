@@ -104,7 +104,7 @@ public class BuildInfoOverlayViewModel: ObservableObject {
             }
             
             let alertController = UIAlertController(title: translations.first(where: { $0.input.value() == projectTitle })?.output ?? projectTitle,
-                                                    message: translations.first(where: { $0.input.value() == messageToDisplay })?.output.removingOccurrences(of: ["*"]) ?? messageToDisplay.removingOccurrences(of: ["*"]),
+                                                    message: (translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay).sanitized,
                                                     preferredStyle: .alert)
             
             
@@ -130,7 +130,7 @@ public class BuildInfoOverlayViewModel: ObservableObject {
             alertController.addAction(dismissAction)
             
             guard Build.timebombActive else {
-                alertController.message = translations.first(where: { $0.input.value() == messageToDisplay })?.output.removingOccurrences(of: ["*"]) ?? messageToDisplay.removingOccurrences(of: ["*"])
+                alertController.message = (translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay).sanitized
                 hasPresented = true
                 Core.ui.politelyPresent(viewController: alertController)
                 
@@ -150,7 +150,7 @@ public class BuildInfoOverlayViewModel: ObservableObject {
                 dateComponent = postExpiryComponents[1].components(separatedBy: ".")[0]
             }
             
-            let message = translations.first(where: { $0.input.value() == messageToDisplay })?.output.removingOccurrences(of: ["*"]) ?? messageToDisplay.removingOccurrences(of: ["*"])
+            let message = (translations.first(where: { $0.input.value() == messageToDisplay })?.output ?? messageToDisplay).sanitized
             let attributed = message.attributed(mainAttributes: mainAttributes,
                                                 alternateAttributes: alternateAttributes,
                                                 alternateAttributeRange: [dateComponent])

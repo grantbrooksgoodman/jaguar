@@ -31,7 +31,6 @@ public struct SignInPageView: View {
     
     // Strings
     @State public var phoneNumberString: String
-    @State public var fromSignUp: Bool
     
     @State private var verificationIdentifier: String = "" {
         didSet {
@@ -39,7 +38,7 @@ public struct SignInPageView: View {
         }
     }
     @State private var verificationCode: String = ""
-    @State private var selectedRegion = "US"
+    @State private var selectedRegion = RuntimeStorage.selectedRegionCode ?? "US"
     
     @Environment(\.colorScheme) private var colorScheme
     
@@ -118,8 +117,6 @@ public struct SignInPageView: View {
                     Button {
                         if verified {
                             verified = false
-                        } else if fromSignUp {
-                            viewRouter.currentPage = .signUp_verifyNumber
                         } else {
                             viewRouter.currentPage = .initial
                         }

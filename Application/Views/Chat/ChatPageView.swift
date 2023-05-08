@@ -44,7 +44,7 @@ public struct ChatPageView: UIViewControllerRepresentable {
         // Allows us to interface with internal cell layout methods to correctly determine constraints
         messagesVC.messagesCollectionView.tag = ThemeService.currentTheme != AppThemes.default ? 1 : 0
         
-        conversation.messages = conversation.sortedFilteredMessages()
+        conversation.messages = conversation.messages.filteredAndSorted
         
         RuntimeStorage.store(conversation, as: .globalConversation)
         RuntimeStorage.store(RuntimeStorage.globalConversation!.get(.last, messages: 10), as: .currentMessageSlice)

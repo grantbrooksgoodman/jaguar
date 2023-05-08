@@ -24,12 +24,12 @@ public class StateProvider: ObservableObject {
     @Published public var currentUserLacksVisibleConversations = false
     @Published public var developerModeEnabled = Build.developerModeEnabled
     @Published public var hasDisappeared = false
+    @Published public var shouldDismissSettingsPage = false
+    @Published public var showingInviteLanguagePicker = false
     @Published public var showNewChatPageForGrantedContactAccess = false
     @Published public var tappedDone = false
     @Published public var tappedSelectContactButton = false
     @Published public var wantsToInvite = false
-    @Published public var showingInviteLanguagePicker = false
-    @Published public var shouldDismissSettingsPage = false
 }
 
 public enum RuntimeStorage {
@@ -89,15 +89,18 @@ public enum RuntimeStorage {
         case invitationLanguageCode
         case wantsToInvite
         
+        case shouldShowMenuForFirstMessage
+        
         // MARK: ConversationsPageView
         case currentYOrigin
+        case isPreviewingChat
         case previousYOrigin
         
         // MARK: ConversationsPageViewModel
         case becameActive
         case conversationsPageViewModel
         case receivedNotification
-        case shouldReloadForFirstConversation
+        case shouldReloadForFirstOrNewConversation
         case shouldUpdateReadState
         
         // MARK: SceneDelegate
@@ -220,8 +223,11 @@ public extension RuntimeStorage {
     static var invitationLanguageCode: String? { get { retrieve(.invitationLanguageCode) as? String } }
     static var wantsToInvite: Bool? { get { retrieve(.wantsToInvite) as? Bool } }
     
+    static var shouldShowMenuForFirstMessage: Bool? { get { retrieve(.shouldShowMenuForFirstMessage) as? Bool } }
+    
     // MARK: ConversationsPageView
     static var currentYOrigin: CGFloat? { get { retrieve(.currentYOrigin) as? CGFloat } }
+    static var isPreviewingChat: Bool? { get { retrieve(.isPreviewingChat) as? Bool } }
     static var previousYOrigin: CGFloat? { get { retrieve(.previousYOrigin) as? CGFloat } }
     
     // MARK: ConversationsPageViewModel
@@ -230,7 +236,7 @@ public extension RuntimeStorage {
     static var conversationsPageViewModel: ConversationsPageViewModel? { get { retrieve(.conversationsPageViewModel) as? ConversationsPageViewModel } }
 #endif
     static var receivedNotification: Bool? { get { retrieve(.receivedNotification) as? Bool } }
-    static var shouldReloadForFirstConversation: Bool? { get { retrieve(.shouldReloadForFirstConversation) as? Bool } }
+    static var shouldReloadForFirstOrNewConversation: Bool? { get { retrieve(.shouldReloadForFirstOrNewConversation) as? Bool } }
     static var shouldUpdateReadState: Bool? { get { retrieve(.shouldUpdateReadState) as? Bool } }
     
     // MARK: SceneDelegate

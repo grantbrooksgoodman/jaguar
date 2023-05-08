@@ -384,7 +384,7 @@ public struct ConversationSerializer {
                 }
                 
                 updatedConversation.messages.append(contentsOf: messages)
-                updatedConversation.messages = updatedConversation.sortedFilteredMessages()
+                updatedConversation.messages = updatedConversation.messages.filteredAndSorted
                 
                 completion(updatedConversation, nil)
             }

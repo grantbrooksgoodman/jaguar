@@ -245,8 +245,8 @@ public class RecipientBar: UIView {
             
             let phoneNumber = PhoneNumber(digits: selectedUser.phoneNumber,
                                           rawStringHasPlusPrefix: true)
-            let contact = Contact(firstName: "+\(selectedUser.callingCode!)",
-                                  lastName: selectedUser.phoneNumber.phoneNumberFormatted,
+            let contact = Contact(firstName: selectedUser.cellTitle,
+                                  lastName: "",
                                   phoneNumbers: [phoneNumber])
             
             self.selectedContactPair = ContactPair(contact: contact,

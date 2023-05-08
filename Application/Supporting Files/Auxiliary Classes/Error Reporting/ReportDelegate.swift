@@ -274,8 +274,10 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
             
             let storageMetadata = StorageMetadata(dictionary: ["name": filePath])
             storageMetadata.contentType = "application/json"
+            storageMetadata.customMetadata = ["Bundle Version": "\(Build.bundleVersion) (\(Build.buildNumber))"]
+            
             if let description {
-                storageMetadata.customMetadata = ["description": description]
+                storageMetadata.customMetadata!["Description"] = description
             }
             
             Storage.storage().reference().putData(logFile.data,

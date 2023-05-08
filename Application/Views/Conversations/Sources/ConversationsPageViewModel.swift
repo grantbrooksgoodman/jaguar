@@ -47,6 +47,7 @@ public class ConversationsPageViewModel: ObservableObject {
     /* MARK: - Initializer Method */
     
     public func load(silent: Bool = false,
+                     canShowOverlay: Bool = false,
                      completion: @escaping() -> Void = { }) {
         RuntimeStorage.store(self, as: .conversationsPageViewModel)
         state = silent ? state : .loading
@@ -59,6 +60,7 @@ public class ConversationsPageViewModel: ObservableObject {
             return
         }
         
+        addOverlayIfNeeded(silent: silent, canShowOverlay: canShowOverlay)
         respondToGlobalStateChange(silent)
         MetadataService.setKeys()
         
@@ -75,6 +77,7 @@ public class ConversationsPageViewModel: ObservableObject {
                 guard let conversations else {
                     self.state = .failed(exception ?? Exception(metadata: [#file, #function, #line]))
                     RuntimeStorage.topWindow?.isUserInteractionEnabled = true
+                    RuntimeStorage.topWindow?.removeOverlay()
                     completion()
                     return
                 }
@@ -95,6 +98,7 @@ public class ConversationsPageViewModel: ObservableObject {
                         Core.gcd.after(seconds: 2) { UpdateService.promptToUpdateIfNeeded() }
                     }
                     
+                    RuntimeStorage.topWindow?.removeOverlay()
                     completion()
                 }
             }
@@ -108,9 +112,9 @@ public class ConversationsPageViewModel: ObservableObject {
     private func getShouldReloadForGlobalStateChange() -> Bool {
         let becameActive = RuntimeStorage.becameActive ?? false
         let receivedNotification = RuntimeStorage.receivedNotification!
-        let shouldReloadForFirstConversation = RuntimeStorage.shouldReloadForFirstConversation!
+        let shouldReloadForFirstOrNewConversation = RuntimeStorage.shouldReloadForFirstOrNewConversation!
         let shouldUpdateReadState = RuntimeStorage.shouldUpdateReadState!
-        return becameActive || receivedNotification || shouldReloadForFirstConversation || shouldUpdateReadState
+        return becameActive || receivedNotification || shouldReloadForFirstOrNewConversation || shouldUpdateReadState
     }
     
     private func getShouldReloadForUpdatedHashes() -> Bool {
@@ -152,12 +156,14 @@ public class ConversationsPageViewModel: ObservableObject {
             AnalyticsService.logEvent(.deleteConversation,
                                       with: ["conversationIdKey": conversation.identifier.key!])
             
+            RuntimeStorage.topWindow?.isUserInteractionEnabled = false
             ConversationSerializer.shared.deleteConversation(withIdentifier: conversation.identifier.key!) { exception in
                 if let exception {
                     Logger.log(exception, with: .errorAlert)
                 }
                 
                 currentUser.deSerializeConversations { _, exception in
+                    RuntimeStorage.topWindow?.isUserInteractionEnabled = true
                     guard let exception else {
                         self.load()
                         return
@@ -255,7 +261,7 @@ public class ConversationsPageViewModel: ObservableObject {
     
     private func resetGlobalStateChangeVariables() {
         RuntimeStorage.store(false, as: .receivedNotification)
-        RuntimeStorage.store(false, as: .shouldReloadForFirstConversation)
+        RuntimeStorage.store(false, as: .shouldReloadForFirstOrNewConversation)
         RuntimeStorage.store(false, as: .shouldUpdateReadState)
         
         guard RuntimeStorage.becameActive != nil else { return }
@@ -283,10 +289,25 @@ public class ConversationsPageViewModel: ObservableObject {
     
     /* MARK: - Miscellaneous Methods */
     
+    private func addOverlayIfNeeded(silent: Bool, canShowOverlay: Bool) {
+        guard silent && canShowOverlay else { return }
+        Core.gcd.after(milliseconds: 200) {
+            guard let topWindow = RuntimeStorage.topWindow,
+                  !topWindow.isUserInteractionEnabled,
+                  topWindow.subview(for: "OVERLAY_VIEW") == nil else {
+                RuntimeStorage.topWindow?.removeOverlay()
+                return
+            }
+            
+            topWindow.addOverlay(alpha: 0.85, color: .black, showsActivityIndicator: true)
+        }
+    }
+    
     public func reloadIfNeeded() {
         StateProvider.shared.hasDisappeared = false
         
-        guard !RuntimeStorage.isPresentingChat! else { return }
+        guard Build.isOnline,
+              !RuntimeStorage.isPresentingChat! else { return }
         
         guard (shouldReloadForGlobalStateChange || shouldReloadForUpdatedHashes),
               RuntimeStorage.currentFile!.hasSuffix("ConversationsPageView.swift") else {
@@ -300,7 +321,7 @@ public class ConversationsPageViewModel: ObservableObject {
             }
         }
         
-        load(silent: true)
+        load(silent: true, canShowOverlay: RuntimeStorage.becameActive ?? false)
     }
     
     private func requestNotificationPermissionIfNeeded(completion: @escaping(_ exception: Exception?) -> Void) {
@@ -343,7 +364,7 @@ public class ConversationsPageViewModel: ObservableObject {
                 }
                 
                 conversation.messages.append(message)
-                conversation.messages = conversation.sortedFilteredMessages()
+                conversation.messages = conversation.messages.filteredAndSorted
                 RuntimeStorage.currentUser?.openConversations = RuntimeStorage.currentUser?.openConversations?.unique()
                 
                 self.state = .loaded(translations: self.translations,

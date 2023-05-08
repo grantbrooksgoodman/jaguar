@@ -12,6 +12,7 @@ import Foundation
 import UIKit
 
 /* Third-party Frameworks */
+import InputBarAccessoryView
 import MessageKit
 import Translator
 
@@ -28,6 +29,7 @@ public protocol ObjCMenuControllerDelegate {
 
 public protocol SwiftMenuControllerDelegate {
     var messagesCollectionView: MessagesCollectionView { get }
+    var messageInputBar: InputBarAccessoryView { get }
 }
 
 public class MenuControllerService: NSObject, ChatService {
@@ -42,17 +44,24 @@ public class MenuControllerService: NSObject, ChatService {
     
     // Other
     public var delegate: MenuControllerDelegate
+    public var isSelectingCell: Bool { get { selectedCell != nil } }
     public var serviceType: ChatServiceType = .menuController
+    public var textViewIsEmpty: Bool { get { delegate.messageInputBar.inputTextView.text.lowercasedTrimmingWhitespace == "" } }
     
-    private let menuController = UIMenuController.shared
+    private typealias MenuController = UIMenuController
+    private typealias MenuItem = UIMenuItem
+    
+    private let menuController = MenuController.shared
     
     private var CURRENT_USER_ID: String!
     private var CURRENT_MESSAGE_SLICE: [Message]!
+    private var miscolorationTimer: Timer?
     private var speechSynthesizer: AVSpeechSynthesizer!
+    private var willHideMenuNotificationName = MenuController.willHideMenuNotification
     
     //==================================================//
     
-    /* MARK: - Constructor & Initialization Methods */
+    /* MARK: - Object Lifecycle */
     
     public init(delegate: MenuControllerDelegate) throws {
         self.delegate = delegate
@@ -61,6 +70,11 @@ public class MenuControllerService: NSObject, ChatService {
         
         speechSynthesizer = AVSpeechSynthesizer()
         speechSynthesizer.delegate = self
+        
+        NotificationCenter.default.addObserver(self,
+                                               selector: #selector(menuWillHide),
+                                               name: willHideMenuNotificationName,
+                                               object: nil)
     }
     
     @discardableResult
@@ -72,6 +86,36 @@ public class MenuControllerService: NSObject, ChatService {
         CURRENT_MESSAGE_SLICE = currentMessageSlice
         
         return true
+    }
+    
+    deinit {
+        NotificationCenter.default.removeObserver(self,
+                                                  name: willHideMenuNotificationName,
+                                                  object: nil)
+        stopListeningForCellMiscoloration()
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Cell Miscoloration Methods */
+    
+    public func startListeningForCellMiscoloration() {
+        miscolorationTimer = Timer.scheduledTimer(timeInterval: 0.01,
+                                                  target: self,
+                                                  selector: #selector(restoreMiscoloredCells),
+                                                  userInfo: nil,
+                                                  repeats: true)
+    }
+    
+    public func stopListeningForCellMiscoloration() {
+        miscolorationTimer?.invalidate()
+        miscolorationTimer = nil
+    }
+    
+    @objc
+    private func restoreMiscoloredCells() {
+        guard !menuController.isMenuVisible else { return }
+        restoreCellColors()
     }
     
     //==================================================//
@@ -99,7 +143,9 @@ public class MenuControllerService: NSObject, ChatService {
         let convertedPoint = delegate.messagesCollectionView.convert(point, to: cell.messageContainerView)
         guard cell.messageContainerView.bounds.contains(convertedPoint) else { return }
         
+        restoreCellColors()
         delegate.messagesCollectionView.becomeFirstResponder()
+        animateSelection(cell.messageContainerView)
         
         let frame = CGRect(x: point.x,
                            y: (cell.frame.minY + 2) + (cell.cellTopLabel.frame.size.height),
@@ -114,14 +160,16 @@ public class MenuControllerService: NSObject, ChatService {
     public func resetAllAlternates() {
         syncDependencies()
         
-        for message in CURRENT_MESSAGE_SLICE {
-            guard message.isDisplayingAlternate else { continue }
-            
+        for message in CURRENT_MESSAGE_SLICE where message.isDisplayingAlternate {
             let originalInput = message.translation.input
             message.translation.input = TranslationInput(message.translation.output)
             message.translation.output = originalInput.value()
             message.isDisplayingAlternate = false
         }
+    }
+    
+    public func resetMenuItems() {
+        menuController.menuItems = nil
     }
     
     public func stopSpeakingIfNeeded() {
@@ -149,11 +197,9 @@ public class MenuControllerService: NSObject, ChatService {
         message.hasAudioComponent = message.isDisplayingAlternate ? true : false
         message.isDisplayingAlternate = message.isDisplayingAlternate ? false : true
         
-        selectedCell = nil
-        
         guard delegate.messagesCollectionView.visibleCells.contains(cell),
               !RuntimeStorage.isSendingMessage! else { return }
-        delegate.messagesCollectionView.reloadItems(at: alternateIndexPaths)
+        reloadWhenSafe(alternateIndexPaths)
     }
     
     public func copyMenuItemAction() {
@@ -229,38 +275,36 @@ public class MenuControllerService: NSObject, ChatService {
         message.translation.output = originalInput.value()
         message.isDisplayingAlternate = !message.isDisplayingAlternate
         
-        selectedCell = nil
-        
         guard delegate.messagesCollectionView.visibleCells.contains(cell),
               !RuntimeStorage.isSendingMessage! else { return }
-        delegate.messagesCollectionView.reloadItems(at: alternateIndexPaths)
+        reloadWhenSafe(alternateIndexPaths)
     }
     
     //==================================================//
     
     /* MARK: - Item Builders */
     
-    private func getAudioMessageMenuItem(title: String? = nil) -> UIMenuItem {
+    private func getAudioMessageMenuItem(title: String? = nil) -> MenuItem {
         return .init(title: title ?? LocalizedString.viewTranscription,
                      action: #selector(delegate.audioMessageMenuItemAction))
     }
     
-    private func getCopyMenuItem(title: String? = nil) -> UIMenuItem {
+    private func getCopyMenuItem(title: String? = nil) -> MenuItem {
         return .init(title: title ?? LocalizedString.copy,
                      action: #selector(delegate.copyMenuItemAction))
     }
     
-    private func getRetryMenuItem(title: String? = nil) -> UIMenuItem {
+    private func getRetryMenuItem(title: String? = nil) -> MenuItem {
         return .init(title: title ?? LocalizedString.retryTranslation,
                      action: #selector(delegate.retryMenuItemAction))
     }
     
-    private func getSpeakMenuItem(title: String? = nil) -> UIMenuItem {
+    private func getSpeakMenuItem(title: String? = nil) -> MenuItem {
         return .init(title: title ?? LocalizedString.speak,
                      action: #selector(delegate.speakMenuItemAction))
     }
     
-    private func getViewAlternateMenuItem(title: String? = nil) -> UIMenuItem {
+    private func getViewAlternateMenuItem(title: String? = nil) -> MenuItem {
         return .init(title: title ?? LocalizedString.viewOriginal,
                      action: #selector(delegate.viewAlternateMenuItemAction))
     }
@@ -273,15 +317,34 @@ public class MenuControllerService: NSObject, ChatService {
         syncDependencies()
         
         var indexPaths = [IndexPath]()
-        for (index, message) in CURRENT_MESSAGE_SLICE.enumerated() {
-            guard message.isDisplayingAlternate else { continue }
+        for (index, message) in CURRENT_MESSAGE_SLICE.enumerated() where message.isDisplayingAlternate {
             indexPaths.append(IndexPath(row: 0, section: index))
         }
         
         return indexPaths
     }
     
-    private func getMenuItems(for cell: MessageContentCell) -> [UIMenuItem]? {
+    private func animateSelection(_ containerView: UIView) {
+        let backgroundColor = containerView.backgroundColor
+        
+        guard backgroundColor?.resolvedColor(with: .current) == .senderMessageBubbleColor.resolvedColor(with: .current) || backgroundColor == .receiverMessageBubbleColor || backgroundColor == .untranslatedMessageBubbleColor else { return }
+        
+        UIView.animate(withDuration: 0.2) {
+            guard backgroundColor == .receiverMessageBubbleColor || backgroundColor == .untranslatedMessageBubbleColor,
+                  (ColorProvider.shared.interfaceStyle == .dark || ThemeService.currentTheme.style == .dark) else {
+                containerView.backgroundColor = backgroundColor?.darker(by: 20)
+                return
+            }
+            
+            containerView.backgroundColor = backgroundColor?.lighter(by: 10)
+        }
+        
+        UISelectionFeedbackGenerator().selectionChanged()
+        
+        return
+    }
+    
+    private func getMenuItems(for cell: MessageContentCell) -> [MenuItem]? {
         syncDependencies()
         
         guard cell.tag < CURRENT_MESSAGE_SLICE.count else { return nil }
@@ -315,9 +378,11 @@ public class MenuControllerService: NSObject, ChatService {
         
         guard translation.languagePair.from != translation.languagePair.to else { return menuItems }
         
-        if translation.input.value() == translation.output,
-           RecognitionService.shouldMarkUntranslated(translation.output,
-                                                     for: translation.languagePair) {
+        if translation.input.value() == translation.output {
+            guard RecognitionService.shouldMarkUntranslated(translation.output,
+                                                            for: translation.languagePair),
+                  let retranslationService = ChatServices.defaultRetranslationService,
+                  !retranslationService.isRetranslating else { return menuItems }
             menuItems.append(getRetryMenuItem())
         } else {
             guard !speechSynthesizer.isSpeaking else { return menuItems }
@@ -334,6 +399,52 @@ public class MenuControllerService: NSObject, ChatService {
         }
         
         return menuItems
+    }
+    
+    @objc
+    private func menuWillHide() {
+        syncDependencies()
+        restoreCellColors()
+        
+        guard let selectedCell,
+              CURRENT_MESSAGE_SLICE.count > selectedCell.tag else { return }
+        
+        let currentMessage = CURRENT_MESSAGE_SLICE[selectedCell.tag]
+        
+        UIView.animate(withDuration: 0.2) {
+            selectedCell.messageContainerView.backgroundColor = currentMessage.backgroundColor
+        } completion: { _ in
+            Core.gcd.after(milliseconds: 200) {
+                guard !self.speechSynthesizer.isSpeaking else { return }
+                self.selectedCell = nil
+            }
+        }
+    }
+    
+    private func reloadWhenSafe(_ indexPaths: [IndexPath]) {
+        guard RuntimeStorage.isPresentingChat! else { return }
+        
+        guard !RuntimeStorage.isSendingMessage!,
+              !RuntimeStorage.shouldReloadData! else {
+            Core.gcd.after(milliseconds: 200) { self.reloadWhenSafe(indexPaths) }
+            return
+        }
+        
+        delegate.messagesCollectionView.reloadItems(at: indexPaths)
+    }
+    
+    private func restoreCellColors() {
+        syncDependencies()
+        
+        guard !CURRENT_MESSAGE_SLICE.isEmpty else { return }
+        
+        for cell in delegate.messagesCollectionView.visibleCells {
+            guard let cell = cell as? MessageContentCell,
+                  let indexPath = delegate.messagesCollectionView.indexPath(for: cell),
+                  CURRENT_MESSAGE_SLICE.count > indexPath.section else { continue }
+            
+            cell.messageContainerView.backgroundColor = CURRENT_MESSAGE_SLICE[indexPath.section].backgroundColor
+        }
     }
 }
 
@@ -355,10 +466,11 @@ extension MenuControllerService: AVSpeechSynthesizerDelegate {
         
         hideMenuIfNeeded()
         speakingCell = nil
+        selectedCell = nil
         
         guard delegate.messagesCollectionView.visibleCells.contains(cell),
               !RuntimeStorage.isSendingMessage! else { return }
-        delegate.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
+        reloadWhenSafe([IndexPath(row: 0, section: cell.tag)])
     }
     
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
@@ -373,10 +485,11 @@ extension MenuControllerService: AVSpeechSynthesizerDelegate {
         
         hideMenuIfNeeded()
         speakingCell = nil
+        selectedCell = nil
         
         guard delegate.messagesCollectionView.visibleCells.contains(cell),
               !RuntimeStorage.isSendingMessage! else { return }
-        delegate.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: cell.tag)])
+        reloadWhenSafe([IndexPath(row: 0, section: cell.tag)])
     }
     
     public func speechSynthesizer(_ synthesizer: AVSpeechSynthesizer,
@@ -410,6 +523,25 @@ extension MenuControllerService: AVSpeechSynthesizerDelegate {
 
 /* MARK: - ChatPageViewController */
 extension ChatPageViewController {
+    
+    //==================================================//
+    
+    /* MARK: - Menu Item Overrides */
+    
+    public override func canPerformAction(_ action: Selector,
+                                          withSender sender: Any?) -> Bool {
+        let actions = [#selector(ChatPageViewController.audioMessageMenuItemAction),
+                       #selector(ChatPageViewController.copyMenuItemAction),
+                       #selector(ChatPageViewController.retryMenuItemAction),
+                       #selector(ChatPageViewController.speakMenuItemAction),
+                       #selector(ChatPageViewController.viewAlternateMenuItemAction)]
+        return actions.contains(action)
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Menu Item Actions */
+    
     @objc
     public func audioMessageMenuItemAction() {
         ChatServices.menuControllerService?.audioMessageMenuItemAction()
@@ -433,5 +565,69 @@ extension ChatPageViewController {
     @objc
     public func viewAlternateMenuItemAction() {
         ChatServices.menuControllerService?.viewAlternateMenuItemAction()
+    }
+}
+
+/* MARK: InputTextView */
+extension InputTextView {
+    
+    //==================================================//
+    
+    /* MARK: - Menu Item Overrides */
+    
+    public override func canPerformAction(_ action: Selector,
+                                          withSender sender: Any?) -> Bool {
+        let messageBubbleActions = [#selector(ChatPageViewController.audioMessageMenuItemAction),
+                                    #selector(ChatPageViewController.copyMenuItemAction),
+                                    #selector(ChatPageViewController.retryMenuItemAction),
+                                    #selector(ChatPageViewController.speakMenuItemAction),
+                                    #selector(ChatPageViewController.viewAlternateMenuItemAction)]
+        
+        let textViewActions = [#selector(cut(_:)),
+                               #selector(copy(_:)),
+                               #selector(paste(_:)),
+                               #selector(selectAll(_:))]
+        
+        guard let menuService = ChatServices.defaultMenuControllerService else { return false }
+        menuService.resetMenuItems()
+        
+        guard menuService.isSelectingCell else {
+            guard menuService.textViewIsEmpty else {
+                return textViewActions.contains(action)
+            }
+            
+            return action == #selector(paste(_:))
+        }
+        
+        return messageBubbleActions.contains(action)
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Menu Item Actions */
+    
+    @objc
+    public func audioMessageMenuItemAction() {
+        ChatServices.defaultMenuControllerService?.audioMessageMenuItemAction()
+    }
+    
+    @objc
+    public func copyMenuItemAction() {
+        ChatServices.defaultMenuControllerService?.copyMenuItemAction()
+    }
+    
+    @objc
+    public func retryMenuItemAction() {
+        ChatServices.defaultMenuControllerService?.retryMenuItemAction()
+    }
+    
+    @objc
+    public func speakMenuItemAction() {
+        ChatServices.defaultMenuControllerService?.speakMenuItemAction()
+    }
+    
+    @objc
+    public func viewAlternateMenuItemAction() {
+        ChatServices.defaultMenuControllerService?.viewAlternateMenuItemAction()
     }
 }

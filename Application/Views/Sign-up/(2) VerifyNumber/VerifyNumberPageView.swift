@@ -25,7 +25,7 @@ public struct VerifyNumberPageView: View {
     
     // Strings
     @State private var phoneNumberString: String = RuntimeStorage.numberFromSignIn ?? ""
-    @State private var selectedRegion = "US"
+    @State private var selectedRegion = RuntimeStorage.selectedRegionCode ?? "US"
     
     // Other
     @StateObject public var viewModel: VerifyNumberPageViewModel
@@ -120,8 +120,7 @@ public struct VerifyNumberPageView: View {
                 
                 alert.present() { actionID in
                     guard actionID == -1 else {
-                        viewRouter.currentPage = .signIn(phoneNumber: phoneNumberString.partiallyFormatted(for: selectedRegion),
-                                                         fromSignUp: true)
+                        viewRouter.currentPage = .signIn(phoneNumber: phoneNumberString.partiallyFormatted(for: selectedRegion))
                         self.pressedContinue = false
                         return
                     }

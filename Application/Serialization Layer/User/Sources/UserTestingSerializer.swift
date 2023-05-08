@@ -81,7 +81,7 @@ public struct UserTestingSerializer {
                 return
             }
             
-            let randomUserIdPair = Array(identifiers.shuffledValue[0...1])
+            let randomUserIdPair = Array(identifiers.shuffled[0...1])
             let dispatchGroup = DispatchGroup()
             
             var users = [User]()

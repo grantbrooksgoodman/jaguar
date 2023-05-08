@@ -40,19 +40,19 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
         // If using a storyboard, the `window` property will automatically be initialized and attached to the scene.
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         
-        guard !Build.developerModeEnabled || Build.stage == .generalRelease else {
-            let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line]) {
-                self.connectScene(scene)
-            }
-            
-#if targetEnvironment(simulator)
-            signInUser(withLanguage: "en", scene: scene, timeout: timeout)
-#else
-            signInUser(withPhoneNumber: "5163614875", scene: scene, timeout: timeout)
-#endif
-            
-            return
-        }
+        //        guard !Build.developerModeEnabled || Build.stage == .generalRelease else {
+        //            let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line]) {
+        //                self.connectScene(scene)
+        //            }
+        //
+        //#if targetEnvironment(simulator)
+        //            signInRandomUser(scene: scene, timeout: timeout)
+        //#else
+        //            signInRandomUser(scene: scene, timeout: timeout)
+        //#endif
+        //
+        //            return
+        //        }
         
         connectScene(scene)
     }
@@ -159,8 +159,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             timeout.cancel()
             
             guard let returnedIdentifier else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
@@ -177,8 +176,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             
             guard let userIDs,
                   !userIDs.isEmpty else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             
@@ -195,8 +193,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             
             guard let users,
                   !users.isEmpty else {
-                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
-                           with: .errorAlert)
+                Logger.log(exception ?? Exception(metadata: [#file, #function, #line]))
                 return
             }
             

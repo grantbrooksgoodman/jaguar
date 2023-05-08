@@ -20,11 +20,7 @@ public struct InviteService {
     /* MARK: - Public Methods */
     
     public static func askToTranslate(completion: @escaping(_ shouldTranslate: Bool?) -> Void) {
-        var message = "Would you like *Hello* to translate the invitation message into another language?"
-        if RuntimeStorage.languageCode! == "en" {
-            message = message.removingOccurrences(of: ["*"])
-        }
-        
+        let message = "Would you like *Hello* to translate the invitation message into another language?"
         let actions = [AKAction(title: "Yes, translate",
                                 style: .preferred),
                        AKAction(title: "No, don't translate",
@@ -80,7 +76,7 @@ public struct InviteService {
             }
             
             AnalyticsService.logEvent(.invite)
-            MessageComposer.shared.compose(withContent: "\(translation.output.removingOccurrences(of: ["*"]))\n\n\(appShareLink.absoluteString)")
+            MessageComposer.shared.compose(withContent: "\(translation.output.sanitized))\n\n\(appShareLink.absoluteString)")
         }
     }
 }

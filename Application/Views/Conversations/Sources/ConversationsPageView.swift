@@ -62,18 +62,25 @@ public struct ConversationsPageView: View {
                     .onAppear { UIApplication.shared.overrideUserInterfaceStyle(ThemeService.currentTheme.style) }
             }
         case .failed(let exception):
-            FailureView(exception: exception) { viewModel.load() }
+            FailureView(exception: exception) {
+                UserDefaults.reset()
+                Core.clearCaches()
+                viewModel.load()
+            }
         }
     }
     
     private func loadedView(translations: [String: Translator.Translation],
                             conversations: [Conversation]) -> some View {
         VStack {
-            withUpdatedAppearance(NavigationView {
+            NavigationView {
                 listView(conversations: conversations.visibleForCurrentUser,
                          messagesTranslation: translations["messages"]!.output)
                 .onFrameChange { frame in respondToListFrameChange(frame) }
-            }.accentColor(.primaryAccentColor))
+            }
+            .accentColor(.primaryAccentColor)
+            .toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar)
+            .scrollContentBackground(.hidden)
             .id(forceAppearanceUpdate)
             .sheet(isPresented: $showingNewChatSheet) { newChatSheet }
             .sheet(isPresented: $showingInviteLanguagePickerSheet) { inviteLanguagePickerSheet }
@@ -124,11 +131,6 @@ public struct ConversationsPageView: View {
             Core.gcd.after(milliseconds: 1500) { showingNewChatSheet = true }
         }
         .navigationViewStyle(.stack)
-    }
-    
-    private func withUpdatedAppearance(_ conversationsPageView: some View) -> some View {
-        guard #available(iOS 16.0, *) else { return AnyView(conversationsPageView) }
-        return AnyView(conversationsPageView.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar).scrollContentBackground(.hidden))
     }
     
     //==================================================//
@@ -239,7 +241,8 @@ public struct ConversationsPageView: View {
                         }
                         .tint(.red)
                     })
-                    .listRowBackground(Color.encapsulatingViewBackgroundColor)
+                    .frame(height: 62)
+                    .listRowBackground(ThemeService.currentTheme == AppThemes.default ? nil : Color.encapsulatingViewBackgroundColor)
             })
         }
         .listStyle(.plain)
@@ -248,7 +251,7 @@ public struct ConversationsPageView: View {
                             titleColor: .navigationBarTitleColor)
         .background(Color.encapsulatingViewBackgroundColor)
         .refreshable {
-            viewModel.load(silent: true)
+            viewModel.load(silent: true, canShowOverlay: false)
         }
         .toolbar {
             settingsButton

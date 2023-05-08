@@ -74,11 +74,11 @@ public class PageViewDataModel {
         
         for pair in translationPairs.sorted(by: { $0.key < $1.key }) {
             let translation = pair.value
-            let newInput = TranslationInput(translation.input.original.removingOccurrences(of: ["*"]),
-                                            alternate: translation.input.alternate?.removingOccurrences(of: ["*"]))
+            let newInput = TranslationInput(translation.input.original.sanitized,
+                                            alternate: translation.input.alternate?.sanitized)
             
             strippedTranslations[pair.key] = Translation(input: newInput,
-                                                         output: translation.output.removingOccurrences(of: ["*"]),
+                                                         output: translation.output.sanitized,
                                                          languagePair: translation.languagePair)
         }
         

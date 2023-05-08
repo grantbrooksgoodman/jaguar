@@ -31,6 +31,8 @@ public class RetranslationService: ChatService {
     public var delegate: RetranslationDelegate!
     public var serviceType: ChatServiceType = .retranslation
     
+    private(set) var isRetranslating = false
+    
     private var CURRENT_MESSAGE_SLICE: [Message]!
     private var CURRENT_USER_ID: String!
     private var GLOBAL_CONVERSATION: Conversation!
@@ -92,6 +94,7 @@ public class RetranslationService: ChatService {
         
         Core.hud.showProgress()
         
+        isRetranslating = true
         TranslationSerializer.removeTranslation(for: translation.input,
                                                 languagePair: translation.languagePair) { exception in
             guard exception == nil else {
@@ -294,6 +297,7 @@ public class RetranslationService: ChatService {
             defer {
                 self.delegate.messagesCollectionView.reloadItems(at: [IndexPath(row: 0, section: selectedSection)])
                 self.selectedCell = nil
+                self.isRetranslating = false
             }
             
             guard var conversations = self.CURRENT_USER.openConversations else {
@@ -354,6 +358,7 @@ public class RetranslationService: ChatService {
                           showAlert: Bool) {
         Logger.closeStream()
         Core.hud.hide()
+        isRetranslating = false
         Logger.log(exception, with: showAlert ? .errorAlert : .none)
     }
     
