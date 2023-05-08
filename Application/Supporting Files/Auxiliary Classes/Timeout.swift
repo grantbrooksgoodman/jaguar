@@ -20,7 +20,7 @@ public class Timeout {
     
     //==================================================//
     
-    /* MARK: - Constructor Methods */
+    /* MARK: - Constructors */
     
     public init(after: Double,
                 _ callback: @escaping () -> Void = {}) {

@@ -36,7 +36,7 @@ public class Message: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(identifier: String,
                 fromAccountIdentifier: String,

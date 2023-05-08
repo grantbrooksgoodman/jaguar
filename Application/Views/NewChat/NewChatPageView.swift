@@ -28,7 +28,6 @@ public struct NewChatPageView: View {
     @State private var showingContactSelector = false
     
     // Other
-    @Environment(\.colorScheme) private var colorScheme
     @State private var selectedContactPair: ContactPair?
     @ObservedObject private var stateProvider = StateProvider.shared
     
@@ -42,11 +41,11 @@ public struct NewChatPageView: View {
             Color.clear.onAppear(perform: viewModel.load)
         case .loading:
             ProgressView("" /*"Loading..."*/)
-        case .loaded(let translations,
-                     let contactPairs):
-            loadedView(translations: translations,
-                       contactPairs: contactPairs)
-            .onAppear { AnalyticsService.logEvent(.accessNewChatPage) }
+        case .loaded(let contactPairs):
+            ThemedView() {
+                loadedView(contactPairs: contactPairs)
+                    .onAppear { AnalyticsService.logEvent(.accessNewChatPage) }
+            }
         case .failed(let exception):
             Color.clear.onAppear {
                 isPresenting = false
@@ -55,8 +54,7 @@ public struct NewChatPageView: View {
         }
     }
     
-    public func loadedView(translations: [String: Translator.Translation],
-                           contactPairs: [ContactPair]) -> some View {
+    public func loadedView(contactPairs: [ContactPair]) -> some View {
         Group {
             NavigationView {
                 VStack {
@@ -70,9 +68,10 @@ public struct NewChatPageView: View {
                 .interactiveDismissDisabled(true)
                 .toolbar {
                     ToolbarItem(placement: .destructiveAction) {
-                        Button(translations["cancel"]!.output) {
+                        Button(LocalizedString.cancel) {
                             dismiss()
                         }
+                        .foregroundColor(.primaryAccentColor)
                     }
                 }
                 .onChange(of: stateProvider.tappedSelectContactButton) { newValue in
@@ -94,9 +93,9 @@ public struct NewChatPageView: View {
                 }
             }
             .sheet(isPresented: $showingContactSelector) {
-                ContactSelectorView(isPresenting: $showingContactSelector,
-                                    selectedContactPair: $selectedContactPair,
-                                    contactPairs: contactPairs.uniquePairs)
+                ContactSelectorView(contactPairs: contactPairs.uniquePairs,
+                                    isPresenting: $showingContactSelector,
+                                    selectedContactPair: $selectedContactPair)
                 .onAppear {
                     selectedContactPair = nil
                     RuntimeStorage.store(false, as: .isSendingMessage)

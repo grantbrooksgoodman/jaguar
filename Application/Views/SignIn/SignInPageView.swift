@@ -51,9 +51,7 @@ public struct SignInPageView: View {
         switch viewModel.state {
         case .idle:
             Color.clear.onAppear {
-                RuntimeStorage.store(Locale.preferredLanguages[0].components(separatedBy: "-")[0],
-                                     as: .languageCode)
-                AKCore.shared.setLanguageCode(Locale.preferredLanguages[0].components(separatedBy: "-")[0])
+                Core.restoreDeviceLanguageCode()
                 viewModel.load()
             }
         case .loading:
@@ -100,7 +98,6 @@ public struct SignInPageView: View {
                     }
                     
                     Button {
-                        //                        DispatchQueue.main.async { self.}
                         pressedContinue = true
                         
                         if verified {

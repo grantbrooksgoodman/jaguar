@@ -24,7 +24,7 @@ public extension AKCore {
         var actions = [AKAction]()
         
 #if !EXTENSION
-        if let urlString = RuntimeStorage.redirectionKey,
+        if let urlString = MetadataService.redirectionKey,
            let asURL = URL(string: massageRedirectionKey(urlString)),
            UIApplication.shared.canOpenURL(asURL) {
             settingsURL = asURL

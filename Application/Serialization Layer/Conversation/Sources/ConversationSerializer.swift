@@ -534,7 +534,6 @@ public struct ConversationSerializer {
         }
     }
     
-#warning("Update this to include audio messages!")
     private func deleteMessages(fromConversation withID: String,
                                 completion: @escaping (_ exception: Exception?) -> Void) {
         let database = Database.database().reference()
@@ -550,15 +549,21 @@ public struct ConversationSerializer {
             
             var exceptions = [Exception]()
             for (index, identifier) in messageIdentifiers.enumerated() {
-                let pathPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
-                GeneralSerializer.setValue(NSNull(),
-                                           forKey: "\(pathPrefix)\(identifier)") { exception in
+                AudioMessageSerializer.shared.deleteInputAudioComponent(forMessageWithId: identifier) { exception in
                     if let exception {
                         exceptions.append(exception)
                     }
                     
-                    if index == messageIdentifiers.count - 1 {
-                        completion(exceptions.compiledException)
+                    let pathPrefix = "/\(GeneralSerializer.environment.shortString)/messages/"
+                    GeneralSerializer.setValue(NSNull(),
+                                               forKey: "\(pathPrefix)\(identifier)") { exception in
+                        if let exception {
+                            exceptions.append(exception)
+                        }
+                        
+                        if index == messageIdentifiers.count - 1 {
+                            completion(exceptions.compiledException)
+                        }
                     }
                 }
             }

@@ -28,7 +28,7 @@ public struct Contact: Codable, Equatable, Identifiable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(firstName: String,
                 lastName: String,

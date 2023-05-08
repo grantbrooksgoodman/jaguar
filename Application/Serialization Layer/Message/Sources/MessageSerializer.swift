@@ -133,7 +133,7 @@ public struct MessageSerializer {
     /* MARK: - Retrieval Methods */
     
     public func getMessage(withIdentifier: String,
-                           completion: @escaping(_ returnedMessage: Message?,
+                           completion: @escaping(_ message: Message?,
                                                  _ exception: Exception?) -> Void) {
         guard withIdentifier != "!" else {
             completion(nil, Exception("Null/first message processed.", metadata: [#file, #function, #line]))

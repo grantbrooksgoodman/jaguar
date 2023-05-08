@@ -41,6 +41,9 @@ public struct ChatPageView: UIViewControllerRepresentable {
         messagesVC.scrollsToLastItemOnKeyboardBeginsEditing = true
         messagesVC.showMessageTimestampOnSwipeLeft = true
         
+        // Allows us to interface with internal cell layout methods to correctly determine constraints
+        messagesVC.messagesCollectionView.tag = ThemeService.currentTheme != AppThemes.default ? 1 : 0
+        
         conversation.messages = conversation.sortedFilteredMessages()
         
         RuntimeStorage.store(conversation, as: .globalConversation)
@@ -53,26 +56,27 @@ public struct ChatPageView: UIViewControllerRepresentable {
         inputBar.inputTextView.layer.borderColor = UIColor.systemGray.cgColor
         inputBar.inputTextView.layer.borderWidth = 0.5
         
-        inputBar.sendButton.setImage(UIImage(named: "Send"), for: .normal)
-        inputBar.sendButton.setImage(UIImage(named: "Send (Highlighted)"), for: .highlighted)
+        let normalImageName = ThemeService.currentTheme != AppThemes.default ? "Send (Alternate)" : "Send"
+        let highlightedImageName = ThemeService.currentTheme != AppThemes.default ? "Send (Alternate - Highlighted)" : "Send (Highlighted)"
+        inputBar.sendButton.setImage(UIImage(named: normalImageName), for: .normal)
+        inputBar.sendButton.setImage(UIImage(named: highlightedImageName), for: .highlighted)
         
         inputBar.inputTextView.placeholder = " \(LocalizedString.newMessage)"
         
-        if Build.developerModeEnabled {
-            let randomNumber = Int().random(min: 1, max: 999)
-            let randomSentence = SentenceGenerator.generateSentence(wordCount: Int().random(min: 3, max: 15))
-            let shouldInsertRandomSentence = randomNumber % 2 == 0
-            inputBar.inputTextView.text = shouldInsertRandomSentence ? randomSentence : ""
-            
-            if shouldInsertRandomSentence {
-                Core.gcd.after(milliseconds: 200) { ChatServices.defaultChatUIService?.configureInputBar(forRecord: false) }
-            }
-        }
+        //        if Build.developerModeEnabled {
+        //            let randomNumber = Int().random(min: 1, max: 999)
+        //            let randomSentence = SentenceGenerator.generateSentence(wordCount: Int().random(min: 3, max: 15))
+        //            let shouldInsertRandomSentence = randomNumber % 2 == 0
+        //            inputBar.inputTextView.text = shouldInsertRandomSentence ? randomSentence : ""
+        //
+        //            if shouldInsertRandomSentence {
+        //                Core.gcd.after(milliseconds: 200) { ChatServices.defaultChatUIService?.configureInputBar(forRecord: false) }
+        //            }
+        //        }
         
         RuntimeStorage.store(#file, as: .currentFile)
         
         if let window = RuntimeStorage.topWindow!.subview(Core.ui.nameTag(for: "buildInfoOverlayWindow")) as? UIWindow {
-            //            window.rootViewController = UIHostingController(rootView: BuildInfoOverlayView(yOffset: -20))
             window.isHidden = true
         }
         

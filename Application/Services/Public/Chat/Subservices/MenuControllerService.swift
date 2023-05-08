@@ -96,8 +96,7 @@ public class MenuControllerService: NSObject, ChatService {
               (!speechSynthesizer.isSpeaking || speakingCell == cell),
               let menuItems = getMenuItems(for: cell) else { return }
         
-        let convertedPoint = delegate.messagesCollectionView.convert(point,
-                                                                     to: cell.messageContainerView)
+        let convertedPoint = delegate.messagesCollectionView.convert(point, to: cell.messageContainerView)
         guard cell.messageContainerView.bounds.contains(convertedPoint) else { return }
         
         delegate.messagesCollectionView.becomeFirstResponder()
@@ -198,6 +197,8 @@ public class MenuControllerService: NSObject, ChatService {
         } else {
             utteranceLanguage = messageIsFromCurrentUser ? languagePair.from : languagePair.to
         }
+        
+        AudioPlaybackController.resetAudioSession()
         
         utterance.voice = SpeechService.shared.highestQualityVoice(for: utteranceLanguage)
         speakingCell = cell
@@ -365,7 +366,7 @@ extension MenuControllerService: AVSpeechSynthesizerDelegate {
         guard let cell = selectedCell as? TextMessageCell,
               cell.tag < CURRENT_MESSAGE_SLICE.count else { return }
         let messageIsFromCurrentUser = CURRENT_MESSAGE_SLICE[cell.tag].fromAccountIdentifier == CURRENT_USER_ID
-        let useWhite = messageIsFromCurrentUser || UITraitCollection.current.userInterfaceStyle == .dark
+        let useWhite = messageIsFromCurrentUser || UITraitCollection.current.userInterfaceStyle == .dark || ThemeService.currentTheme != AppThemes.default
         cell.messageLabel.attributedText = NSAttributedString(string: cell.messageLabel.text!,
                                                               attributes: [.font: cell.messageLabel.font!,
                                                                            .foregroundColor: useWhite ? UIColor.white : UIColor.black])
@@ -390,7 +391,7 @@ extension MenuControllerService: AVSpeechSynthesizerDelegate {
         
         let font = cell.messageLabel.font!
         let messageIsFromCurrentUser = CURRENT_MESSAGE_SLICE[cell.tag].fromAccountIdentifier == CURRENT_USER_ID
-        let useWhite = messageIsFromCurrentUser || UITraitCollection.current.userInterfaceStyle == .dark
+        let useWhite = messageIsFromCurrentUser || UITraitCollection.current.userInterfaceStyle == .dark || ThemeService.currentTheme != AppThemes.default
         
         let attributed = NSMutableAttributedString(string: cell.messageLabel.text!)
         guard characterRange.lowerBound >= 0,

@@ -21,6 +21,7 @@ public class StateProvider: ObservableObject {
     public static let shared = StateProvider()
     
     // Custom
+    @Published public var currentUserLacksVisibleConversations = false
     @Published public var developerModeEnabled = Build.developerModeEnabled
     @Published public var hasDisappeared = false
     @Published public var showNewChatPageForGrantedContactAccess = false
@@ -28,6 +29,7 @@ public class StateProvider: ObservableObject {
     @Published public var tappedSelectContactButton = false
     @Published public var wantsToInvite = false
     @Published public var showingInviteLanguagePicker = false
+    @Published public var shouldDismissSettingsPage = false
 }
 
 public enum RuntimeStorage {
@@ -39,10 +41,6 @@ public enum RuntimeStorage {
     // Enums
     public enum StoredItem: String {
         // MARK: AppDelegate
-        case appShareLink
-        case pushApiKey
-        case redirectionKey
-        
         case archivedLocalUserHashes
         case archivedServerUserHashes
         
@@ -67,6 +65,7 @@ public enum RuntimeStorage {
         case acknowledgedAudioMessagesUnsupported
         
         case didResetForFirstRun
+        case isFirstLaunchFromSetup
         
         // MARK: BuildInfoOverlayView
         case currentFile
@@ -175,10 +174,6 @@ public enum RuntimeStorage {
 /* MARK: RuntimeStorage */
 public extension RuntimeStorage {
     // MARK: AppDelegate
-    static var appShareLink: URL? { get { retrieve(.appShareLink) as? URL } }
-    static var pushApiKey: String? { get { retrieve(.pushApiKey) as? String } }
-    static var redirectionKey: String? { get { retrieve(.redirectionKey) as? String } }
-    
     static var archivedLocalUserHashes: [String]? { get { retrieve(.archivedLocalUserHashes) as? [String] } }
     static var archivedServerUserHashes: [String]? { get { retrieve(.archivedServerUserHashes) as? [String] } }
     
@@ -201,6 +196,7 @@ public extension RuntimeStorage {
     static var acknowledgedAudioMessagesUnsupported: Bool? { get { retrieve(.acknowledgedAudioMessagesUnsupported) as? Bool } }
     
     static var didResetForFirstRun: Bool? { get { retrieve(.didResetForFirstRun) as? Bool } }
+    static var isFirstLaunchFromSetup: Bool? { get { retrieve(.isFirstLaunchFromSetup) as? Bool } }
     
     // MARK: BuildInfoOverlayView
     static var currentFile: String? { get { retrieve(.currentFile) as? String } }

@@ -30,7 +30,10 @@ public struct InitialPageView: View {
     public var body: some View {
         switch viewModel.state {
         case .idle:
-            Color.clear.onAppear(perform: viewModel.load)
+            Color.clear.onAppear {
+                Core.restoreDeviceLanguageCode()
+                viewModel.load()
+            }
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):

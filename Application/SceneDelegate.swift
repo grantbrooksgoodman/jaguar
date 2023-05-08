@@ -1,6 +1,6 @@
 //
 //  SceneDelegate.swift
-//  Application
+//  Jaguar
 //
 //  Created by Grant Brooks Goodman on 23/04/2022.
 //  Copyright © 2013-2022 NEOTechnica Corporation. All rights reserved.
@@ -46,9 +46,9 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             }
             
 #if targetEnvironment(simulator)
-            self.signInRandomUser(scene: scene, timeout: timeout)
+            signInUser(withLanguage: "en", scene: scene, timeout: timeout)
 #else
-            self.signInRandomUser(scene: scene, timeout: timeout)
+            signInUser(withPhoneNumber: "5163614875", scene: scene, timeout: timeout)
 #endif
             
             return
@@ -105,6 +105,18 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
         AnalyticsService.logEvent(.closeApp)
         RuntimeStorage.store(false, as: .becameActive)
         lastResigned = Date()
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Trait Collection Methods */
+    
+    public func windowScene(_ windowScene: UIWindowScene,
+                            didUpdate previousCoordinateSpace: UICoordinateSpace,
+                            interfaceOrientation previousInterfaceOrientation:
+                            UIInterfaceOrientation,
+                            traitCollection previousTraitCollection: UITraitCollection) {
+        ColorProvider.shared.interfaceStyle = UITraitCollection.current.userInterfaceStyle
     }
     
     //==================================================//
@@ -211,7 +223,6 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             
             let tapGesture = UITapGestureRecognizer(target: self, action: nil)
             tapGesture.delegate = self
-            window.addGestureRecognizer(tapGesture)
             
             let bounds = UIScreen.main.bounds
             
@@ -224,8 +235,13 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
             buildInfoOverlayWindow.isHidden = false
             buildInfoOverlayWindow.tag = Core.ui.nameTag(for: "buildInfoOverlayWindow")
             
-            if Build.stage != .generalRelease {
+            if Build.stage != .generalRelease  {
+                window.addGestureRecognizer(tapGesture)
                 window.addSubview(buildInfoOverlayWindow)
+            }
+            
+            if let shouldHide = UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool {
+                buildInfoOverlayWindow.isHidden = shouldHide
             }
             
             if Build.expiryDate == Date().comparator,
@@ -242,6 +258,9 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
                 
                 window.addSubview(self.expiryOverlayWindow)
             }
+            
+            buildInfoOverlayWindow.backgroundColor = .clear
+            buildInfoOverlayWindow.rootViewController?.view.backgroundColor = .clear
             
             RuntimeStorage.store(self.window!, as: .topWindow)
         }

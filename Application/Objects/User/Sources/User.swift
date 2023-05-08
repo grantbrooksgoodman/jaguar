@@ -40,7 +40,7 @@ public class User: Codable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(identifier: String,
                 callingCode: String,
@@ -291,7 +291,7 @@ public class User: Codable {
             return
         }
         
-        guard let apiKey = RuntimeStorage.pushApiKey else {
+        guard let apiKey = MetadataService.pushApiKey else {
             completion(Exception("Couldn't get push API key.", metadata: [#file, #function, #line]))
             return
         }

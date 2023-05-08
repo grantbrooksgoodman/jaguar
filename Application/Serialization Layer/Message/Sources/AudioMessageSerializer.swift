@@ -67,16 +67,31 @@ public struct AudioMessageSerializer {
             return
         }
         
-        upload(reference: audioReference) { exception in
-            guard exception == nil else {
-                completion(message, Exception("Failed to upload audio component.",
-                                              extraParams: ["MessageID": message.identifier!],
-                                              metadata: [#file, #function, #line]))
+        hasPreRecordedOutput(for: message.translation) { fileExists, exception in
+            guard !fileExists else {
+                upload(audioFile: audioReference.original,
+                       toPath: audioReference.directoryPath) { exception in
+                    guard exception == nil else {
+                        completion(message, exception!)
+                        return
+                    }
+                    
+                    message.audioComponent = audioReference
+                    completion(message, nil)
+                }
+                
                 return
             }
             
-            message.audioComponent = audioReference
-            completion(message, nil)
+            upload(reference: audioReference) { exception in
+                guard exception == nil else {
+                    completion(message, exception!)
+                    return
+                }
+                
+                message.audioComponent = audioReference
+                completion(message, nil)
+            }
         }
     }
     
@@ -131,6 +146,66 @@ public struct AudioMessageSerializer {
     //==================================================//
     
     /* MARK: - Retrieval Methods */
+    
+    // MARK: Public
+    
+    public func getPreRecordedOutputFile(for translation: Translation,
+                                         completion: @escaping(_ outputFile: AudioFile?,
+                                                               _ exception: Exception?) -> Void) {
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/audioMessages/"
+        let subPath = "\(translation.languagePair.asString())/\(translation.serialize().key)"
+        let fullPath = "\(pathPrefix)\(subPath)"
+        let outputFilePath = "/\(fullPath)/output.m4a"
+        
+        let outputFileReference = Storage.storage().reference().child(outputFilePath)
+        let outputPathURL = FileManager.default.documentsDirectoryURL.appendingPathComponent(outputFilePath)
+        
+        outputFileReference.write(toFile: outputPathURL) { localOutputPath, error in
+            guard let localOutputPath else {
+                let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
+                completion(nil, exception)
+                return
+            }
+            
+            let outputFile = try? AudioFile(fromURL: localOutputPath)
+            guard let outputFile else {
+                completion(nil, Exception("Couldn't generate output file.",
+                                          metadata: [#file, #function, #line]))
+                return
+            }
+            
+            completion(outputFile, nil)
+        }
+    }
+    
+    public func retrieveAudioReference(for message: Message,
+                                       completion: @escaping(_ message: Message,
+                                                             _ exception: Exception?) -> Void) {
+        getCachedAudioReference(for: message) { audioReference, cachedException in
+            guard let audioReference else {
+                self.downloadAudioReference(for: message) { audioReference, downloadException in
+                    guard let audioReference else {
+                        var exceptions = [Exception]()
+                        if let downloadException { exceptions.append(downloadException) }
+                        if let cachedException { exceptions.append(cachedException) }
+                        completion(message,
+                                   exceptions.compiledException ?? Exception(metadata: [#file, #function, #line]))
+                        return
+                    }
+                    
+                    message.audioComponent = audioReference
+                    completion(message, nil)
+                }
+                
+                return
+            }
+            
+            message.audioComponent = audioReference
+            completion(message, nil)
+        }
+    }
+    
+    // MARK: Private
     
     private func downloadAudioReference(for message: Message,
                                         retrying: Bool = false,
@@ -227,59 +302,71 @@ public struct AudioMessageSerializer {
         completion(audioReference, nil)
     }
     
-    public func getPreRecordedOutputFile(for translation: Translation,
-                                         completion: @escaping(_ outputFile: AudioFile?,
-                                                               _ exception: Exception?) -> Void) {
+    private func hasPreRecordedOutput(for translation: Translation,
+                                      completion: @escaping(_ fileExists: Bool,
+                                                            _ exception: Exception?) -> Void) {
         let pathPrefix = "\(GeneralSerializer.environment.shortString)/audioMessages/"
         let subPath = "\(translation.languagePair.asString())/\(translation.serialize().key)"
         let fullPath = "\(pathPrefix)\(subPath)"
         let outputFilePath = "/\(fullPath)/output.m4a"
         
         let outputFileReference = Storage.storage().reference().child(outputFilePath)
-        let outputPathURL = FileManager.default.documentsDirectoryURL.appendingPathComponent(outputFilePath)
         
-        outputFileReference.write(toFile: outputPathURL) { localOutputPath, error in
-            guard let localOutputPath else {
+        outputFileReference.getMetadata { metadata, error in
+            guard metadata != nil else {
                 let exception = error == nil ? Exception(metadata: [#file, #function, #line]) : Exception(error!, metadata: [#file, #function, #line])
-                completion(nil, exception)
+                completion(false, exception)
                 return
             }
             
-            let outputFile = try? AudioFile(fromURL: localOutputPath)
-            guard let outputFile else {
-                completion(nil, Exception("Couldn't generate output file.",
-                                          metadata: [#file, #function, #line]))
-                return
-            }
-            
-            completion(outputFile, nil)
+            completion(true, nil)
         }
     }
     
-    public func retrieveAudioReference(for message: Message,
-                                       completion: @escaping(_ message: Message,
-                                                             _ exception: Exception?) -> Void) {
-        getCachedAudioReference(for: message) { audioReference, cachedException in
-            guard let audioReference else {
-                self.downloadAudioReference(for: message) { audioReference, downloadException in
-                    guard let audioReference else {
-                        var exceptions = [Exception]()
-                        if let downloadException { exceptions.append(downloadException) }
-                        if let cachedException { exceptions.append(cachedException) }
-                        completion(message,
-                                   exceptions.compiledException ?? Exception(metadata: [#file, #function, #line]))
-                        return
-                    }
-                    
-                    message.audioComponent = audioReference
-                    completion(message, nil)
-                }
-                
+    //==================================================//
+    
+    /* MARK: - Deletion Methods */
+    
+    public func deleteInputAudioComponent(for message: Message,
+                                          completion: @escaping(_ exception: Exception?) -> Void) {
+        guard let localFilePaths = message.localAudioFilePaths else {
+            completion(Exception("Message doesn't have an audio component.",
+                                 metadata: [#file, #function, #line]))
+            return
+        }
+        
+        let inputFileReference = Storage.storage().reference().child("/\(localFilePaths.inputPathString)")
+        inputFileReference.delete { error in
+            guard error == nil else {
+                completion(Exception(error!, metadata: [#file, #function, #line]))
                 return
             }
             
-            message.audioComponent = audioReference
-            completion(message, nil)
+            completion(nil)
+        }
+    }
+    
+    public func deleteInputAudioComponent(forMessageWithId: String,
+                                          completion: @escaping(_ exception: Exception?) -> Void) {
+        MessageSerializer.shared.getMessage(withIdentifier: forMessageWithId) { message, exception in
+            guard let message else {
+                completion(exception ?? Exception(metadata: [#file, #function, #line]))
+                return
+            }
+            
+            guard message.hasAudioComponent else {
+                completion(nil)
+                return
+            }
+            
+            self.deleteInputAudioComponent(for: message) { exception in
+                guard let exception else {
+                    completion(nil)
+                    return
+                }
+                
+                completion(exception)
+            }
         }
     }
 }

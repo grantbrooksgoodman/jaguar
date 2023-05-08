@@ -32,7 +32,7 @@ public struct Exception: Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Methods */
+    /* MARK: - Constructors */
     
     public init(_ descriptor: String? = nil,
                 isReportable: Bool? = nil,

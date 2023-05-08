@@ -66,6 +66,43 @@ public enum ContactService {
         }
     }
     
+    // #warning("Clean this up.")
+    public static func fetchContact(forUser: User,
+                                    completion: @escaping(_ match: CNContact?,
+                                                          _ exception: Exception?) -> Void) {
+        let contactStore = CNContactStore()
+        let queryKeys = [CNContactFormatter.descriptorForRequiredKeys(for: .fullName),
+                         CNContactPhoneNumbersKey,
+                         CNContactThumbnailImageDataKey,
+                         CNContactViewController.descriptorForRequiredKeys()] as [Any]
+        let fetchRequest = CNContactFetchRequest(keysToFetch: queryKeys as! [CNKeyDescriptor])
+        
+        var match: CNContact?
+        
+        DispatchQueue.global(qos: .userInteractive).async {
+            do {
+                try contactStore.enumerateContacts(with: fetchRequest, usingBlock: { contact,
+                    _ in
+                    let phoneNumbers = contact.phoneNumbers.asPhoneNumbers().digits
+                    for number in phoneNumbers {
+                        guard let hashes = PhoneNumberService.possibleHashes(for: number),
+                              let callingCodes = PhoneNumberService.possibleCallingCodes(for: number),
+                              hashes.contains(forUser.phoneNumber.digits.compressedHash),
+                              callingCodes.contains(forUser.callingCode) else { continue }
+                        
+                        match = contact
+                    }
+                })
+            } catch {
+                completion(nil, Exception(error,
+                                          extraParams: ["UserFacingDescriptor": "Unable to fetch contacts."],
+                                          metadata: [#file, #function, #line]))
+            }
+            
+            completion(match, match == nil ? Exception(metadata: [#file, #function, #line]) : nil)
+        }
+    }
+    
     public static func fetchContactName(forUser: User) -> (givenName: String, familyName: String)? {
         guard let archivedPair = ContactArchiver.getFromArchive(withUserHash: forUser.phoneNumber.compressedHash) else { return nil }
         

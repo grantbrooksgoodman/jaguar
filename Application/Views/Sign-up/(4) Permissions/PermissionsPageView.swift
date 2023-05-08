@@ -138,6 +138,8 @@ public struct PermissionsPageView: View {
                 return
             }
             
+            RuntimeStorage.store(true, as: .isFirstLaunchFromSetup)
+            
             RuntimeStorage.store(userID, as: .currentUserID)
             AnalyticsService.logEvent(.signUp)
             

@@ -22,6 +22,12 @@ extension InputBarAccessoryView {
 /* MARK: InputBarSendButton */
 public extension InputBarSendButton {
     var isRecordButton: Bool {
-        return image(for: .normal) == UIImage(named: "Record")
+        // #warning("Not sure why, but simply comparing the image was broken when updating for the new theme")
+        guard image(for: .normal) == UIImage(named: "Record") else {
+            guard self.tag == Core.ui.nameTag(for: "recordButton") else { return false }
+            return true
+        }
+        
+        return true
     }
 }

@@ -101,6 +101,8 @@ public struct AnalyticsService {
             parameters["currentFile"] = snakeCaseFileName
         }
         
+        parameters["environment"] = GeneralSerializer.environment.shortString
+        
         return parameters
     }
 }

@@ -429,6 +429,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
             return
         }
         
+        // #warning("Is this ever used?")
         if let otherUser = GLOBAL_CONVERSATION.otherUser {
             guard Capabilities.textToSpeechSupported(for: otherUser.languageCode) else {
                 guard !RuntimeStorage.acknowledgedAudioMessagesUnsupported! else { return }

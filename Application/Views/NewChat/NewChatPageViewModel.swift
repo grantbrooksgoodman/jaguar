@@ -11,7 +11,6 @@ import SwiftUI
 
 /* Third-party Frameworks */
 import AlertKit
-import Translator
 
 public class NewChatPageViewModel: ObservableObject {
     
@@ -23,15 +22,12 @@ public class NewChatPageViewModel: ObservableObject {
         case idle
         case loading
         case failed(Exception)
-        case loaded(translations: [String: Translator.Translation],
-                    contactPairs: [ContactPair])
+        case loaded(contactPairs: [ContactPair])
     }
     
     //==================================================//
     
     /* MARK: - Properties */
-    
-    private let inputs = ["cancel": Translator.TranslationInput("Cancel")]
     
     @Published private(set) var state = State.idle
     
@@ -42,48 +38,33 @@ public class NewChatPageViewModel: ObservableObject {
     public func load() {
         state = .loading
         
-        let dataModel = PageViewDataModel(inputs: inputs)
-        
-        dataModel.translateStrings { (returnedTranslations,
-                                      returnedException) in
-            guard let translations = returnedTranslations else {
-                let exception = returnedException ?? Exception(metadata: [#file, #function, #line])
-                Logger.log(exception)
+        ContactService.loadContacts { contactPairs, exception in
+            guard let pairs = contactPairs else {
+                let error = exception ?? Exception(metadata: [#file, #function, #line])
                 
-                self.state = .failed(exception)
-                return
-            }
-            
-            ContactService.loadContacts { contactPairs, exception in
-                guard let pairs = contactPairs else {
-                    let error = exception ?? Exception(metadata: [#file, #function, #line])
-                    
-                    guard error.isEqual(to: .contactAccessDenied) ||
-                            error.isEqual(to: .emptyContactList) ||
-                            error.isEqual(to: .noUserWithCallingCode) ||
-                            error.isEqual(to: .noUserWithHashes) ||
-                            error.isEqual(to: .noUserWithPhoneNumber) ||
-                            error.isEqual(to: .noUsersForContacts) else {
-                        Logger.log(error)
-                        self.state = .failed(error)
-                        
-                        return
-                    }
-                    
-                    RuntimeStorage.store([], as: .contactPairs)
-                    self.state = .loaded(translations: translations,
-                                         contactPairs: [])
+                guard error.isEqual(to: .contactAccessDenied) ||
+                        error.isEqual(to: .emptyContactList) ||
+                        error.isEqual(to: .noUserWithCallingCode) ||
+                        error.isEqual(to: .noUserWithHashes) ||
+                        error.isEqual(to: .noUserWithPhoneNumber) ||
+                        error.isEqual(to: .noUsersForContacts) else {
+                    Logger.log(error)
+                    self.state = .failed(error)
                     
                     return
                 }
                 
-                RuntimeStorage.store(pairs, as: .contactPairs)
-                self.state = .loaded(translations: translations,
-                                     contactPairs: pairs)
+                RuntimeStorage.store([], as: .contactPairs)
+                self.state = .loaded(contactPairs: [])
                 
-                guard StateProvider.shared.showNewChatPageForGrantedContactAccess else { return }
-                Core.gcd.after(seconds: 1) { StateProvider.shared.showNewChatPageForGrantedContactAccess = false }
+                return
             }
+            
+            RuntimeStorage.store(pairs, as: .contactPairs)
+            self.state = .loaded(contactPairs: pairs)
+            
+            guard StateProvider.shared.showNewChatPageForGrantedContactAccess else { return }
+            Core.gcd.after(seconds: 1) { StateProvider.shared.showNewChatPageForGrantedContactAccess = false }
         }
     }
 }

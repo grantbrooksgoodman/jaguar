@@ -27,7 +27,7 @@ public struct PhoneNumber: Codable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(digits: String!,
                 rawStringHasPlusPrefix: Bool,

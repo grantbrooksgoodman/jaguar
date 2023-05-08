@@ -20,7 +20,7 @@ public struct DevModeAction {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(title: String,
                 perform: @escaping() -> Void,

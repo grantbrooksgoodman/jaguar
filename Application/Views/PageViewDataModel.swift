@@ -19,7 +19,7 @@ public class PageViewDataModel {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(inputs: [String: TranslationInput]) {
         self.inputs = inputs
@@ -29,18 +29,17 @@ public class PageViewDataModel {
     
     /* MARK: - String Translation */
     
-    public func translateStrings(completion: @escaping (_ returnedTranslations: [String: Translation]?,
-                                                        _ returnedException: Exception?) -> Void) {
+    public func translateStrings(completion: @escaping (_ translations: [String: Translation]?,
+                                                        _ exception: Exception?) -> Void) {
         let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line])
         
         FirebaseTranslator.shared.getTranslations(for: Array(inputs.values),
                                                   languagePair: LanguagePair(from: "en",
                                                                              to: RuntimeStorage.languageCode!),
-                                                  using: .google) { returnedTranslations,
-            exception in
+                                                  using: .google) { translations, exception in
             timeout.cancel()
             
-            guard let translations = returnedTranslations else {
+            guard let translations else {
                 completion(nil, exception)
                 return
             }

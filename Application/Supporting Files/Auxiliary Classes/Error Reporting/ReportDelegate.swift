@@ -154,7 +154,9 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
         let connectionStatus = Build.isOnline ? "online" : "offline"
         
         var sections = ["build_sku": Build.buildSKU,
+                        "bundle_version": "\(Build.bundleVersion) (\(Build.buildNumber))",
                         "environment_code": "[\(environmentCode)]",
+                        "server_environment": GeneralSerializer.environment.shortString,
                         "internet_connection_status": connectionStatus,
                         "occurrence_date": Core.secondaryDateFormatter!.string(from: Date()),
                         "project_id": Build.projectID]
@@ -268,7 +270,7 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
                 return
             }
             
-            let filePath = "reports/\(logFile.directoryName!)/\(logFile.fileName!).log"
+            let filePath = "\(GeneralSerializer.environment.shortString)/reports/\(logFile.directoryName!)/\(logFile.fileName!).log"
             
             let storageMetadata = StorageMetadata(dictionary: ["name": filePath])
             storageMetadata.contentType = "application/json"

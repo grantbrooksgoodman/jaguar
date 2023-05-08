@@ -68,6 +68,7 @@ public struct ConversationCell: View {
                             Text(cellTitle)
                                 .bold()
                                 .padding(.bottom, 0.01)
+                                .foregroundColor(.titleTextColor)
                             
                             Rectangle()
                                 .overlay(dualIdentifierBadge, alignment: .center)
@@ -79,7 +80,7 @@ public struct ConversationCell: View {
                         let textToUse = lastMessage == nil ? "" : getCellSubtitle(forMessage: lastMessage!)
                         
                         Text(textToUse)
-                            .foregroundColor(.gray)
+                            .foregroundColor(.subtitleTextColor)
                             .font(Font.system(size: 12))
                             .lineLimit(2)
                     }
@@ -107,10 +108,13 @@ public struct ConversationCell: View {
             }
             .navigationTitle(title)
             .navigationBarTitleDisplayMode(.inline)
-            .onDisappear {
-                RuntimeStorage.messagesVC?.resignFirstResponder()
-                Core.ui.resetNavigationBarAppearance()
-            })
+            .navigationBarColor(backgroundColor: .navigationBarBackgroundColor,
+                                titleColor: .navigationBarTitleColor)
+                .background(ThemeService.currentTheme != AppThemes.default ? .navigationBarBackgroundColor : Color.clear)
+                .onDisappear {
+                    RuntimeStorage.messagesVC?.resignFirstResponder()
+                    Core.ui.resetNavigationBarAppearance()
+                })
     }
     
     private var dualIdentifierBadge: some View {
@@ -164,7 +168,7 @@ public struct ConversationCell: View {
             HStack(alignment: .center, spacing: 2) {
                 Text(conversation.otherUser!.languageCode.uppercased())
                     .font(Font.system(size: 13).bold())
-                    .foregroundColor(colorScheme == .dark ? Color.white : Color.black)
+                    .foregroundColor(.titleTextColor)
                     .shadow(color: .black, radius: 20)
                     .frame(width: 20,
                            height: 10,
@@ -187,14 +191,9 @@ public struct ConversationCell: View {
     
     /* MARK: - View Configuration Helpers */
     
-    private var appearanceBasedBackgroundColor: Color {
-        guard colorScheme == .dark else { return Color(uiColor: UIColor(hex: 0xF8F8F8)) }
-        return Color(uiColor: UIColor(hex: 0x2A2A2C))
-    }
-    
     private func withNavigationBarAppearance(_ chatPageView: some View) -> some View {
         guard #available(iOS 16.0, *) else { return AnyView(chatPageView) }
-        return AnyView(chatPageView.toolbarBackground(appearanceBasedBackgroundColor, for: .navigationBar))
+        return AnyView(chatPageView.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar))
     }
     
     //==================================================//
@@ -202,19 +201,10 @@ public struct ConversationCell: View {
     /* MARK: - Private Methods */
     
     private func getCellSubtitle(forMessage: Message) -> String {
-        guard forMessage.audioComponent == nil else {
-            return "🔊 \(LocalizedString.audioMessage)"
-        }
+        guard forMessage.audioComponent == nil else { return "🔊 \(LocalizedString.audioMessage)" }
         
-        var textToUse = ""
-        
-        if forMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! {
-            textToUse = forMessage.translation.input.value()
-        } else {
-            textToUse = forMessage.translation.output
-        }
-        
-        return textToUse
+        guard forMessage.fromAccountIdentifier == RuntimeStorage.currentUserID! else { return forMessage.translation.output }
+        return forMessage.translation.input.value()
     }
     
     private func getLanguageAndRegionString(languageCode: String,

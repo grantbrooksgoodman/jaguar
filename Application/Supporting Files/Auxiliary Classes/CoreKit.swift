@@ -31,6 +31,32 @@ public enum Core {
     
     //==================================================//
     
+    /* MARK: - Public Methods */
+    
+    @discardableResult
+    public static func restoreDeviceLanguageCode() -> Exception? {
+        let preferredLanguages = Locale.preferredLanguages
+        guard !preferredLanguages.isEmpty else {
+            return Exception("No preferred languages.", metadata: [#file, #function, #line])
+        }
+        
+        let components = preferredLanguages[0].components(separatedBy: "-")
+        guard !components.isEmpty else {
+            return Exception("No language separator key.", metadata: [#file, #function, #line])
+        }
+        
+        RuntimeStorage.store(components[0], as: .languageCode)
+        guard !AKCore.shared.languageCodeIsLocked else {
+            AKCore.shared.unlockLanguageCode(andSetTo: components[0])
+            return nil
+        }
+        
+        AKCore.shared.setLanguageCode(components[0])
+        return nil
+    }
+    
+    //==================================================//
+    
     /* MARK: - Private Methods */
     
     private static func getCurrentCalendar() -> Calendar {
@@ -247,6 +273,12 @@ public enum Core {
         /* MARK: - Navigation Bar Appearance */
         
         public func resetNavigationBarAppearance() {
+            guard ThemeService.currentTheme == AppThemes.default else {
+                setNavigationBarAppearance(backgroundColor: .navigationBarBackgroundColor,
+                                           titleColor: .primaryAccentColor)
+                return
+            }
+            
             let appearance = UINavigationBarAppearance()
             appearance.configureWithTransparentBackground()
             appearance.backgroundColor = UITraitCollection.current.userInterfaceStyle == .dark ? .black : .white

@@ -28,7 +28,7 @@ public class ContactCell: UITableViewCell {
     
     //==================================================//
     
-    /* MARK: - Constructor Methods */
+    /* MARK: - Constructors */
     
     public override init(style: UITableViewCell.CellStyle,
                          reuseIdentifier: String?) {

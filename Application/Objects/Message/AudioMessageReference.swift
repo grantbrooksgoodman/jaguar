@@ -24,7 +24,7 @@ public struct AudioMessageReference: Codable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(directoryPath: String,
                 original: AudioFile,

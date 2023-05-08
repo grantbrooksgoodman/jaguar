@@ -84,9 +84,6 @@ public enum ContactArchiver {
             completion(decodedContacts, nil)
             return
         } catch {
-            Logger.log(Exception(error,
-                                 metadata: [#file, #function, #line]))
-            
             completion(nil, Exception(error, metadata: [#file, #function, #line]))
         }
     }
@@ -102,9 +99,6 @@ public enum ContactArchiver {
             }
             completion(nil)
         } catch {
-            Logger.log(Exception(error,
-                                 metadata: [#file, #function, #line]))
-            
             completion(Exception(error, metadata: [#file, #function, #line]))
         }
     }

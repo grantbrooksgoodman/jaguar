@@ -1,0 +1,260 @@
+//
+//  SettingsPageView.swift
+//  Jaguar
+//
+//  Created by Grant Brooks Goodman on 12/04/2023.
+//  Copyright © 2013-2023 NEOTechnica Corporation. All rights reserved.
+//
+
+/* First-party Frameworks */
+import ContactsUI
+import Foundation
+import SwiftUI
+
+/* Third-party Frameworks */
+import AlertKit
+import Translator
+
+public struct SettingsPageView: View {
+    
+    //==================================================//
+    
+    /* MARK: - Properties */
+    
+    @Binding public var isPresenting: Bool
+    @StateObject public var viewModel: SettingsPageViewModel
+    @StateObject public var viewRouter: ViewRouter
+    
+    @State private var buildInfoStringKey: BuildInfoStringKey = .bundleVersionAndBuildNumber
+    @ObservedObject private var stateProvider = StateProvider.shared
+    
+    private enum BuildInfoStringKey {
+        case bundleVersionAndBuildNumber
+        case buildSKU
+        case projectID
+    }
+    
+    //==================================================//
+    
+    /* MARK: - View Body */
+    
+    public var body: some View {
+        switch viewModel.state {
+        case .idle:
+            Color.clear.onAppear { viewModel.load() }
+        case .loading:
+            ProgressView("")
+        case .loaded(let translations, let contact):
+            ThemedView(reloadsForUpdates: true) {
+                bodyView(translations: translations, contact: contact)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.listViewBackgroundColor)
+                    .onChange(of: stateProvider.shouldDismissSettingsPage) { newValue in
+                        guard newValue else { return }
+                        isPresenting = false
+                        stateProvider.shouldDismissSettingsPage = false
+                    }
+            }
+        case .failed(let exception):
+            FailureView(exception: exception)
+        }
+    }
+    
+    public func bodyView(translations: [String: Translator.Translation],
+                         contact: CNContact?) -> some View {
+        withNavigationBarAppearance(NavigationView {
+            ScrollViewReader { _ in
+                VStack {
+                    if let contact {
+                        let contact = Binding(get: { contact },
+                                              set: { let _ = $0 })
+                        NavigationLink(destination: ContactView(contact: contact)) {
+                            contactView
+                        }
+                    } else {
+                        contactView
+                    }
+                    
+                    StaticList(items: [StaticListItem(title: translations["change_theme"]!.output,
+                                                      imageData: (Image(systemName: "eye.square.fill"), .purple),
+                                                      action: viewModel.changeTheme),
+                                       StaticListItem(title: LocalizedString.sendFeedback,
+                                                      imageData: (Image(systemName: "info.square.fill"), .green),
+                                                      action: BuildInfoOverlayViewModel().presentSendFeedbackActionSheet)])
+                    .padding(.bottom, 20)
+                    
+                    StaticList(items: [StaticListItem(title: translations["clear_caches"]!.output,
+                                                      imageData: (Image(systemName: "trash.square.fill"), .orange),
+                                                      action: viewModel.confirmClearCaches),
+                                       StaticListItem(title: translations["log_out"]!.output,
+                                                      imageData: (Image(systemName: "hand.raised.square.fill"), .red),
+                                                      action: confirmSignOut)])
+                    .padding(.bottom, 20)
+                    
+                    if !viewModel.developerModeItems().isEmpty {
+                        StaticList(items: viewModel.developerModeItems())
+                    }
+                    
+                    Spacer()
+                    
+                    buildInfoButton(versionTranslation: translations["version"]!.output)
+                }
+                .toolbar {
+                    doneButton
+                }
+                .navigationBarTitle(LocalizedString.settings.removingOccurrences(of: ["..."]), displayMode: .inline)
+                .interactiveDismissDisabled(true)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(Color.listViewBackgroundColor)
+        })
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Toolbar Buttons */
+    
+    @ToolbarContentBuilder
+    private var doneButton: some ToolbarContent {
+        ToolbarItem(placement: .confirmationAction) {
+            Button(LocalizedString.done) {
+                isPresenting = false
+            }
+            .foregroundColor(.primaryAccentColor)
+        }
+    }
+    
+    //==================================================//
+    
+    /* MARK: - View Builders */
+    
+    private func buildInfoButton(versionTranslation: String) -> some View {
+        var nextStringKey: BuildInfoStringKey
+        var stringToDisplay = ""
+        
+        switch buildInfoStringKey {
+        case .bundleVersionAndBuildNumber:
+            nextStringKey = .buildSKU
+            stringToDisplay = "\(versionTranslation) \(Build.bundleVersion) (\(String(Build.buildNumber))\(Build.stage.description(short: true)))"
+        case .buildSKU:
+            nextStringKey = .projectID
+            stringToDisplay = Build.buildSKU
+        case .projectID:
+            nextStringKey = .bundleVersionAndBuildNumber
+            stringToDisplay = Build.projectID
+        }
+        
+        return Button { } label: {
+            Text(stringToDisplay)
+                .font(Font.custom("SFUIText-Regular", size: 13))
+                .foregroundColor(.subtitleTextColor)
+                .padding(.bottom, 8)
+        }.buttonStyle(StaticButtonStyle()).simultaneousGesture(LongPressGesture()
+            .onEnded { _ in
+                UIPasteboard.general.string = stringToDisplay
+                UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
+            })
+        .highPriorityGesture(TapGesture()
+            .onEnded { _ in
+                buildInfoStringKey = nextStringKey
+            }
+        )
+    }
+    
+    private var contactView: some View {
+        HStack(alignment: .center) {
+            AvatarImageView(uiImage: viewModel.userThumbnail,
+                            dimensions: CGSize(width: 50, height: 50),
+                            includePadding: false)
+            .padding(.trailing, 2)
+            
+            VStack(alignment: .leading) {
+                Text(viewModel.userTitle)
+                    .font(Font.custom("SFUIText-Semibold", size: 17))
+                    .foregroundColor(.titleTextColor)
+                    .padding(.bottom, 0)
+                
+                Text(viewModel.userSubtitle)
+                    .font(Font.custom("SFUIText-Regular", size: 13))
+                    .foregroundColor(.titleTextColor)
+            }
+            
+            Spacer()
+            
+            if viewModel.userSubtitle.lowercasedTrimmingWhitespace != "" {
+                Image(systemName: "chevron.forward")
+                    .foregroundColor(.subtitleTextColor)
+            }
+        }
+        .padding()
+        .background((ThemeService.currentTheme.style == .dark || ColorProvider.shared.interfaceStyle == .dark) ? Color(uiColor: UIColor(hex: 0x2A2A2C)) : .white)
+        .cornerRadius(8)
+        .padding(.top, 30)
+        .padding(.bottom, 20)
+        .padding(.horizontal, 20)
+    }
+    
+    private func withNavigationBarAppearance(_ view: some View) -> some View {
+        guard #available(iOS 16.0, *) else { return AnyView(view) }
+        return AnyView(view.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar))
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Private Methods */
+    
+    private func confirmSignOut() {
+        viewModel.confirmSignOut(viewRouter)
+    }
+}
+
+private struct ContactView: UIViewControllerRepresentable {
+    
+    //==================================================//
+    
+    /* MARK: - Properties */
+    
+    @Binding var contact: CNContact
+    
+    //==================================================//
+    
+    /* MARK: - UIViewControllerRepresentable Methods */
+    
+    func makeCoordinator() -> ContactView.Coordinator {
+        Coordinator(self)
+    }
+    
+    func makeUIViewController(context: UIViewControllerRepresentableContext<ContactView>) -> CNContactViewController {
+        return CNContactViewController(for: contact)
+    }
+    
+    func updateUIViewController(_ uiViewController: CNContactViewController,
+                                context: UIViewControllerRepresentableContext<ContactView>) { }
+    
+    //==================================================//
+    
+    /* MARK: - Coordinator */
+    
+    class Coordinator: NSObject, CNContactViewControllerDelegate {
+        
+        //==================================================//
+        
+        /* MARK: - Properties */
+        
+        var parent: ContactView
+        
+        //==================================================//
+        
+        /* MARK: - Constructor */
+        
+        init(_ contactDetail: ContactView) {
+            self.parent = contactDetail
+        }
+    }
+}
+
+private struct StaticButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+    }
+}

@@ -21,7 +21,6 @@ public struct LanguagePickerView: View {
     @Binding public var isPresenting: Bool
     public var languages = Array(RuntimeStorage.languageCodeDictionary!.values).sorted()
     
-    @Environment(\.colorScheme) private var colorScheme
     @State private var query = ""
     @State private var selectedLanguage = ""
     
@@ -30,10 +29,16 @@ public struct LanguagePickerView: View {
     /* MARK: - View Body */
     
     public var body: some View {
-        NavigationView {
+        ThemedView(reloadsForUpdates: true) {
+            bodyView
+        }
+    }
+    
+    private var bodyView: some View {
+        withNavigationBarAppearance(NavigationView {
             ScrollViewReader { _ in
                 SearchBar(query: $query)
-                    .background(appearanceBasedBackgroundColor)
+                    .background(Color.navigationBarBackgroundColor)
                     .padding(.bottom, 7)
                 
                 VStack {
@@ -50,8 +55,13 @@ public struct LanguagePickerView: View {
                 .navigationBarTitle(LocalizedString.selectLanguage, displayMode: .inline)
                 .interactiveDismissDisabled(true)
             }
-            .background(appearanceBasedBackgroundColor)
-        }
+            .background(Color.navigationBarBackgroundColor)
+        })
+    }
+    
+    private func withNavigationBarAppearance(_ view: some View) -> some View {
+        guard #available(iOS 16.0, *) else { return AnyView(view) }
+        return AnyView(view.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar))
     }
     
     //==================================================//
@@ -62,8 +72,10 @@ public struct LanguagePickerView: View {
     private var cancelButton: some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
             Button(LocalizedString.cancel) {
+                RuntimeStorage.remove(.invitationLanguageCode)
                 isPresenting = false
             }
+            .foregroundColor(.primaryAccentColor)
         }
     }
     
@@ -73,6 +85,7 @@ public struct LanguagePickerView: View {
             Button(LocalizedString.done) {
                 isPresenting = false
             }
+            .foregroundColor(selectedLanguage == "" ? Color(uiColor: .systemGray2) : .primaryAccentColor)
             .disabled(selectedLanguage == "")
         }
     }
@@ -81,19 +94,11 @@ public struct LanguagePickerView: View {
     
     /* MARK: - View Builders */
     
-    private var appearanceBasedBackgroundColor: some View {
-        guard colorScheme == .dark else {
-            return Color(uiColor: UIColor(hex: 0xF8F8F8))
-        }
-        
-        return Color(uiColor: UIColor(hex: 0x2A2A2C))
-    }
-    
     private func cellLabel(for language: String) -> some View {
         HStack {
             Text(language)
                 .font(Font.system(size: 17, weight: .regular))
-                .foregroundColor(colorScheme == .dark ? .white : .black)
+                .foregroundColor(.titleTextColor)
             
             if language == selectedLanguage {
                 Image(systemName: "checkmark.circle.fill")

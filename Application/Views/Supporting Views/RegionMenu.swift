@@ -33,9 +33,11 @@ public struct RegionMenu: View {
                 menuButtonLabel
             }
             .popover(isPresented: $isExpanded) {
-                RegionPicker(isExpanded: $isExpanded, selectedRegionCode: $selectedRegionCode)
-                    .frame(maxWidth: .infinity, alignment: .top)
-                    .onAppear { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+                ThemedView(reloadsForUpdates: true) {
+                    RegionPicker(isExpanded: $isExpanded, selectedRegionCode: $selectedRegionCode)
+                        .frame(maxWidth: .infinity, alignment: .top)
+                        .onAppear { UIImpactFeedbackGenerator(style: .medium).impactOccurred() }
+                }
             }
         }
     }
@@ -74,7 +76,6 @@ struct RegionPicker: View {
     @Binding public var isExpanded: Bool
     @Binding public var selectedRegionCode: String
     
-    @Environment(\.colorScheme) private var colorScheme
     @State private var query = ""
     
     //==================================================//
@@ -100,7 +101,7 @@ struct RegionPicker: View {
                         }
                 }
             }
-            .background(appearanceBasedBackgroundColor)
+            .background(Color.navigationBarBackgroundColor)
         } else {
             EmptyView()
         }
@@ -109,14 +110,6 @@ struct RegionPicker: View {
     //==================================================//
     
     /* MARK: - View Builders */
-    
-    private var appearanceBasedBackgroundColor: some View {
-        guard colorScheme == .dark else {
-            return Color(uiColor: UIColor(hex: 0xF8F8F8))
-        }
-        
-        return Color(uiColor: UIColor(hex: 0x2A2A2C))
-    }
     
     private func cellLabel(for regionTitle: String) -> some View {
         HStack {
@@ -129,7 +122,7 @@ struct RegionPicker: View {
             
             Text(regionTitle)
                 .font(Font.system(size: 17, weight: .regular))
-                .foregroundColor(colorScheme == .dark ? .white : .black)
+                .foregroundColor(.titleTextColor)
             
             if let title = RegionDetailServer.getRegionTitle(forRegionCode: selectedRegionCode),
                regionTitle == title {
@@ -156,10 +149,10 @@ struct RegionPicker: View {
                 .font(Font.system(size: 17, weight: .medium))
                 .frame(maxWidth: .infinity,
                        maxHeight: 54)
-                .background(appearanceBasedBackgroundColor)
+                .background(Color.navigationBarBackgroundColor)
             
             SearchBar(query: $query)
-                .background(appearanceBasedBackgroundColor)
+                .background(Color.navigationBarBackgroundColor)
                 .padding(.bottom, 7)
         }
     }

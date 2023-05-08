@@ -25,7 +25,7 @@ public final class ChatPageViewCoordinator {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(conversation: Binding<Conversation>) {
         self.conversation = conversation
@@ -199,7 +199,10 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                                           command: RecordButtonCommand) {
         switch command {
         case .startRecording:
+            AudioPlaybackController.stopPlayback()
+            ChatServices.defaultMenuControllerService?.hideMenuIfNeeded()
             ChatServices.defaultMenuControllerService?.stopSpeakingIfNeeded()
+            
             startRecording { exception in
                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                 guard let exception else { return }
@@ -305,6 +308,12 @@ extension ChatPageViewCoordinator: MessageCellDelegate {
 
 /* MARK: MessagesDataSource */
 extension ChatPageViewCoordinator: MessagesDataSource {
+    public func audioTintColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
+        guard let message = message as? Message,
+              message.fromAccountIdentifier == RuntimeStorage.currentUser?.identifier else { return .primaryAccentColor }
+        return .white
+    }
+    
     public func cellBottomLabelAttributedText(for message: MessageType, at indexPath: IndexPath) -> NSAttributedString? {
         guard let currentUser = RuntimeStorage.currentUser,
               let otherUser = conversation.wrappedValue.otherUser,
@@ -356,6 +365,11 @@ extension ChatPageViewCoordinator: MessagesDataSource {
     public func configureAudioCell(_ cell: AudioMessageCell, message: MessageType) {
         guard let message = message as? Message else { return }
         cell.playButton.isEnabled = message.identifier != "NEW"
+        guard message.fromAccountIdentifier != RuntimeStorage.currentUser?.identifier else { return }
+        
+        cell.playButton.tintColor = .primaryAccentColor
+        cell.progressView.progressTintColor = .primaryAccentColor
+        cell.durationLabel.textColor = .primaryAccentColor
     }
     
     public func currentSender() -> SenderType {
@@ -406,12 +420,7 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
     public func backgroundColor(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> UIColor {
         guard let currentUserID = RuntimeStorage.currentUserID,
               let currentUser = RuntimeStorage.currentUser,
-              let otherUser = conversation.wrappedValue.otherUser else { return .systemBlue }
-        
-        var color = UIColor(hex: 0xE5E5EA)
-        if UITraitCollection.current.userInterfaceStyle == .dark {
-            color = UIColor(hex: 0x27252A)
-        }
+              let otherUser = conversation.wrappedValue.otherUser else { return .senderMessageBubbleColor }
         
         let index = indexPath.section
         guard let messages = RuntimeStorage.currentMessageSlice,
@@ -421,10 +430,10 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
               currentUser.languageCode != otherUser.languageCode,
               RecognitionService.shouldMarkUntranslated(messages[index].translation.output,
                                                         for: messages[index].translation.languagePair) else {
-            return message.sender.senderId == currentUserID ? .systemBlue : color
+            return message.sender.senderId == currentUserID ? .senderMessageBubbleColor : .receiverMessageBubbleColor
         }
         
-        return UIColor(hex: 0x65C466)
+        return .untranslatedMessageBubbleColor
     }
     
     public func configureAvatarView(_ avatarView: AvatarView,
@@ -455,8 +464,12 @@ extension ChatPageViewCoordinator: MessagesDisplayDelegate {
     }
     
     public func messageStyle(for message: MessageType, at indexPath: IndexPath, in messagesCollectionView: MessagesCollectionView) -> MessageStyle {
-        guard let currentUserID = RuntimeStorage.currentUserID else { return .none }
-        return message.sender.senderId == currentUserID ? .bubbleTail(.bottomRight, .curved) : .bubbleTail(.bottomLeft, .curved)
+        guard ThemeService.currentTheme != AppThemes.default else {
+            guard let currentUserID = RuntimeStorage.currentUserID else { return .none }
+            return message.sender.senderId == currentUserID ? .bubbleTail(.bottomRight, .curved) : .bubbleTail(.bottomLeft, .curved)
+        }
+        
+        return .custom({ $0.layer.cornerRadius = 10 })
     }
 }
 

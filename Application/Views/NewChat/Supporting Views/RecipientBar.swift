@@ -40,6 +40,11 @@ public class RecipientBar: UIView {
     
     private var contactTableView: UITableView!
     private var isAnimating = false
+    private var recipientBarBorderColor: CGColor {
+        let darkModeBorderColor = UIColor(hex: 0x3C3C434A).cgColor
+        guard ThemeService.currentTheme == AppThemes.default else { return darkModeBorderColor }
+        return delegate.traitCollection.userInterfaceStyle == .dark ? darkModeBorderColor : UIColor(hex: 0xDCDCDD).cgColor
+    }
     
     private struct TableViewSection {
         let letter: String
@@ -48,7 +53,7 @@ public class RecipientBar: UIView {
     
     //==================================================//
     
-    /* MARK: - Constructor Methods */
+    /* MARK: - Constructors */
     
     public init(delegate: ChatPageViewController,
                 contactPairs: [ContactPair]) {
@@ -60,8 +65,9 @@ public class RecipientBar: UIView {
                                  width: UIScreen.main.bounds.width,
                                  height: 54))
         
-        addVerticalBorders(color: UIColor.quaternaryLabel.cgColor,
+        addVerticalBorders(color: recipientBarBorderColor,
                            height: 0.3)
+        
         backgroundColor = UIColor.white.withAlphaComponent(0.98)
     }
     
@@ -423,11 +429,9 @@ public class RecipientBar: UIView {
         guard let contactEnclosingView = subview(for: "contactEnclosingView"),
               let contactLabel = contactEnclosingView.subview(Core.ui.nameTag(for: "contactLabel")) as? UILabel else { return }
         
-        guard contactEnclosingView.backgroundColor != .clear else {
-            return
-        }
+        guard contactEnclosingView.backgroundColor != .clear else { return }
         
-        contactLabel.textColor = (selectedContactPair?.isEmpty ?? false) ? .systemRed : .systemBlue
+        contactLabel.textColor = (selectedContactPair?.isEmpty ?? false) ? .systemRed : .primaryAccentColor
         let selectionColor = UIColor(hex: delegate.traitCollection.userInterfaceStyle == .dark ? 0x2A2A2C : 0xECF0F1)
         contactEnclosingView.backgroundColor = selectionColor
         contactEnclosingView.layer.borderColor = selectionColor.cgColor
@@ -460,7 +464,7 @@ public class RecipientBar: UIView {
         let currentlySelected = contactLabel.textColor == .white
         
         if currentlySelected {
-            contactLabel.textColor = useRedColor ? .systemRed : .systemBlue
+            contactLabel.textColor = useRedColor ? .systemRed : .primaryAccentColor
             let selectionColor = UIColor(hex: delegate.traitCollection.userInterfaceStyle == .dark ? 0x2A2A2C : 0xECF0F1)
             contactEnclosingView.backgroundColor = selectionColor
             contactEnclosingView.layer.borderColor = selectionColor.cgColor
@@ -473,8 +477,8 @@ public class RecipientBar: UIView {
             }
             
             contactLabel.textColor = .white
-            contactEnclosingView.backgroundColor = useRedColor ? .systemRed : .systemBlue
-            contactEnclosingView.layer.borderColor = useRedColor ? UIColor.systemRed.cgColor : UIColor.systemBlue.cgColor
+            contactEnclosingView.backgroundColor = useRedColor ? .systemRed : .primaryAccentColor
+            contactEnclosingView.layer.borderColor = useRedColor ? UIColor.systemRed.cgColor : UIColor.primaryAccentColor.cgColor
             
             delegate.messageInputBar.inputTextView.resignFirstResponder()
         }
@@ -544,7 +548,7 @@ public class RecipientBar: UIView {
         let range = textField.text!.rangeOfCharacter(from: CharacterSet.letters)
         guard range == nil else { return }
         
-        textField.text = textField.text!.phoneNumberFormatted
+        textField.text = PhoneNumberService.format(textField.text!, useFailsafe: false)
     }
     
     //==================================================//
@@ -606,7 +610,7 @@ public class RecipientBar: UIView {
         
         contactLabel.text = text
         contactLabel.textAlignment = .center
-        contactLabel.textColor = useRedColor ? .systemRed : .systemBlue
+        contactLabel.textColor = useRedColor ? .systemRed : .primaryAccentColor
         
         contactLabel.frame.size.height = contactLabel.intrinsicContentSize.height
         contactLabel.frame.size.width = contactLabel.intrinsicContentSize.width
@@ -651,6 +655,7 @@ public class RecipientBar: UIView {
     
     private func getSelectContactButton() -> UIButton {
         let selectContactButton = UIButton(type: .contactAdd)
+        selectContactButton.tintColor = .primaryAccentColor
         
         selectContactButton.addTarget(self, action: #selector(selectContactButtonAction), for: .touchUpInside)
         selectContactButton.isEnabled = false
@@ -733,15 +738,20 @@ public class RecipientBar: UIView {
     }
     
     public func updateAppearance() {
-        backgroundColor = delegate.traitCollection.userInterfaceStyle == .dark ? delegate.messagesCollectionView.backgroundColor : UIColor.white.withAlphaComponent(0.98)
+        let darkColorToUse = ThemeService.currentTheme == AppThemes.default ? UIColor.listViewBackgroundColor : UIColor.encapsulatingViewBackgroundColor
+        backgroundColor = delegate.traitCollection.userInterfaceStyle == .dark ? darkColorToUse : UIColor.white.withAlphaComponent(0.98)
         
-        guard let contactEnclosingView = subview(for: "contactEnclosingView") else { return }
+        addVerticalBorders(color: recipientBarBorderColor,
+                           height: 0.3)
+        
+        guard let contactEnclosingView = subview(for: "contactEnclosingView"),
+              let contactLabel = contactEnclosingView.subview(Core.ui.nameTag(for: "contactLabel")) as? UILabel,
+              contactLabel.textColor != .white,
+              contactEnclosingView.backgroundColor != .clear else { return }
+        
         let selectionColor = UIColor(hex: delegate.traitCollection.userInterfaceStyle == .dark ? 0x2A2A2C : 0xECF0F1)
         contactEnclosingView.backgroundColor = selectionColor
         contactEnclosingView.layer.borderColor = selectionColor.cgColor
-        
-        addVerticalBorders(color: UIColor.quaternaryLabel.cgColor,
-                           height: 0.3)
     }
 }
 
@@ -845,6 +855,8 @@ private extension UIView {
         let borderHeight = height ?? 0.3
         let borderColor = color ?? UIColor.gray.cgColor
         
+        layer.sublayers?.removeAll(where: { $0.frame.height == borderHeight && $0.backgroundColor == borderColor })
+        
         let topBorder = CALayer()
         let bottomBorder = CALayer()
         
@@ -858,7 +870,7 @@ private extension UIView {
                                     y: frame.size.height - borderHeight,
                                     width: frame.size.width,
                                     height: borderHeight)
-        bottomBorder.backgroundColor = UIColor.quaternaryLabel.cgColor
+        bottomBorder.backgroundColor = borderColor
         
         layer.addSublayer(topBorder)
         layer.addSublayer(bottomBorder)

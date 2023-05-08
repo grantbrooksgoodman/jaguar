@@ -23,10 +23,13 @@ public struct ConversationsPageView: View {
     @State private var composeButtonEnabled = true
     @State private var hasRecordedInitialYOrigin = false
     @State private var settingsButtonEnabled = true
+    @State private var shouldPulseComposeButton = false
     @State private var showingInviteLanguagePickerSheet = false
     @State private var showingNewChatSheet = false
+    @State private var showingSettingsSheet = false
     
     // CGFloats
+    @State private var animationAmount: CGFloat = 1.0
     @State private var currentYOrigin: CGFloat = 0.0
     @State private var initialYOrigin: CGFloat = 0.0
     
@@ -34,7 +37,6 @@ public struct ConversationsPageView: View {
     @StateObject public var viewModel: ConversationsPageViewModel
     @StateObject public var viewRouter: ViewRouter
     
-    @Environment(\.colorScheme) private var colorScheme
     @State private var forceAppearanceUpdate = UUID()
     @ObservedObject private var stateProvider = StateProvider.shared
     
@@ -48,10 +50,17 @@ public struct ConversationsPageView: View {
             Color.clear.onAppear { viewModel.load() }
         case .loading:
             ProgressView("" /*"Loading..."*/)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color.encapsulatingViewBackgroundColor)
         case .loaded(let translations,
                      let conversations):
-            loadedView(translations: translations,
-                       conversations: conversations)
+            ThemedView(onAppearanceChange: {
+                guard !RuntimeStorage.isPresentingChat! else { return }
+                viewModel.load(silent: true) { self.forceAppearanceUpdate = UUID() }
+            }) {
+                loadedView(translations: translations, conversations: conversations)
+                    .onAppear { UIApplication.shared.overrideUserInterfaceStyle(ThemeService.currentTheme.style) }
+            }
         case .failed(let exception):
             FailureView(exception: exception) { viewModel.load() }
         }
@@ -60,38 +69,15 @@ public struct ConversationsPageView: View {
     private func loadedView(translations: [String: Translator.Translation],
                             conversations: [Conversation]) -> some View {
         VStack {
-            NavigationView {
+            withUpdatedAppearance(NavigationView {
                 listView(conversations: conversations.visibleForCurrentUser,
                          messagesTranslation: translations["messages"]!.output)
                 .onFrameChange { frame in respondToListFrameChange(frame) }
-            }
+            }.accentColor(.primaryAccentColor))
             .id(forceAppearanceUpdate)
-            .sheet(isPresented: $showingNewChatSheet) {
-                NewChatPageView(viewModel: NewChatPageViewModel(),
-                                isPresenting: $showingNewChatSheet)
-                .onAppear {
-                    ContactNavigationRouter.currentlySelectedUser = nil
-                }
-                .onDisappear {
-                    composeButtonEnabled = true
-                    stateProvider.tappedDone = false
-                    
-                    AnalyticsService.logEvent(.dismissNewChatPage)
-                }
-            }
-            .sheet(isPresented: $showingInviteLanguagePickerSheet) {
-                LanguagePickerView(isPresenting: $showingInviteLanguagePickerSheet)
-                    .onAppear {
-                        let backgroundColor = UIColor(hex: colorScheme == .dark ? 0x2A2A2C : 0xF8F8F8)
-                        let titleColor: UIColor = colorScheme == .dark ? .white : .black
-                        Core.ui.setNavigationBarAppearance(backgroundColor: backgroundColor, titleColor: titleColor)
-                    }
-                    .onDisappear {
-                        Core.ui.resetNavigationBarAppearance()
-                        guard RuntimeStorage.invitationLanguageCode != nil else { return }
-                        InviteService.composeInvitation()
-                    }
-            }
+            .sheet(isPresented: $showingNewChatSheet) { newChatSheet }
+            .sheet(isPresented: $showingInviteLanguagePickerSheet) { inviteLanguagePickerSheet }
+            .sheet(isPresented: $showingSettingsSheet) { settingsSheet }
         }
         .onChange(of: stateProvider.hasDisappeared, perform: { newValue in
             guard newValue else { return }
@@ -120,10 +106,74 @@ public struct ConversationsPageView: View {
             showingInviteLanguagePickerSheet = true
             stateProvider.showingInviteLanguagePicker = false
         })
+        .onChange(of: stateProvider.currentUserLacksVisibleConversations, perform: { newValue in
+            guard !newValue else { return }
+            shouldPulseComposeButton = newValue
+        })
         .onAppear {
             RuntimeStorage.store(#file, as: .currentFile)
+            guard conversations.visibleForCurrentUser.count == 0 else {
+                shouldPulseComposeButton = false
+                return
+            }
+            
+            shouldPulseComposeButton = true
+            
+            guard RuntimeStorage.isFirstLaunchFromSetup! else { return }
+            RuntimeStorage.store(false, as: .isFirstLaunchFromSetup)
+            Core.gcd.after(milliseconds: 1500) { showingNewChatSheet = true }
         }
         .navigationViewStyle(.stack)
+    }
+    
+    private func withUpdatedAppearance(_ conversationsPageView: some View) -> some View {
+        guard #available(iOS 16.0, *) else { return AnyView(conversationsPageView) }
+        return AnyView(conversationsPageView.toolbarBackground(Color.navigationBarBackgroundColor, for: .navigationBar).scrollContentBackground(.hidden))
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Sheets */
+    
+    private var inviteLanguagePickerSheet: some View {
+        LanguagePickerView(isPresenting: $showingInviteLanguagePickerSheet)
+            .onAppear {
+                Core.ui.setNavigationBarAppearance(backgroundColor: .navigationBarBackgroundColor,
+                                                   titleColor: .navigationBarTitleColor)
+            }
+            .onDisappear {
+                Core.ui.resetNavigationBarAppearance()
+                guard RuntimeStorage.invitationLanguageCode != nil else { return }
+                InviteService.composeInvitation()
+            }
+    }
+    
+    private var newChatSheet: some View {
+        NewChatPageView(viewModel: NewChatPageViewModel(),
+                        isPresenting: $showingNewChatSheet)
+        .onAppear {
+            ContactNavigationRouter.currentlySelectedUser = nil
+        }
+        .onDisappear {
+            composeButtonEnabled = true
+            stateProvider.tappedDone = false
+            
+            AnalyticsService.logEvent(.dismissNewChatPage)
+        }
+    }
+    
+    private var settingsSheet: some View {
+        SettingsPageView(isPresenting: $showingSettingsSheet,
+                         viewModel: SettingsPageViewModel(),
+                         viewRouter: viewRouter)
+        .onAppear {
+            Core.ui.setNavigationBarAppearance(backgroundColor: .navigationBarBackgroundColor,
+                                               titleColor: .navigationBarTitleColor)
+        }
+        .onDisappear {
+            settingsButtonEnabled = true
+            Core.ui.resetNavigationBarAppearance()
+        }
     }
     
     //==================================================//
@@ -137,21 +187,24 @@ public struct ConversationsPageView: View {
                 showingNewChatSheet = true
                 composeButtonEnabled = false
             }) {
-                Label("Compose", systemImage: "square.and.pencil")
+                if shouldPulseComposeButton {
+                    Label("Compose", systemImage: "square.and.pencil")
+                        .foregroundColor(.primaryAccentColor)
+                        .scaleEffect(animationAmount)
+                        .animation(
+                            .linear(duration: 0.4)
+                            .delay(0.1)
+                            .repeatForever(autoreverses: true),
+                            value: animationAmount)
+                        .onAppear {
+                            animationAmount = 1.4
+                        }
+                } else {
+                    Label("Compose", systemImage: "square.and.pencil")
+                        .foregroundColor(.primaryAccentColor)
+                }
             }
             .disabled(!composeButtonEnabled)
-        }
-    }
-    
-    @ToolbarContentBuilder
-    private func doneButton(_ translation: String) -> some ToolbarContent {
-        ToolbarItem(placement: .navigationBarTrailing) {
-            Button(action: {
-                doneButtonAction()
-            }) {
-                Text(translation)
-                    .font(Font.body.bold())
-            }
         }
     }
     
@@ -159,9 +212,11 @@ public struct ConversationsPageView: View {
     private var settingsButton: some ToolbarContent {
         ToolbarItem(placement: .navigationBarLeading) {
             Button(action: {
-                settingsButtonAction()
+                showingSettingsSheet = true
+                settingsButtonEnabled = false
             }) {
                 Label("Settings", systemImage: "gearshape")
+                    .foregroundColor(.primaryAccentColor)
             }
             .disabled(!settingsButtonEnabled)
         }
@@ -170,14 +225,6 @@ public struct ConversationsPageView: View {
     //==================================================//
     
     /* MARK: - Other Views */
-    
-    private var appearanceBasedBackgroundColor: some View {
-        guard colorScheme == .dark else {
-            return Color(uiColor: UIColor(hex: 0xF8F8F8))
-        }
-        
-        return Color(uiColor: UIColor(hex: 0x2A2A2C))
-    }
     
     private func listView(conversations: [Conversation],
                           messagesTranslation: String) -> some View {
@@ -192,10 +239,14 @@ public struct ConversationsPageView: View {
                         }
                         .tint(.red)
                     })
+                    .listRowBackground(Color.encapsulatingViewBackgroundColor)
             })
         }
-        .listStyle(PlainListStyle())
+        .listStyle(.plain)
         .navigationBarTitle(messagesTranslation)
+        .navigationBarColor(backgroundColor: .navigationBarBackgroundColor,
+                            titleColor: .navigationBarTitleColor)
+        .background(Color.encapsulatingViewBackgroundColor)
         .refreshable {
             viewModel.load(silent: true)
         }
@@ -207,84 +258,11 @@ public struct ConversationsPageView: View {
     
     //==================================================//
     
-    /* MARK: - Toolbar Button Actions */
-    
-    private func doneButtonAction() {
-        guard let isSendingMessage = RuntimeStorage.isSendingMessage,
-              !isSendingMessage else {
-            Core.gcd.after(milliseconds: 500) {
-                self.doneButtonAction()
-            }
-            return
-        }
-        
-        RuntimeStorage.remove(.isSendingMessage)
-    }
-    
-    private func settingsButtonAction() {
-        settingsButtonEnabled = false
-        
-        var preferenceActions = [AKAction(title: "Clear Caches", style: .default),
-                                 AKAction(title: LocalizedString.sendFeedback, style: .default),
-                                 AKAction(title: "Log Out", style: .destructive)]
-        
-        if Build.developerModeEnabled,
-           let currentUser = RuntimeStorage.currentUser,
-           currentUser.languageCode != "en" {
-            let languageCode = currentUser.languageCode!
-            let languageName = languageCode.languageName ?? languageCode.uppercased()
-            
-            let overrideOrRestore = AKCore.shared.languageCodeIsLocked ? "Restore Language to \(languageName)" : "Override Language Code to English"
-            preferenceActions.append(AKAction(title: overrideOrRestore, style: .default))
-        }
-        
-        var translationKeys: [AKTranslationOptionKey] = [.actions(indices: [0, 2])]
-        var message = "Preferences"
-        
-        if Build.developerModeEnabled {
-            let user = RuntimeStorage.currentUser!
-            
-            let regionTitle = RegionDetailServer.getRegionTitle(forCallingCode: user.callingCode)
-            
-            let runtimeCode = RuntimeStorage.languageCode!
-            let appLanguageName = runtimeCode.languageName ?? runtimeCode.uppercased()
-            
-            let userLanguageName = user.languageCode.languageName ?? user.languageCode.uppercased()
-            
-            message = "\(user.cellTitle)\n\nEnvironment: \(GeneralSerializer.environment.description)\n\nApp Language: \(appLanguageName)\nUser Language: \(userLanguageName)\n\nRegion: \(regionTitle)"
-        } else {
-            translationKeys.append(.title)
-        }
-        
-        let actionSheet = AKActionSheet(message: message,
-                                        actions: preferenceActions,
-                                        shouldTranslate: translationKeys)
-        
-        actionSheet.present { actionID in
-            settingsButtonEnabled = true
-            
-            guard actionID != -1 else { return }
-            
-            switch actionID {
-            case preferenceActions[0].identifier:
-                viewModel.confirmClearCaches()
-            case preferenceActions[1].identifier:
-                BuildInfoOverlayViewModel().presentSendFeedbackActionSheet()
-            case preferenceActions[2].identifier:
-                viewModel.confirmSignOut(viewRouter)
-            case preferenceActions[3].identifier:
-                viewModel.overrideLanguageCode()
-            default:
-                return
-            }
-        }
-    }
-    
-    //==================================================//
-    
     /* MARK: - Private Methods */
     
     private func respondToListFrameChange(_ frame: CGRect) {
+        guard !RuntimeStorage.isPresentingChat! else { return }
+        
         guard !hasRecordedInitialYOrigin else {
             currentYOrigin = frame.origin.y
             RuntimeStorage.store(currentYOrigin, as: .currentYOrigin)
@@ -294,7 +272,9 @@ public struct ConversationsPageView: View {
                   currentYOrigin == initialYOrigin else { return }
             RuntimeStorage.topWindow?.isUserInteractionEnabled = false
             Core.gcd.after(milliseconds: 500) {
-                self.forceAppearanceUpdate = UUID()
+                if !RuntimeStorage.isPresentingChat! {
+                    self.forceAppearanceUpdate = UUID()
+                }
                 RuntimeStorage.topWindow?.isUserInteractionEnabled = true
             }
             RuntimeStorage.remove(.previousYOrigin)
@@ -305,53 +285,6 @@ public struct ConversationsPageView: View {
         guard frame.origin.y != 0 else { return }
         initialYOrigin = frame.origin.y
         hasRecordedInitialYOrigin = true
-    }
-    
-    private func testExceptionDepth() {
-        let totalToGenerate = 10
-        
-        var exceptions = [Exception]()
-        while exceptions.count < totalToGenerate {
-            let randomAction = Int().random(min: 0, max: 3)
-            
-            var randomException = Exception(SentenceGenerator.generateSentence(wordCount: 5),
-                                            isReportable: randomAction % 2 == 0,
-                                            extraParams: ["index": "nil"],
-                                            metadata: [#file, #function, Int().random(min: 0, max: 100)])
-            
-            switch randomAction {
-            case 1:
-                guard !exceptions.isEmpty else { continue }
-                let randomIndex = Int().random(min: 0, max: exceptions.count - 1)
-                
-                var randomElement = exceptions[randomIndex]
-                randomElement = randomElement.appending(underlyingException: randomException)
-                
-                exceptions.remove(at: randomIndex)
-                exceptions.insert(randomElement, at: randomIndex)
-            case 2:
-                guard !exceptions.isEmpty else { continue }
-                let randomIndex = Int().random(min: 0, max: exceptions.count - 1)
-                
-                let randomElement = exceptions[randomIndex]
-                randomException = randomException.appending(underlyingException: randomElement).appending(underlyingException: randomException)
-                
-                exceptions.append(randomException)
-            case 3:
-                for var exception in exceptions {
-                    exception = exception.appending(underlyingException: randomException).appending(underlyingException: exception)
-                }
-            default: /*0*/
-                exceptions.append(randomException)
-            }
-        }
-        
-        let compiledException = exceptions.compiledException
-        
-        guard let compiledException = compiledException else { return }
-        let underlyingExceptions = compiledException.allUnderlyingExceptions()
-        
-        print("Total desired: \(totalToGenerate)\nTotal exceptions generated: \(exceptions.count)\nAll underlying exceptions result: \(underlyingExceptions.count)")
     }
 }
 

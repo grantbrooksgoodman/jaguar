@@ -33,7 +33,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     
     public func application(_ application: UIApplication, didFinishLaunchingWithOptions _: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         preInitialize()
-        resetForFirstRunIfNeeded(environment: .staging)
+        resetForFirstRunIfNeeded(environment: .production)
         
         setUpRuntimeStorage()
         setEnvironment()
@@ -100,14 +100,14 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
             developerModeEnabled = developerMode
         }
         
-        Build.set([.appStoreReleaseVersion: 0,
+        Build.set([.appStoreReleaseVersion: 1,
                    .codeName: "Jaguar",
                    .developerModeEnabled: developerModeEnabled,
                    .dmyFirstCompileDateString: "23042022",
                    .finalName: "Hello",
                    .loggingEnabled: false,
-                   .stage: Build.Stage.releaseCandidate,
-                   .timebombActive: true])
+                   .stage: Build.Stage.generalRelease,
+                   .timebombActive: false])
         
         if Build.stage == .generalRelease {
             Build.set(.developerModeEnabled, to: false)
@@ -118,6 +118,17 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         
         Logger.exposureLevel = .verbose
         DevModeService.addStandardActions()
+        
+        if let themeName = UserDefaults.standard.value(forKey: "pendingThemeName") as? String,
+           let correspondingTheme = AppThemes.list.first(where: { $0.name == themeName }) {
+            ThemeService.setTheme(correspondingTheme, checkStyle: false)
+            UserDefaults.standard.removeObject(forKey: "pendingThemeName")
+        } else if let themeName = UserDefaults.standard.value(forKey: "currentTheme") as? String,
+                  let correspondingTheme = AppThemes.list.first(where: { $0.name == themeName }) {
+            ThemeService.setTheme(correspondingTheme, checkStyle: false)
+        } else {
+            ThemeService.setTheme(AppThemes.default, checkStyle: false)
+        }
         
         /* MARK: AlertKit Setup */
         
@@ -139,7 +150,10 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
             return
         }
         
-        RuntimeStorage.store(essentialLocalizations["language_codes"]!, as: .languageCodeDictionary)
+        let unsupportedLanguageCodes = ["ba", "ceb", "jv", "la", "mr", "ms", "udm"]
+        let supportedLanguages = essentialLocalizations["language_codes"]!.filter({ !unsupportedLanguageCodes.contains($0.key) })
+        
+        RuntimeStorage.store(supportedLanguages, as: .languageCodeDictionary)
         
         guard let languageCodeDictionary = RuntimeStorage.languageCodeDictionary else {
             Logger.log("No language code dictionary!",
@@ -161,6 +175,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         StateProvider.shared.hasDisappeared = false
         
         RuntimeStorage.store(false, as: .acknowledgedAudioMessagesUnsupported)
+        RuntimeStorage.store(false, as: .isFirstLaunchFromSetup)
         RuntimeStorage.store(false, as: .isPresentingChat)
         RuntimeStorage.store(false, as: .isSendingMessage)
         RuntimeStorage.store(false, as: .receivedNotification)
@@ -180,6 +195,25 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         
         if let mismatchedHashes = UserDefaults.standard.value(forKey: "mismatchedHashes") as? [String] {
             RuntimeStorage.store(mismatchedHashes, as: .mismatchedHashes)
+        }
+        
+        if UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool == nil {
+            UserDefaults.standard.set(false, forKey: "hidesBuildInfoOverlay")
+        }
+        
+        if let firstPostponedUpdateString = UserDefaults.standard.value(forKey: "firstPostponedUpdate") as? String,
+           let asDate = Core.masterDateFormatter?.date(from: firstPostponedUpdateString) {
+            UpdateService.setFirstPostponedUpdate(asDate)
+            
+            if let relaunchesSinceLastPostponed = UserDefaults.standard.value(forKey: "relaunchesSinceLastPostponed") as? Int {
+                UpdateService.setRelaunchesSinceLastPostponed(relaunchesSinceLastPostponed + 1)
+            } else {
+                UpdateService.setRelaunchesSinceLastPostponed(UpdateService.relaunchesSinceLastPostponed + 1)
+            }
+        }
+        
+        if let buildNumberWhenLastForcedToUpdate = UserDefaults.standard.value(forKey: "buildNumberWhenLastForcedToUpdate") as? Int {
+            UpdateService.setBuildNumberWhenLastForcedToUpdate(buildNumberWhenLastForcedToUpdate)
         }
     }
     
@@ -244,17 +278,15 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     
     private func setUpContactArchive() {
         ContactArchiver.getArchive { _, exception in
-            guard let error = exception else { return }
-            
-            Logger.log(error)
+            guard let exception else { return }
+            Logger.log(exception)
         }
     }
     
     private func setUpConversationArchive() {
         ConversationArchiver.getArchive { _, exception in
-            guard let error = exception else { return }
-            
-            Logger.log(error)
+            guard let exception else { return }
+            Logger.log(exception)
         }
     }
     

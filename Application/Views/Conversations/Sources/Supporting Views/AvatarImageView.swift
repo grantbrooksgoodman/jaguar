@@ -16,6 +16,9 @@ public struct AvatarImageView: View {
     /* MARK: - Properties */
     
     public var uiImage: UIImage?
+    public var dimensions: CGSize?
+    public var size: CGFloat?
+    public var includePadding = true
     
     //==================================================//
     
@@ -26,18 +29,18 @@ public struct AvatarImageView: View {
             Image(uiImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
-                .font(.system(size: 50))
-                .frame(width: 50, height: 50)
+                .font(.system(size: size ?? 50))
+                .frame(width: dimensions?.width ?? 50, height: dimensions?.height ?? 50)
                 .cornerRadius(10)
                 .clipShape(Circle())
-                .padding(.top, 10)
+                .padding(.top, includePadding ? 10 : 0)
         } else {
             Image(systemName: "person.crop.circle.fill")
-                .font(.system(size: 50))
-                .frame(width: 50, height: 50)
+                .font(.system(size: size ?? 50))
+                .frame(width: dimensions?.width ?? 50, height: dimensions?.height ?? 50)
                 .cornerRadius(10)
                 .foregroundColor(Color.gray)
-                .padding(.top, 10)
+                .padding(.top, includePadding ? 10 : 0)
         }
     }
 }

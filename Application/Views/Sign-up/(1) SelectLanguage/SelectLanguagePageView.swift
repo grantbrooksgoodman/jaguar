@@ -38,65 +38,70 @@ public struct SelectLanguagePageView: View {
         switch viewModel.state {
         case .idle:
             Color.clear.onAppear {
-                RuntimeStorage.store(Locale.preferredLanguages[0].components(separatedBy: "-")[0],
-                                     as: .languageCode)
-                AKCore.shared.setLanguageCode(Locale.preferredLanguages[0].components(separatedBy: "-")[0])
+                guard let selectedLanguageCode = RuntimeStorage.localizedLanguageCodeDictionary?.allKeys(forValue: selectedLanguage).first else {
+                    viewModel.load()
+                    return
+                }
+                
+                Core.restoreDeviceLanguageCode()
                 viewModel.load()
                 
                 languages = Array(RuntimeStorage.localizedLanguageCodeDictionary!.values).sorted()
-                selectedLanguage = RuntimeStorage.localizedLanguageCodeDictionary![RuntimeStorage.languageCode!]!
+                selectedLanguage = RuntimeStorage.localizedLanguageCodeDictionary![selectedLanguageCode]!
             }
         case .loading:
             ProgressView("" /*"Loading..."*/)
         case .loaded(let translations):
-            VStack {
-                TitleSubtitleView(translations: translations)
-                
-                VStack(alignment: .center) {
-                    Text(translations["instruction"]!.output)
-                        .bold()
-                        .foregroundColor(.gray)
-                        .font(.system(size: 16))
-                        .padding(.vertical, 5)
+            ThemedView {
+                VStack {
+                    TitleSubtitleView(translations: translations)
                     
-                    Picker("", selection: $selectedLanguage) {
-                        ForEach(languages, id: \.self) {
-                            Text($0)
-                        }
-                    }
-                    .pickerStyle(.wheel)
-                    .padding(.horizontal, 30)
-                    
-                    Button {
-                        guard let selectedLanguageCode = RuntimeStorage.localizedLanguageCodeDictionary!.allKeys(forValue: selectedLanguage).first else { return }
-                        
-                        RegionDetailServer.clearCache()
-                        RuntimeStorage.store(selectedLanguageCode, as: .languageCode)
-                        AKCore.shared.setLanguageCode(selectedLanguageCode)
-                        
-                        viewRouter.currentPage = .signUp_verifyNumber
-                        pressedContinue = true
-                    } label: {
-                        Text(translations["continue"]!.output)
+                    VStack(alignment: .center) {
+                        Text(translations["instruction"]!.output)
                             .bold()
+                            .foregroundColor(.gray)
+                            .font(.system(size: 16))
+                            .padding(.vertical, 5)
+                        
+                        Picker("", selection: $selectedLanguage) {
+                            ForEach(languages, id: \.self) {
+                                Text($0)
+                            }
+                        }
+                        .pickerStyle(.wheel)
+                        .padding(.horizontal, 30)
+                        
+                        Button {
+                            guard let selectedLanguageCode = RuntimeStorage.localizedLanguageCodeDictionary!.allKeys(forValue: selectedLanguage).first else { return }
+                            
+                            RegionDetailServer.clearCache()
+                            RuntimeStorage.store(selectedLanguageCode, as: .languageCode)
+                            AKCore.shared.setLanguageCode(selectedLanguageCode)
+                            
+                            viewRouter.currentPage = .signUp_verifyNumber
+                            pressedContinue = true
+                        } label: {
+                            Text(translations["continue"]!.output)
+                                .bold()
+                        }
+                        .padding(.top, 5)
+                        .foregroundColor(.blue)
+                        .disabled(pressedContinue)
+                        
+                        Button {
+                            viewRouter.currentPage = .initial
+                        } label: {
+                            Text(translations["back"]!.output)
+                        }
+                        .padding(.top, 2)
+                        .foregroundColor(.blue)
+                        .font(.system(size: 15))
                     }
-                    .padding(.top, 5)
-                    .foregroundColor(.blue)
-                    .disabled(pressedContinue)
+                    .padding(.top, 50)
                     
-                    Button {
-                        viewRouter.currentPage = .initial
-                    } label: {
-                        Text(translations["back"]!.output)
-                    }
-                    .padding(.top, 2)
-                    .foregroundColor(.blue)
-                    .font(.system(size: 15))
-                }
-                .padding(.top, 50)
-                
-                Spacer()
-            }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
+                    Spacer()
+                }.onAppear { RuntimeStorage.store(#file, as: .currentFile) }
+            }
         case .failed(let exception):
             FailureView(exception: exception) { viewModel.load() }
         }

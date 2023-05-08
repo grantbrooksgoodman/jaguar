@@ -21,7 +21,7 @@ public struct ConversationID: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(key: String, hash: String) {
         self.key = key

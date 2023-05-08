@@ -27,7 +27,7 @@ public class Conversation: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(identifier: ConversationID,
                 messageIdentifiers: [String],

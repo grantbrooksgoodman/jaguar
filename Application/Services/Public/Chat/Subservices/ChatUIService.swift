@@ -47,7 +47,7 @@ public class ChatUIService: ChatService {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(delegate: ChatUIDelegate) {
         self.delegate = delegate

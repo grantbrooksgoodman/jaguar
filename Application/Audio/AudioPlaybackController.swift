@@ -68,20 +68,7 @@ public class AudioPlaybackController {
         startPlaybackTimer()
     }
     
-    // MARK: Private
-    
-    private static func playAudio(url: URL) {
-        resetAudioSession { exception in
-            guard let exception else { return }
-            Logger.log(exception)
-        }
-        
-        player.removeAllItems()
-        player.insert(AVPlayerItem(url: url), after: nil)
-        player.play()
-    }
-    
-    private static func stopPlayback() {
+    public static func stopPlayback() {
         player.removeAllItems()
         
         guard let playingCell,
@@ -97,6 +84,19 @@ public class AudioPlaybackController {
         
         resetVariables()
         stopPlaybackForAllVisibleCells()
+    }
+    
+    // MARK: Private
+    
+    private static func playAudio(url: URL) {
+        resetAudioSession { exception in
+            guard let exception else { return }
+            Logger.log(exception)
+        }
+        
+        player.removeAllItems()
+        player.insert(AVPlayerItem(url: url), after: nil)
+        player.play()
     }
     
     private static func stopPlaybackForAllVisibleCells() {

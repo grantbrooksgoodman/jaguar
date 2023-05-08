@@ -61,6 +61,22 @@ public struct DevModeService {
     
     //==================================================//
     
+    /* MARK: - Action Removal */
+    
+    public static func removeAction(at index: Int) {
+        guard index < actions.count,
+              index > -1 else { return }
+        
+        actions.remove(at: index)
+    }
+    
+    public static func removeAction(withTitle: String) {
+        guard actions.contains(where: { $0.title == withTitle }) else { return }
+        actions.removeAll(where: { $0.title == withTitle })
+    }
+    
+    //==================================================//
+    
     /* MARK: - Menu Presentation */
     
     public static func presentActionSheet() {

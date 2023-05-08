@@ -124,9 +124,9 @@ public struct PhoneNumberService {
         return formattedString.trimmingBorderedWhitespace
     }
     
-    public static func format(_ number: String) -> String {
+    public static func format(_ number: String, useFailsafe: Bool = true) -> String {
         let digits = number.digits
-        let fallbackFormatted = failsafeFormat(digits)
+        let fallbackFormatted = useFailsafe ? failsafeFormat(digits) : digits
         
         guard containsCallingCode(number: digits),
               let callingCodes = matchingCountryCodes(for: digits),

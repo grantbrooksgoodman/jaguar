@@ -21,7 +21,7 @@ public struct Participant: Codable, Equatable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(userID: String,
                 hasDeleted: Bool,

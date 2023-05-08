@@ -15,12 +15,10 @@ public struct ContactSelectorView: View {
     
     /* MARK: - Properties */
     
+    @State public var contactPairs: [ContactPair]
     @Binding public var isPresenting: Bool
     @Binding public var selectedContactPair: ContactPair?
     
-    @State public var contactPairs: [ContactPair]
-    
-    @Environment(\.colorScheme) private var colorScheme
     @State private var query = ""
     
     //==================================================//
@@ -28,11 +26,17 @@ public struct ContactSelectorView: View {
     /* MARK: - View Body */
     
     public var body: some View {
+        ThemedView(reloadsForUpdates: true) {
+            bodyView
+        }
+    }
+    
+    private var bodyView: some View {
         NavigationView {
             VStack(spacing: 0) {
                 SearchBar(query: $query)
                     .padding(.bottom, 14)
-                    .background(Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x2A2A2C) : UIColor(hex: 0xF8F8F8)))
+                    .background(Color.navigationBarBackgroundColor)
                 
                 ScrollViewReader { scrollView in
                     HStack {
@@ -66,6 +70,7 @@ public struct ContactSelectorView: View {
                     } label: {
                         Text(LocalizedString.invite)
                             .font(Font.body.bold())
+                            .foregroundColor(.primaryAccentColor)
                     }
                 }
                 
@@ -74,6 +79,7 @@ public struct ContactSelectorView: View {
                         selectedContactPair = nil
                         isPresenting = false
                     }
+                    .foregroundColor(.primaryAccentColor)
                 }
             }
             .navigationBarTitle(LocalizedString.contacts, displayMode: .inline)

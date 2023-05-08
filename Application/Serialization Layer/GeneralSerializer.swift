@@ -113,46 +113,4 @@ public enum GeneralSerializer {
             completion(Exception(error, metadata: [#file, #function, #line]))
         })
     }
-    
-    
-    //==================================================//
-    
-    /* MARK: - Stored Variable Retrieval */
-    
-    public static func getAppShareLink(completion: @escaping(_ link: URL?,
-                                                             _ exception: Exception?) -> Void) {
-        getValues(atPath: "/shared/appShareLink") { values, exception in
-            guard let linkString = values as? String,
-                  let url = URL(string: linkString) else {
-                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                return
-            }
-            
-            completion(url, nil)
-        }
-    }
-    
-    public static func getPushApiKey(completion: @escaping(_ key: String?,
-                                                           _ exception: Exception?) -> Void) {
-        getValues(atPath: "/shared/pushApiKey") { values, exception in
-            guard let key = values as? String else {
-                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                return
-            }
-            
-            completion(key, nil)
-        }
-    }
-    
-    public static func getRedirectionKey(completion: @escaping(_ key: String?,
-                                                               _ exception: Exception?) -> Void) {
-        getValues(atPath: "/shared/redirectionKey") { values, exception in
-            guard let key = values as? String else {
-                completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                return
-            }
-            
-            completion(key, nil)
-        }
-    }
 }

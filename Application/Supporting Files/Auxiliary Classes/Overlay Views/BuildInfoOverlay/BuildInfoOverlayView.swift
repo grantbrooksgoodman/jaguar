@@ -59,8 +59,7 @@ public struct BuildInfoOverlayView: View {
             }
             
             Text("\(Build.codeName) \(Build.bundleVersion) (\(String(Build.buildNumber))\(Build.stage.description(short: true)))")
-                .font(Font.custom("SFUIText-Bold",
-                                  size: 13))
+                .font(Font.custom("SFUIText-Bold", size: 13))
                 .foregroundColor(.white)
         })
         .padding(.all, 1)

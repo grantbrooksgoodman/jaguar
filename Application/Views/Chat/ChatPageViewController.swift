@@ -46,6 +46,7 @@ public final class ChatPageViewController: MessagesViewController,
         
         registerServices()
         
+        configureBackgroundColor()
         configureCollectionViewLayout()
         configureInitialInputBar()
         updateAppearance(forTraitCollectionChange: false)
@@ -71,21 +72,29 @@ public final class ChatPageViewController: MessagesViewController,
         if let retranslationService { ChatServices.register(service: retranslationService) }
     }
     
+    public override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+        
+        RuntimeStorage.store(true, as: .isPresentingChat)
+        DevModeService.removeAction(withTitle: "Show/Hide Build Info Overlay")
+    }
+    
     public override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         
         becomeFirstResponder()
         
         Core.gcd.after(seconds: 3) { self.configureTimers() }
-        Core.gcd.after(milliseconds: 500) { self.messagesCollectionView.scrollToLastItem(animated: true) }
+        Core.gcd.after(milliseconds: 500) {
+            guard self.delegatesHaveBeenSet else { return }
+            self.messagesCollectionView.scrollToLastItem(animated: true)
+        }
         
         Database.database().reference().removeAllObservers()
         
         ChatServices.observerService?.setUpNewMessageObserver()
         ChatServices.observerService?.setUpReadDateObserver()
         ChatServices.observerService?.setUpTypingIndicatorObserver()
-        
-        RuntimeStorage.store(true, as: .isPresentingChat)
     }
     
     public override func viewDidLayoutSubviews() {
@@ -120,6 +129,7 @@ public final class ChatPageViewController: MessagesViewController,
         
         RuntimeStorage.store(false, as: .isPresentingChat)
         
+        // #warning("Possibly redundant due to removeRecordingUI() call.")
         SpeechService.shared.stopRecording { fileURL, exception in
             guard let fileURL else {
                 let error = exception ?? Exception(metadata: [#file, #function, #line])
@@ -138,11 +148,13 @@ public final class ChatPageViewController: MessagesViewController,
         super.viewDidDisappear(animated)
         
         if let window = RuntimeStorage.topWindow!.subview(Core.ui.nameTag(for: "buildInfoOverlayWindow")) as? UIWindow {
-            //            window.rootViewController = UIHostingController(rootView: BuildInfoOverlayView(yOffset: 0))
-            window.isHidden = false
+            var shouldHide = UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool
+            shouldHide = shouldHide == nil ? true : shouldHide!
+            window.isHidden = shouldHide!
         }
         
         ChatServices.menuControllerService?.resetAllAlternates()
+        DevModeService.addStandardActions()
         
         RuntimeStorage.store("ConversationsPageView.swift", as: .currentFile)
         RuntimeStorage.topWindow?.isUserInteractionEnabled = false
@@ -259,6 +271,11 @@ public final class ChatPageViewController: MessagesViewController,
     /* Setup */
     
     private func configureTimers() {
+        guard delegatesHaveBeenSet else {
+            discardTimer(.both)
+            return
+        }
+        
         guard reloadTimer == nil else {
             discardTimer(.reload)
             configureTimers()
@@ -317,7 +334,13 @@ public final class ChatPageViewController: MessagesViewController,
             return
         }
         
-        guard RuntimeStorage.shouldReloadData! else { return }
+        guard RuntimeStorage.shouldReloadData!,
+              !messagesCollectionView.isDragging,
+              !messagesCollectionView.isTracking,
+              !messagesCollectionView.isDecelerating,
+              !AudioPlaybackController.isPlaying,
+              !UIMenuController.shared.isMenuVisible else { return }
+        
         messagesCollectionView.reloadData()
         messagesCollectionView.scrollToLastItem(animated: true)
         RuntimeStorage.store(false, as: .shouldReloadData)
@@ -360,6 +383,11 @@ public final class ChatPageViewController: MessagesViewController,
     
     /* MARK: - UI Configuration */
     
+    private func configureBackgroundColor() {
+        messagesCollectionView.backgroundColor = .encapsulatingViewBackgroundColor
+        messagesCollectionView.backgroundView?.backgroundColor = .encapsulatingViewBackgroundColor
+    }
+    
     private func configureCollectionViewLayout() {
         guard let layout = messagesCollectionView.collectionViewLayout as? MessagesCollectionViewFlowLayout  else { return }
         layout.textMessageSizeCalculator.outgoingAvatarSize = .zero
@@ -390,8 +418,8 @@ public final class ChatPageViewController: MessagesViewController,
         messageInputBar.inputTextView.layer.borderWidth = 0.5
         messageInputBar.inputTextView.layer.cornerRadius = 15
         
-        messageInputBar.sendButton.setImage(UIImage(named: configureInputBarForText ? "Send" : "Record"), for: .normal)
-        messageInputBar.sendButton.setImage(UIImage(named: "\(configureInputBarForText ? "Send" : "Record") (Highlighted)"), for: .highlighted)
+        messageInputBar.sendButton.setImage(sendButtonImage(record: !configureInputBarForText), for: .normal)
+        messageInputBar.sendButton.setImage(sendButtonImage(record: !configureInputBarForText, highlighted: true), for: .highlighted)
         messageInputBar.sendButton.tintColor = configureInputBarForText ? .systemBlue : .red
         
         messageInputBar.sendButton
@@ -417,6 +445,7 @@ public final class ChatPageViewController: MessagesViewController,
                                                     y: 0,
                                                     width: UIScreen.main.bounds.width,
                                                     height: 2))
+        progressView!.progressTintColor = .primaryAccentColor
         progressView!.progressViewStyle = .bar
         progressView!.progress = 0
         view.addSubview(progressView!)
@@ -437,37 +466,49 @@ public final class ChatPageViewController: MessagesViewController,
         view.addSubview(recipientBar!)
     }
     
-    private func updateAppearance(forTraitCollectionChange: Bool) {
-        if traitCollection.userInterfaceStyle == .dark {
-            messageInputBar.backgroundView.backgroundColor = UIColor(hex: 0x1A1A1C)
+    private func sendButtonImage(record: Bool,
+                                 highlighted: Bool = false) -> UIImage? {
+        guard record else {
+            let imageName = ThemeService.currentTheme != AppThemes.default ? "Send (Alternate\(highlighted ? " - Highlighted)" : ")")" : "Send\(highlighted ? " (Highlighted)" : "")"
+            return UIImage(named: imageName)
         }
+        
+        return UIImage(named: "Record\(highlighted ? " (Highlighted)" : "")")
+    }
+    
+    private func setTextInsets(for cell: TextMessageCell,
+                               at indexPath: IndexPath) {
+        guard ThemeService.currentTheme != AppThemes.default,
+              let currentUserID = RuntimeStorage.currentUserID,
+              let messageSlice = RuntimeStorage.currentMessageSlice,
+              messageSlice.count > indexPath.section else { return }
+        
+        let currentMessage = messageSlice[indexPath.section]
+        guard !currentMessage.isDisplayingAlternate else { return }
+        
+        guard currentMessage.fromAccountIdentifier == currentUserID else {
+            cell.messageLabel.textInsets.left = 15
+            return
+        }
+        
+        cell.messageLabel.textInsets.right = 1
+    }
+    
+    private func updateAppearance(forTraitCollectionChange: Bool) {
+        messageInputBar.backgroundView.backgroundColor = .inputBarBackgroundColor
         
         guard forTraitCollectionChange else {
-            switch traitCollection.userInterfaceStyle {
-            case .light:
-                Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF3F3F3),
-                                                   titleColor: .black)
-                navigationController?.isNavigationBarHidden = true
-                navigationController?.isNavigationBarHidden = false
-            default:
-                return
-            }
+            guard traitCollection.userInterfaceStyle == .light else { return }
+            Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF3F3F3),
+                                               titleColor: .navigationBarTitleColor)
+            navigationController?.isNavigationBarHidden = true
+            navigationController?.isNavigationBarHidden = false
             return
         }
         
-        switch traitCollection.userInterfaceStyle {
-        case .dark:
-            Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0x2A2A2C),
-                                               titleColor: .white)
-            recipientBar?.updateAppearance()
-        case .light:
-            messageInputBar.backgroundView.backgroundColor = .white
-            Core.ui.setNavigationBarAppearance(backgroundColor: UIColor(hex: 0xF8F8F8),
-                                               titleColor: .black)
-            recipientBar?.updateAppearance()
-        default:
-            return
-        }
+        Core.ui.setNavigationBarAppearance(backgroundColor: .navigationBarBackgroundColor,
+                                           titleColor: .navigationBarTitleColor)
+        recipientBar?.updateAppearance()
         
         navigationController?.isNavigationBarHidden = true
         navigationController?.isNavigationBarHidden = false
@@ -486,11 +527,16 @@ public final class ChatPageViewController: MessagesViewController,
         guard let genericCell = super.collectionView(collectionView, cellForItemAt: indexPath) as? MessageCollectionViewCell else { return UICollectionViewCell() }
         genericCell.tag = indexPath.section
         
-        guard let messageSlice = RuntimeStorage.currentMessageSlice,
-              messageSlice.count > indexPath.section,
-              messageSlice[indexPath.section].isDisplayingAlternate,
-              let textCell = genericCell as? TextMessageCell else { return genericCell }
+        guard let textCell = genericCell as? TextMessageCell,
+              let messageSlice = RuntimeStorage.currentMessageSlice,
+              messageSlice.count > indexPath.section else {
+            return genericCell
+        }
         
+        let currentMessage = messageSlice[indexPath.section]
+        setTextInsets(for: textCell, at: indexPath)
+        
+        guard currentMessage.isDisplayingAlternate else { return textCell }
         textCell.messageLabel.font = textCell.messageLabel.font.withTraits(traits: .traitItalic)
         
         guard textCell.messageContainerView.frame.size.height < 40 else { return textCell }
@@ -591,6 +637,7 @@ extension ChatPageViewController: ChatUIDelegate {
         guard forRecord else {
             guard messageInputBar.sendButton.isRecordButton else { return }
             messageInputBar.sendButton.gestureRecognizers?.removeAll()
+            messageInputBar.sendButton.tag = 0
             
             UIView.transition(with: messageInputBar.sendButton,
                               duration: 0.3,
@@ -598,15 +645,16 @@ extension ChatPageViewController: ChatUIDelegate {
                 self.messageInputBar.inputTextView.layer.borderColor = UIColor.clear.cgColor
                 self.messageInputBar.contentView.layer.borderColor = UIColor.systemGray.cgColor
                 
-                self.messageInputBar.sendButton.setImage(UIImage(named: "Send"), for: .normal)
-                self.messageInputBar.sendButton.setImage(UIImage(named: "Send (Highlighted)"), for: .highlighted)
-                self.messageInputBar.sendButton.tintColor = .systemBlue
+                self.messageInputBar.sendButton.setImage(self.sendButtonImage(record: false), for: .normal)
+                self.messageInputBar.sendButton.setImage(self.sendButtonImage(record: false, highlighted: true), for: .highlighted)
+                self.messageInputBar.sendButton.tintColor = .primaryAccentColor
             }
             
             return
         }
         
         guard !messageInputBar.sendButton.isRecordButton else { return }
+        messageInputBar.sendButton.tag = Core.ui.nameTag(for: "recordButton")
         
         UIView.transition(with: messageInputBar.sendButton,
                           duration: 0.3,
@@ -614,8 +662,8 @@ extension ChatPageViewController: ChatUIDelegate {
             self.messageInputBar.contentView.layer.borderColor = UIColor.clear.cgColor
             self.messageInputBar.inputTextView.layer.borderColor = UIColor.systemGray.cgColor
             
-            self.messageInputBar.sendButton.setImage(UIImage(named: "Record"), for: .normal)
-            self.messageInputBar.sendButton.setImage(UIImage(named: "Record (Highlighted)"), for: .highlighted)
+            self.messageInputBar.sendButton.setImage(self.sendButtonImage(record: true), for: .normal)
+            self.messageInputBar.sendButton.setImage(self.sendButtonImage(record: true, highlighted: true), for: .highlighted)
             self.messageInputBar.sendButton.tintColor = .red
             
             ChatServices.audioMessageService?.addGestureRecognizers()
@@ -667,6 +715,7 @@ extension ChatPageViewController: ChatUIDelegate {
                                         style: .plain,
                                         target: self,
                                         action: #selector(self.toggleDoneButton))
+            barButton.tintColor = .primaryAccentColor
             barButton.tag = Core.ui.nameTag(for: "cancelButton")
             return
         }
@@ -675,6 +724,7 @@ extension ChatPageViewController: ChatUIDelegate {
                                     style: .done,
                                     target: self,
                                     action: #selector(self.toggleDoneButton))
+        barButton.tintColor = .primaryAccentColor
         barButton.tag = Core.ui.nameTag(for: "doneButton")
     }
     
@@ -720,12 +770,19 @@ extension ChatPageViewController: UITextViewDelegate {
     public func textViewDidBeginEditing(_ textView: UITextView) {
         messageInputBar.tag = 88
         
-        Core.gcd.after(milliseconds: 250) { self.messagesCollectionView.scrollToLastItem(animated: true) }
+        Core.gcd.after(milliseconds: 250) {
+            guard self.delegatesHaveBeenSet else { return }
+            self.messagesCollectionView.scrollToLastItem(animated: true)
+        }
         
         UIMenuController.shared.menuItems = nil
         ChatServices.menuControllerService?.hideMenuIfNeeded()
         
         guard let recipientBar = recipientBar else { return }
         recipientBar.deselectContact(animated: true)
+    }
+    
+    public func textViewDidChange(_ textView: UITextView) {
+        configureInputBar(forRecord: textView.text == nil)
     }
 }

@@ -20,7 +20,7 @@ public struct ContactPair: Codable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(contact: Contact, numberPairs: [NumberPair]?) {
         self.contact = contact

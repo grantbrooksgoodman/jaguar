@@ -23,7 +23,7 @@ public struct LogFile {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(fileName: String,
                 directoryName: String,

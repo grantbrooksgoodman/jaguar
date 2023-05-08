@@ -48,6 +48,6 @@ public struct SearchBar: View {
             .cornerRadius(10)
         }
         .padding([.leading, .trailing])
-        .background(Color(uiColor: colorScheme == .dark ? UIColor(hex: 0x2A2A2C) : UIColor(hex: 0xF8F8F8)))
+        .background(Color.navigationBarBackgroundColor)
     }
 }

@@ -148,8 +148,9 @@ public final class SpeechService: NSObject {
         var chosenVoice: AVSpeechSynthesisVoice?
         for voice in applicableVoices {
             guard voice.quality == .enhanced,
-                  !voice.audioFileSettings.isEmpty,
-                  chosenVoice == nil else { continue }
+                  chosenVoice == nil,
+                  !voice.audioFileSettings.isEmpty else { continue }
+            
             chosenVoice = voice
         }
         

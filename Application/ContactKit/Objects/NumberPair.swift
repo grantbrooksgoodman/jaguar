@@ -21,7 +21,7 @@ public struct NumberPair: Codable {
     
     //==================================================//
     
-    /* MARK: - Constructor Method */
+    /* MARK: - Constructor */
     
     public init(number: String,
                 users: [User],

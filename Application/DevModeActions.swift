@@ -28,7 +28,9 @@ public extension DevModeService {
         let resetUserDefaultsAction = DevModeAction(title: "Reset UserDefaults", perform: resetUserDefaults)
         let switchEnvironmentAction = DevModeAction(title: "Switch Environment", perform: switchEnvironment)
         let overrideLanguageCodeAction = DevModeAction(title: "Override Language Code", perform: overrideLanguageCode)
-        let restoreResetOnFirstRunFlag = DevModeAction(title: "Restore “Reset on First Run” Flag", perform: restoreResetOnFirstRunFlag)
+        let restoreResetOnFirstRunFlagAction = DevModeAction(title: "Restore “Reset on First Run” Flag", perform: restoreResetOnFirstRunFlag)
+        let changeThemeAction = DevModeAction(title: "Change Theme", perform: changeTheme)
+        let toggleBuildInfoOverlayAction = DevModeAction(title: "Show/Hide Build Info Overlay", perform: toggleBuildInfoOverlay)
         
         let destroyConversationDatabaseAction = DevModeAction(title: "Destroy Conversation Database",
                                                               perform: destroyConversationDatabase,
@@ -44,7 +46,9 @@ public extension DevModeService {
                                resetUserDefaultsAction,
                                switchEnvironmentAction,
                                overrideLanguageCodeAction,
-                               restoreResetOnFirstRunFlag,
+                               changeThemeAction,
+                               toggleBuildInfoOverlayAction,
+                               restoreResetOnFirstRunFlagAction,
                                destroyConversationDatabaseAction,
                                resetPushTokensAction,
                                disableDeveloperModeAction]
@@ -54,6 +58,28 @@ public extension DevModeService {
     //==================================================//
     
     /* MARK: - Action Handlers */
+    
+    private static func changeTheme() {
+        var actions = [AKAction]()
+        var actionIDs = [Int: String]()
+        
+        for theme in AppThemes.list {
+            guard theme.name != ThemeService.currentTheme.name else { continue }
+            let action = AKAction(title: theme.name, style: .default)
+            actions.append(action)
+            actionIDs[action.identifier] = theme.name
+        }
+        
+        AKActionSheet(message: "Change Theme",
+                      actions: actions,
+                      shouldTranslate: [.none]).present { actionID in
+            guard actionID != -1,
+                  let themeName = actionIDs[actionID],
+                  let correspondingTheme = AppThemes.list.first(where: { $0.name == themeName }) else { return }
+            
+            ThemeService.setTheme(correspondingTheme, checkStyle: false)
+        }
+    }
     
     private static func clearCaches() {
         ContactArchiver.clearArchive()
@@ -242,6 +268,22 @@ public extension DevModeService {
                 fatalError()
             }
         }
+    }
+    
+    private static func toggleBuildInfoOverlay() {
+        guard let overlay = RuntimeStorage.topWindow?.subview(Core.ui.nameTag(for: "buildInfoOverlayWindow")) as? UIWindow else { return }
+        
+        guard !RuntimeStorage.isPresentingChat! else { return }
+        
+        guard let currentValue = UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool else {
+            overlay.isHidden.toggle()
+            UserDefaults.standard.set(overlay.isHidden, forKey: "hidesBuildInfoOverlay")
+            return
+        }
+        
+        let toggledValue = !currentValue
+        overlay.isHidden = toggledValue
+        UserDefaults.standard.set(toggledValue, forKey: "hidesBuildInfoOverlay")
     }
     
     //==================================================//
