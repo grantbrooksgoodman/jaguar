@@ -24,7 +24,7 @@ public struct FirebaseTranslator: Translatorable {
     public func getTranslations(for inputs: [TranslationInput],
                                 languagePair: LanguagePair,
                                 requiresHUD: Bool? = nil,
-                                using: TranslationPlatform? = nil,
+                                using: PlatformName? = nil,
                                 completion: @escaping(_ returnedTranslations: [Translation]?,
                                                       _ exception: Exception?) -> Void) {
         guard !(languagePair.from == "en" && languagePair.to == "en") else {
@@ -54,14 +54,14 @@ public struct FirebaseTranslator: Translatorable {
             self.translate(input,
                            with: languagePair,
                            requiresHUD: requiresHUD,
-                           using: using ?? .google) { (returnedTranslation, exception) in
-                if let translation = returnedTranslation {
+                           using: using ?? .google) { translation, exception in
+                if let translation {
                     translations.append(translation)
                 }
                 //else
-                if let unwrappedException = exception {
-                    exceptions.append(unwrappedException.appending(extraParams: ["TranslationInputOriginal": input.original,
-                                                                                 "TranslationInputAlternate": input.alternate ?? ""]))
+                if let exception {
+                    exceptions.append(exception.appending(extraParams: ["TranslationInputOriginal": input.original,
+                                                                        "TranslationInputAlternate": input.alternate ?? ""]))
                 }
                 
                 Logger.logToStream("Translated item \(index + 1) of \(inputs.count).",
@@ -94,7 +94,7 @@ public struct FirebaseTranslator: Translatorable {
     public func translate(_ input: TranslationInput,
                           with languagePair: LanguagePair,
                           requiresHUD: Bool? = nil,
-                          using: TranslationPlatform? = nil,
+                          using: PlatformName? = nil,
                           completion: @escaping (_ returnedTranslation: Translation?,
                                                  _ exception: Exception?) -> Void) {
         if let archivedTranslation = TranslationArchiver.getFromArchive(input, languagePair: languagePair) {
@@ -144,9 +144,8 @@ public struct FirebaseTranslator: Translatorable {
                 self.translate(input.value(),
                                from: languagePair.from,
                                to: languagePair.to,
-                               using: using ?? .google) { (returnedString,
-                                                           errorDescriptor) in
-                    guard let translatedString = returnedString else {
+                               using: using ?? .google) { translatedString, errorDescriptor in
+                    guard let translatedString else {
                         // #warning("Clean this up.")
                         if let descriptor = errorDescriptor,
                            descriptor == "Couldn't translate the requested string." {
@@ -165,10 +164,13 @@ public struct FirebaseTranslator: Translatorable {
                             hasCompleted = true
                             completion(translation, nil)
                         } else {
-                            let exception = Exception(errorDescriptor, metadata: [#file, #function, #line])
+                            if let required = requiresHUD,
+                               required {
+                                Core.hud.hide()
+                            }
                             
-                            Logger.log(exception)
-                            //                            completion(nil, exception)
+                            hasCompleted = true
+                            completion(nil, Exception(errorDescriptor, metadata: [#file, #function, #line]))
                         }
                         
                         return
@@ -194,9 +196,9 @@ public struct FirebaseTranslator: Translatorable {
     }
     
     public func translate(_ text: String,
-                          from: String,
-                          to: String,
-                          using: TranslationPlatform,
+                          from sourceLanguage: String,
+                          to targetLanguage: String,
+                          using platform: Translator.PlatformName,
                           completion: @escaping (String?, String?) -> Void) {
         guard text.lowercasedTrimmingWhitespace != "" else {
             completion("", nil)
@@ -204,17 +206,14 @@ public struct FirebaseTranslator: Translatorable {
         }
         
         let input = Translator.TranslationInput(text)
-        let languagePair = Translator.LanguagePair(from: from,
-                                                   to: to)
+        let languagePair = Translator.LanguagePair(from: sourceLanguage,
+                                                   to: targetLanguage)
         
         TranslatorService.shared.translate(input,
-                                           with: languagePair) { (returnedTranslation,
-                                                                  errorDescriptor) in
-            guard let translation = returnedTranslation else {
-                let exception = Exception(errorDescriptor,
-                                          metadata: [#file, #function, #line])
-                
-                Logger.log(exception)
+                                           with: languagePair,
+                                           using: platform) { translation, errorDescriptor in
+            guard let translation else {
+                let exception = Exception(errorDescriptor, metadata: [#file, #function, #line])
                 completion(nil, exception.descriptor)
                 return
             }

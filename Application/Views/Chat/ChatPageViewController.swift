@@ -77,6 +77,10 @@ public final class ChatPageViewController: MessagesViewController,
         
         RuntimeStorage.store(true, as: .isPresentingChat)
         DevModeService.removeAction(withTitle: "Show/Hide Build Info Overlay")
+        
+        // Avoids crashing bug
+        guard !StateProvider.shared.showingNewChatPage else { return }
+        StateProvider.shared.shouldDismissNewChatPage = true
     }
     
     public override func viewDidAppear(_ animated: Bool) {
@@ -388,6 +392,7 @@ public final class ChatPageViewController: MessagesViewController,
     private func configureBackgroundColor() {
         messagesCollectionView.backgroundColor = .encapsulatingViewBackgroundColor
         messagesCollectionView.backgroundView?.backgroundColor = .encapsulatingViewBackgroundColor
+        view.backgroundColor = .encapsulatingViewBackgroundColor
     }
     
     private func configureCollectionViewLayout() {

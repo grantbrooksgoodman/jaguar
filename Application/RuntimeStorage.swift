@@ -24,8 +24,10 @@ public class StateProvider: ObservableObject {
     @Published public var currentUserLacksVisibleConversations = false
     @Published public var developerModeEnabled = Build.developerModeEnabled
     @Published public var hasDisappeared = false
+    @Published public var shouldDismissNewChatPage = false
     @Published public var shouldDismissSettingsPage = false
     @Published public var showingInviteLanguagePicker = false
+    @Published public var showingNewChatPage = false
     @Published public var showNewChatPageForGrantedContactAccess = false
     @Published public var tappedDone = false
     @Published public var tappedSelectContactButton = false

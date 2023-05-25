@@ -84,15 +84,17 @@ public class SettingsPageViewModel: ObservableObject {
         var actions = [AKAction]()
         var actionIDs = [Int: String]()
         
-        for theme in AppThemes.list where theme.name != ThemeService.currentTheme.name {
-            let action = AKAction(title: theme.name, style: .default)
+        for theme in AppThemes.list {
+            let isCurrentTheme = theme.name == ThemeService.currentTheme.name
+            let themeName = RuntimeStorage.languageCode == "en" ? theme.name : (theme.nonEnglishDescriptor ?? theme.name)
+            let action = AKAction(title: isCurrentTheme ? "\(themeName) (Applied)" : themeName, style: .default)
+            action.isEnabled = theme.name != ThemeService.currentTheme.name
             actions.append(action)
             actionIDs[action.identifier] = theme.name
         }
         
         AKActionSheet(message: "Change Theme",
-                      actions: actions,
-                      shouldTranslate: [.message]).present { actionID in
+                      actions: actions).present { actionID in
             guard actionID != -1,
                   let themeName = actionIDs[actionID],
                   let correspondingTheme = AppThemes.list.first(where: { $0.name == themeName }) else { return }
@@ -162,6 +164,9 @@ public class SettingsPageViewModel: ObservableObject {
         
         UserDefaults.standard.set(nil, forKey: "archivedLocalUserHashes")
         UserDefaults.standard.set(nil, forKey: "archivedServerUserHashes")
+        
+        Core.eraseDocumentsDirectory()
+        Core.eraseTemporaryDirectory()
         
         AKAlert(message: "Caches have been cleared. You must now restart the app.",
                 actions: [AKAction(title: "Exit", style: .destructivePreferred)],

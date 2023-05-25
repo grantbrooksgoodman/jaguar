@@ -178,6 +178,41 @@ public class Conversation: Codable, Equatable {
         }
     }
     
+    public func unHideForAllParticipants(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
+        guard participants.contains(where: { $0.hasDeleted }) else {
+            completion(nil)
+            return
+        }
+        
+        var newParticipants = [Participant]()
+        for participant in participants {
+            let newParticipant = Participant(userID: participant.userID,
+                                             hasDeleted: false,
+                                             isTyping: participant.isTyping)
+            newParticipants.append(newParticipant)
+        }
+        
+        let pathPrefix = "/\(GeneralSerializer.environment.shortString)/conversations/"
+        GeneralSerializer.setValue(newParticipants.serialized,
+                                   forKey: "\(pathPrefix)\(identifier.key!)/participants") { exception in
+            guard exception == nil else {
+                completion(exception!)
+                return
+            }
+            
+            self.participants = newParticipants
+            self.updateHash { exception in
+                guard exception == nil else {
+                    completion(exception!)
+                    return
+                }
+                
+                ConversationArchiver.addToArchive(self)
+                completion(nil)
+            }
+        }
+    }
+    
     public func updateHash(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
         identifier.hash = hash
         

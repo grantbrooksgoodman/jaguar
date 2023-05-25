@@ -363,7 +363,7 @@ public class RetranslationService: ChatService {
     }
     
     private func retryTranslation(_ translation: Translation,
-                                  using: TranslationPlatform,
+                                  using: PlatformName,
                                   completion: @escaping(_ returnedTranslation: Translation?,
                                                         _ exception: Exception?) -> Void) {
         TranslationArchiver.clearArchive()

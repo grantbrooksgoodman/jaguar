@@ -46,6 +46,7 @@ public struct ThemeService {
             return
         }
         
+        UserDefaults.standard.set(nil, forKey: "pendingThemeName")
         currentTheme = theme
     }
 }

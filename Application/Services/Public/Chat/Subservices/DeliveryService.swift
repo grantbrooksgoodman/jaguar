@@ -115,32 +115,43 @@ public class DeliveryService: ChatService {
         conversation.messages.append(newMessage)
         conversation.messages = conversation.messages.filteredAndSorted
         
-        conversation.updateHash { exception in
-            timeout?.cancel()
-            RuntimeStorage.store(conversation, as: .globalConversation)
-            
-            self.CURRENT_MESSAGE_SLICE.removeAll(where: { $0.identifier == "NEW" })
-            self.CURRENT_MESSAGE_SLICE.append(newMessage)
-            RuntimeStorage.store(self.CURRENT_MESSAGE_SLICE!, as: .currentMessageSlice)
-            
-            print("Adding to archive \(conversation.identifier.key!) | \(conversation.identifier.hash!)")
-            ConversationArchiver.addToArchive(conversation)
-            
-            if var openConversations = self.CURRENT_USER.openConversations {
-                openConversations.removeLast()
-                openConversations.append(conversation)
-                self.CURRENT_USER.openConversations = openConversations
-            } else {
-                self.CURRENT_USER.openConversations = [conversation]
+        var exceptions = [Exception]()
+        conversation.unHideForAllParticipants { unHideException in
+            if let unHideException {
+                exceptions.append(unHideException)
             }
             
-            RuntimeStorage.store(true, as: .shouldReloadData)
-            RuntimeStorage.store(false, as: .isSendingMessage)
-            
-            ContactNavigationRouter.currentlySelectedUser = nil
-            
-            Logger.closeStream()
-            completion(exception)
+            conversation.updateHash { updateHashException in
+                if let updateHashException {
+                    exceptions.append(updateHashException)
+                }
+                
+                timeout?.cancel()
+                RuntimeStorage.store(conversation, as: .globalConversation)
+                
+                self.CURRENT_MESSAGE_SLICE.removeAll(where: { $0.identifier == "NEW" })
+                self.CURRENT_MESSAGE_SLICE.append(newMessage)
+                RuntimeStorage.store(self.CURRENT_MESSAGE_SLICE!, as: .currentMessageSlice)
+                
+                print("Adding to archive \(conversation.identifier.key!) | \(conversation.identifier.hash!)")
+                ConversationArchiver.addToArchive(conversation)
+                
+                if var openConversations = self.CURRENT_USER.openConversations {
+                    openConversations.removeLast()
+                    openConversations.append(conversation)
+                    self.CURRENT_USER.openConversations = openConversations
+                } else {
+                    self.CURRENT_USER.openConversations = [conversation]
+                }
+                
+                RuntimeStorage.store(true, as: .shouldReloadData)
+                RuntimeStorage.store(false, as: .isSendingMessage)
+                
+                ContactNavigationRouter.currentlySelectedUser = nil
+                
+                Logger.closeStream()
+                completion(exceptions.compiledException)
+            }
         }
     }
     
@@ -266,8 +277,14 @@ public class DeliveryService: ChatService {
                            languagePair: LanguagePair,
                            completion: @escaping(_ translation: Translation?,
                                                  _ exception: Exception?) -> Void) {
+        let timeout = Timeout(after: 30) {
+            completion(nil, Exception.timedOut([#file, #function, #line]))
+        }
+        
         FirebaseTranslator.shared.translate(TranslationInput(text),
                                             with: languagePair) { translation, exception in
+            timeout.cancel()
+            
             guard let translation else {
                 completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
                 return
@@ -355,26 +372,26 @@ public class DeliveryService: ChatService {
         let languagePair = Translator.LanguagePair(from: CURRENT_USER.languageCode,
                                                    to: otherUser.languageCode)
         
-        guard !Build.developerModeEnabled else {
-            debugTranslate(text) {
-                self.deliveryProgress += 0.2
-            } completion: { translation, exception in
-                guard let translation else {
-                    completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
-                    return
-                }
-                
-                self.deliveryProgress += 0.2
-                self.createMessage(translation: translation) {
-                    self.deliveryProgress += 0.2
-                } completion: { message, exception in
-                    self.deliveryProgress += 0.2
-                    completion(message, exception)
-                }
-            }
-            
-            return
-        }
+        //        guard !Build.developerModeEnabled else {
+        //            debugTranslate(text) {
+        //                self.deliveryProgress += 0.2
+        //            } completion: { translation, exception in
+        //                guard let translation else {
+        //                    completion(nil, exception ?? Exception(metadata: [#file, #function, #line]))
+        //                    return
+        //                }
+        //
+        //                self.deliveryProgress += 0.2
+        //                self.createMessage(translation: translation) {
+        //                    self.deliveryProgress += 0.2
+        //                } completion: { message, exception in
+        //                    self.deliveryProgress += 0.2
+        //                    completion(message, exception)
+        //                }
+        //            }
+        //
+        //            return
+        //        }
         
         translate(text, languagePair: languagePair) { translation, exception in
             guard let translation else {
@@ -461,7 +478,7 @@ public class DeliveryService: ChatService {
             }
             
             self.updateConversationData(for: message,
-                                        timeout: Timeout(after: 20),
+                                        timeout: Timeout(after: 30),
                                         completion: { exception in
                 Core.hud.hide(delay: 1)
                 self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(.audioMessage)
@@ -500,7 +517,7 @@ public class DeliveryService: ChatService {
             }
             
             self.updateConversationData(for: message,
-                                        timeout: Timeout(after: 20)) { exception in
+                                        timeout: Timeout(after: 30)) { exception in
                 Core.hud.hide(delay: 1)
                 self.COORDINATOR.conversation.otherUser.wrappedValue?.notifyOfNewMessage(.textMessage(content: message.translation.output))
                 

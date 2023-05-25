@@ -165,7 +165,7 @@ public struct UserSerializer {
                         timeout: Timeout? = nil,
                         completion: @escaping(_ user: User?,
                                               _ exception: Exception?) -> Void) {
-        let timeout = timeout ?? Timeout(after: 10, {
+        let timeout = timeout ?? Timeout(after: 30, {
             completion(nil, Exception.timedOut([#file, #function, #line]))
         })
         

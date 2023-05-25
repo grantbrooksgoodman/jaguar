@@ -19,9 +19,9 @@ public struct TranslationDelegate: AKTranslationDelegate {
     public func getTranslations(for inputs: [AlertKit.TranslationInput],
                                 languagePair: AlertKit.LanguagePair,
                                 requiresHUD: Bool?,
-                                using _: AlertKit.TranslationPlatform?,
+                                using platform: AlertKit.PlatformName?,
                                 completion: @escaping (_ returnedTranslations: [AlertKit.Translation]?,
-                                                       _ errorDescriptor: [String: AlertKit.TranslationInput]?) -> Void) {
+                                                       _ errorDescriptors: [String: AlertKit.TranslationInput]?) -> Void) {
         var convertedInputs = [Translator.TranslationInput]()
         
         for input in inputs {

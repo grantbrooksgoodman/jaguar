@@ -121,7 +121,6 @@ public extension ChatServices {
         return observerService
     }
     
-    /// - Warning: Unused.
     static var defaultRetranslationService: RetranslationService? {
         if retranslationService == nil {
             guard let messagesVC = RuntimeStorage.messagesVC,

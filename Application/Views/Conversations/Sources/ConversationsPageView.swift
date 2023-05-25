@@ -117,6 +117,11 @@ public struct ConversationsPageView: View {
             guard !newValue else { return }
             shouldPulseComposeButton = newValue
         })
+        .onChange(of: stateProvider.shouldDismissNewChatPage, perform: { newValue in
+            guard newValue else { return }
+            showingNewChatSheet = false
+            stateProvider.shouldDismissNewChatPage = false
+        })
         .onAppear {
             RuntimeStorage.store(#file, as: .currentFile)
             guard conversations.visibleForCurrentUser.count == 0 else {

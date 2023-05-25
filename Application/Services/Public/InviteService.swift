@@ -60,23 +60,23 @@ public struct InviteService {
             return
         }
         
-        let invitationPrompt = "Hey, let's chat on *\"Hello\"*! It's a simple messaging app that allows us to easily talk to each other in our native languages!"
+        let invitationPrompt = "Hey, let's chat on *Hello*! It's a simple messaging app that allows us to easily talk to each other in our native languages!"
         
         let languageCode = RuntimeStorage.invitationLanguageCode ?? RuntimeStorage.languageCode!
         FirebaseTranslator.shared.translate(Translator.TranslationInput(invitationPrompt),
                                             with: Translator.LanguagePair(from: "en",
                                                                           to: languageCode),
-                                            requiresHUD: true) { returnedTranslation, exception in
+                                            requiresHUD: true) { translation, exception in
             RuntimeStorage.remove(.invitationLanguageCode)
             
-            guard let translation = returnedTranslation else {
+            guard let translation else {
                 Logger.log(exception ?? Exception(metadata: [#file, #function, #line]),
                            with: .errorAlert)
                 return
             }
             
             AnalyticsService.logEvent(.invite)
-            MessageComposer.shared.compose(withContent: "\(translation.output.sanitized))\n\n\(appShareLink.absoluteString)")
+            MessageComposer.shared.compose(withContent: "\(translation.output.sanitized)\n\n\(appShareLink.absoluteString)")
         }
     }
 }

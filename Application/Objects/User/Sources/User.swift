@@ -9,9 +9,6 @@
 /* First-party Frameworks */
 import UIKit
 
-/* First-party Frameworks */
-import PhoneNumberKit
-
 public class User: Codable {
     
     //==================================================//
@@ -601,7 +598,6 @@ public extension User {
             guard let lastFromCurrentUser = conversation.messages.last(where: { $0.fromAccountIdentifier == identifier }),
                   let indexOfLast = conversation.messages.firstIndex(of: lastFromCurrentUser) else {
                 incrementForUnread(conversation.messages)
-                
                 continue
             }
             

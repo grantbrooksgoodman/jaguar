@@ -30,7 +30,7 @@ public class VerifyNumberPageViewModel: ObservableObject {
     /* MARK: - Properties */
     
     private let inputs = ["title": Translator.TranslationInput("Enter Phone Number"),
-                          "subtitle": Translator.TranslationInput("Next, enter your phone number with your country prefix.\n\nA verification code will be sent to your number. Standard messaging rates apply."),
+                          "subtitle": Translator.TranslationInput("Next, enter your phone number.\n\nA verification code will be sent to your number. Standard messaging rates apply."),
                           "instruction": Translator.TranslationInput("Enter your phone number below:"),
                           "continue": Translator.TranslationInput("Continue"),
                           "back": Translator.TranslationInput("Back", alternate: "Go back")]

@@ -169,26 +169,23 @@ public extension Date {
     
     ///Function that gets a nicely formatted date string from a provided Date.
     func formattedString() -> String {
-        let differenceBetweenDates = Date().comparator.distance(to: self.comparator)
+        let distance = Date().distance(to: self)
         
-        let stylizedDateFormatter = DateFormatter()
-        stylizedDateFormatter.locale = RuntimeStorage.languageCode == "en" ? .current : Locale(identifier: RuntimeStorage.languageCode!)
-        stylizedDateFormatter.dateStyle = .short
+        let formatter = DateFormatter()
+        formatter.locale = RuntimeStorage.languageCode == "en" ? .current : Locale(identifier: RuntimeStorage.languageCode!)
+        formatter.dateStyle = .short
         
-        if differenceBetweenDates == 0 {
+        switch true {
+        case Calendar.current.isDateInToday(self):
             return DateFormatter.localizedString(from: self, dateStyle: .none, timeStyle: .short)
-        } else if differenceBetweenDates == -86400 {
+        case Calendar.current.isDateInYesterday(self):
             return LocalizedString.yesterday
-        } else if differenceBetweenDates >= -604_800 {
-            guard let dayOfWeek,
-                  dayOfWeek == Date().dayOfWeek else {
-                return stylizedDateFormatter.string(from: self)
-            }
-            
+        case Calendar.current.isDate(self, equalTo: Date(), toGranularity: .weekOfYear) || distance >= -604_800:
+            guard let dayOfWeek else { return formatter.string(from: self) }
             return dayOfWeek
+        default:
+            return formatter.string(from: self)
         }
-        
-        return stylizedDateFormatter.string(from: self)
     }
     
     func seconds(from date: Date) -> Int {

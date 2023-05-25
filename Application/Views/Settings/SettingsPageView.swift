@@ -32,6 +32,7 @@ public struct SettingsPageView: View {
         case bundleVersionAndBuildNumber
         case buildSKU
         case projectID
+        case copyright
     }
     
     //==================================================//
@@ -141,11 +142,22 @@ public struct SettingsPageView: View {
             nextStringKey = .projectID
             stringToDisplay = Build.buildSKU
         case .projectID:
-            nextStringKey = .bundleVersionAndBuildNumber
+            nextStringKey = .copyright
             stringToDisplay = Build.projectID
+        case .copyright:
+            nextStringKey = .bundleVersionAndBuildNumber
+            stringToDisplay = "Copyright © \(Core.currentCalendar.component(.year, from: Date())) NEOTechnica Corp."
         }
         
         return Button { } label: {
+            if buildInfoStringKey == .copyright {
+                let imageStyle = (ColorProvider.shared.interfaceStyle == .dark || ThemeService.currentTheme.style == .dark) ? "White" : "Black"
+                Image(uiImage: UIImage(named: "NT (\(imageStyle)).png") ?? UIImage())
+                    .resizable()
+                    .frame(width: (1000 / 20), height: (515 / 20), alignment: .center)
+                    .padding(.bottom, 2)
+            }
+            
             Text(stringToDisplay)
                 .font(Font.custom("SFUIText-Regular", size: 13))
                 .foregroundColor(.subtitleTextColor)

@@ -37,7 +37,7 @@ public class ConversationsPageViewModel: ObservableObject {
     private var shouldReloadForUpdatedHashes: Bool { get { getShouldReloadForUpdatedHashes() } }
     
     // Other
-    public let inputs = ["messages": Translator.TranslationInput(ThemeService.currentTheme != AppThemes.default ? "Conversations" : "Messages")]
+    public let inputs = ["messages": Translator.TranslationInput("Messages")]
     
     @Published private(set) var state = State.idle
     private var translations: [String: Translator.Translation]!

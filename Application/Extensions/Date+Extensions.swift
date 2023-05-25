@@ -11,7 +11,7 @@ import Foundation
 
 public extension Date {
     func separatorDateString() -> NSAttributedString {
-        let calendar = Core.currentCalendar!
+        let calendar = Calendar.current
         let dateDifference = calendar.startOfDay(for: Date()).distance(to: calendar.startOfDay(for: self))
         
         let timeString = DateFormatter.localizedString(from: self,

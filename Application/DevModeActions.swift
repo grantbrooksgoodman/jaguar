@@ -25,32 +25,30 @@ public extension DevModeService {
     
     static func addStandardActions() {
         let clearCachesAction = DevModeAction(title: "Clear Caches", perform: clearCaches)
+        let eraseTemporaryFilesAction = DevModeAction(title: "Erase Temporary Files", perform: eraseTemporaryFiles)
         let resetUserDefaultsAction = DevModeAction(title: "Reset UserDefaults", perform: resetUserDefaults)
         let switchEnvironmentAction = DevModeAction(title: "Switch Environment", perform: switchEnvironment)
         let overrideLanguageCodeAction = DevModeAction(title: "Override Language Code", perform: overrideLanguageCode)
-        let restoreResetOnFirstRunFlagAction = DevModeAction(title: "Restore “Reset on First Run” Flag", perform: restoreResetOnFirstRunFlag)
         let changeThemeAction = DevModeAction(title: "Change Theme", perform: changeTheme)
         let toggleBuildInfoOverlayAction = DevModeAction(title: "Show/Hide Build Info Overlay", perform: toggleBuildInfoOverlay)
+        let restoreResetOnFirstRunFlagAction = DevModeAction(title: "Restore “Reset on First Run” Flag", perform: restoreResetOnFirstRunFlag)
         
-        let destroyConversationDatabaseAction = DevModeAction(title: "Destroy Conversation Database",
-                                                              perform: destroyConversationDatabase,
-                                                              isDestructive: true)
-        let resetPushTokensAction = DevModeAction(title: "Reset Push Tokens",
-                                                  perform: resetPushTokens,
-                                                  isDestructive: true)
+        let presentDestructiveOptionsAction = DevModeAction(title: "Destructive Options",
+                                                            perform: presentDestructiveOptions,
+                                                            isDestructive: true)
         let disableDeveloperModeAction = DevModeAction(title: "Disable Developer Mode",
                                                        perform: promptToToggle,
                                                        isDestructive: true)
         
         let standardActions = [clearCachesAction,
+                               eraseTemporaryFilesAction,
                                resetUserDefaultsAction,
                                switchEnvironmentAction,
                                overrideLanguageCodeAction,
                                changeThemeAction,
                                toggleBuildInfoOverlayAction,
                                restoreResetOnFirstRunFlagAction,
-                               destroyConversationDatabaseAction,
-                               resetPushTokensAction,
+                               presentDestructiveOptionsAction,
                                disableDeveloperModeAction]
         addActions(standardActions)
     }
@@ -63,8 +61,10 @@ public extension DevModeService {
         var actions = [AKAction]()
         var actionIDs = [Int: String]()
         
-        for theme in AppThemes.list where theme.name != ThemeService.currentTheme.name {
-            let action = AKAction(title: theme.name, style: .default)
+        for theme in AppThemes.list {
+            let isCurrentTheme = theme.name == ThemeService.currentTheme.name
+            let action = AKAction(title: isCurrentTheme ? "\(theme.name) (Applied)" : theme.name, style: .default)
+            action.isEnabled = theme.name != ThemeService.currentTheme.name
             actions.append(action)
             actionIDs[action.identifier] = theme.name
         }
@@ -85,34 +85,15 @@ public extension DevModeService {
         Core.hud.showSuccess(text: "Cleared Caches")
     }
     
-    private static func destroyConversationDatabase() {
+    private static func eraseTemporaryFiles() {
+        guard let exception = Core.eraseTemporaryDirectory() else {
+            Core.hud.flash("Erased Temporary Files", image: .success)
+            return
+        }
+        
         let previousLanguage = RuntimeStorage.languageCode!
         setLanguageCode("en")
-        AKConfirmationAlert(title: "Destroy Database",
-                            message: "This will delete all conversations for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
-                            confirmationStyle: .destructivePreferred).present { confirmed in
-            AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
-            guard confirmed == 1 else { return }
-            setLanguageCode("en")
-            AKConfirmationAlert(title: "Are you sure?",
-                                message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
-                                cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
-                                confirmationStyle: .destructivePreferred).present { doubleConfirmed in
-                AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
-                guard doubleConfirmed == 1 else { return }
-                ConversationTestingSerializer.deleteAllConversations { exception in
-                    guard exception == nil else {
-                        Logger.log(exception!, with: .errorAlert)
-                        return
-                    }
-                    
-                    Core.hud.showSuccess()
-#if !EXTENSION
-                    RuntimeStorage.conversationsPageViewModel?.load(silent: false)
-#endif
-                }
-            }
-        }
+        AKErrorAlert(error: exception.asAkError()).present { _ in setLanguageCode(previousLanguage) }
     }
     
     private static func overrideLanguageCode() {
@@ -167,28 +148,6 @@ public extension DevModeService {
             
             setLanguageCode(returnedString)
             Core.hud.showSuccess()
-        }
-    }
-    
-    private static func resetPushTokens() {
-        let previousLanguage = RuntimeStorage.languageCode!
-        setLanguageCode("en")
-        AKConfirmationAlert(title: "Reset Push Tokens",
-                            message: "This will remove all push tokens for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
-                            confirmationStyle: .destructivePreferred,
-                            shouldTranslate: [.none],
-                            networkDependent: true).present { confirmed in
-            defer { AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage) }
-            
-            guard confirmed == 1 else { return }
-            UserTestingSerializer.shared.resetPushTokensForAllUsers { exception in
-                guard exception == nil else {
-                    Logger.log(exception!, with: .errorAlert)
-                    return
-                }
-                
-                Core.hud.flash("Reset Push Tokens", image: .success)
-            }
         }
     }
     
@@ -278,6 +237,130 @@ public extension DevModeService {
         let toggledValue = !currentValue
         overlay.isHidden = toggledValue
         UserDefaults.standard.set(toggledValue, forKey: "hidesBuildInfoOverlay")
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Destructive Action Handlers */
+    
+    private static func presentDestructiveOptions() {
+        let destroyConversationDatabaseAction = DevModeAction(title: "Destroy Conversation Database",
+                                                              perform: destroyConversationDatabase,
+                                                              isDestructive: true)
+        let eraseDocumentsDirectoryAction = DevModeAction(title: "Erase Documents Directory",
+                                                          perform: eraseDocumentsDirectory,
+                                                          isDestructive: true)
+        let resetPushTokensAction = DevModeAction(title: "Reset Push Tokens",
+                                                  perform: resetPushTokens,
+                                                  isDestructive: true)
+        
+        let destructiveActions: [DevModeAction] = [destroyConversationDatabaseAction,
+                                                   eraseDocumentsDirectoryAction,
+                                                   resetPushTokensAction]
+        
+        guard let topViewController = UIApplication.topViewController(),
+              !topViewController.isKind(of: UIAlertController.self) else { return }
+        
+        var akActions = [AKAction]()
+        for action in destructiveActions {
+            akActions.append(AKAction(title: action.title,
+                                      style: action.isDestructive ? .destructive : .default))
+        }
+        
+        let actionSheet = AKActionSheet(message: "Destructive Options",
+                                        actions: akActions,
+                                        shouldTranslate: [.none])
+        
+        actionSheet.present { actionID in
+            guard let index = akActions.firstIndex(where: { $0.identifier == actionID }),
+                  index < destructiveActions.count else { return }
+            
+            let selectedAkAction = akActions[index]
+            let presumedDevModeAction = destructiveActions[index]
+            
+            let akActionTitle = selectedAkAction.title
+            let akActionDestructive = selectedAkAction.style == .destructive
+            
+            guard presumedDevModeAction.metadata(isEqual: (akActionTitle, akActionDestructive)) else { return }
+            presumedDevModeAction.perform()
+        }
+    }
+    
+    private static func destroyConversationDatabase() {
+        let previousLanguage = RuntimeStorage.languageCode!
+        setLanguageCode("en")
+        AKConfirmationAlert(title: "Destroy Database",
+                            message: "This will delete all conversations for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
+                            confirmationStyle: .destructivePreferred).present { confirmed in
+            AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
+            guard confirmed == 1 else { return }
+            setLanguageCode("en")
+            AKConfirmationAlert(title: "Are you sure?",
+                                message: "ALL CONVERSATIONS FOR ALL USERS WILL BE DELETED!",
+                                cancelConfirmTitles: (cancel: nil, confirm: "Yes, I'm sure"),
+                                confirmationStyle: .destructivePreferred).present { doubleConfirmed in
+                AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
+                guard doubleConfirmed == 1 else { return }
+                ConversationTestingSerializer.deleteAllConversations { exception in
+                    guard exception == nil else {
+                        Logger.log(exception!, with: .errorAlert)
+                        return
+                    }
+                    
+                    Core.hud.showSuccess()
+#if !EXTENSION
+                    RuntimeStorage.conversationsPageViewModel?.load(silent: false)
+#endif
+                }
+            }
+        }
+    }
+    
+    private static func eraseDocumentsDirectory() {
+        let previousLanguage = RuntimeStorage.languageCode!
+        setLanguageCode("en")
+        AKConfirmationAlert(title: "Erase Documents Directory",
+                            message: "This will remove all files in the userland Documents directory. An app restart is required.",
+                            confirmationStyle: .destructivePreferred).present { confirmed in
+            defer { AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage) }
+            
+            guard confirmed == 1 else { return }
+            guard let exception = Core.eraseDocumentsDirectory() else {
+                AKAlert(message: "The Documents directory has been erased. You must now restart the app.",
+                        actions: [AKAction(title: "Exit", style: .destructivePreferred)],
+                        showsCancelButton: false).present { _ in
+                    fatalError()
+                }
+                return
+            }
+            
+            setLanguageCode("en")
+            AKErrorAlert(error: exception.asAkError()).present { _ in
+                AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage)
+            }
+        }
+    }
+    
+    private static func resetPushTokens() {
+        let previousLanguage = RuntimeStorage.languageCode!
+        setLanguageCode("en")
+        AKConfirmationAlert(title: "Reset Push Tokens",
+                            message: "This will remove all push tokens for all users in the \(GeneralSerializer.environment.description.uppercased()) environment.\n\nThis operation cannot be undone.",
+                            confirmationStyle: .destructivePreferred,
+                            shouldTranslate: [.none],
+                            networkDependent: true).present { confirmed in
+            defer { AKCore.shared.unlockLanguageCode(andSetTo: previousLanguage) }
+            
+            guard confirmed == 1 else { return }
+            UserTestingSerializer.shared.resetPushTokensForAllUsers { exception in
+                guard exception == nil else {
+                    Logger.log(exception!, with: .errorAlert)
+                    return
+                }
+                
+                Core.hud.flash("Reset Push Tokens", image: .success)
+            }
+        }
     }
     
     //==================================================//

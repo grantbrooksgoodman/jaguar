@@ -7,7 +7,7 @@
 		<string>synchronizeContacts</string>
 	</array>
 	<key>CFBuildDate</key>
-	<string>1683580086</string>
+	<string>1684986314</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
 	<key>CFBundleDisplayName</key>
@@ -46,7 +46,7 @@
 		</dict>
 	</array>
 	<key>CFBundleVersion</key>
-	<string>11326</string>
+	<string>11537</string>
 	<key>FirebaseAutomaticScreenReportingEnabled</key>
 	<false/>
 	<key>LSApplicationQueriesSchemes</key>

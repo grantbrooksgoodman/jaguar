@@ -41,7 +41,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
         // This delegate does not imply the connecting scene or session are new (see `application:configurationForConnectingSceneSession` instead).
         
         //        guard !Build.developerModeEnabled || Build.stage == .generalRelease else {
-        //            let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line]) {
+        //            let timeout = Timeout(alertingAfter: 30, metadata: [#file, #function, #line]) {
         //                self.connectScene(scene)
         //            }
         //

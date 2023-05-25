@@ -119,6 +119,8 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         Logger.exposureLevel = .verbose
         DevModeService.addStandardActions()
         
+        /* MARK: Theme Setup */
+        
         if let themeName = UserDefaults.standard.value(forKey: "pendingThemeName") as? String,
            let correspondingTheme = AppThemes.list.first(where: { $0.name == themeName }) {
             ThemeService.setTheme(correspondingTheme, checkStyle: false)
@@ -164,8 +166,8 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         }
         
         guard languageCodeDictionary[RuntimeStorage.languageCode!] != nil else {
-            RuntimeStorage.store("en", as: .overriddenLanguageCode)
-            AKCore.shared.lockLanguageCode(to: "en")
+            RuntimeStorage.store("en", as: .languageCode)
+            AKCore.shared.setLanguageCode("en")
             
             Logger.log("Unsupported language code; reverting to English.",
                        metadata: [#file, #function, #line])

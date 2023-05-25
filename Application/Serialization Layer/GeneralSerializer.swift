@@ -53,7 +53,7 @@ public enum GeneralSerializer {
                                  timeout: Timeout? = nil,
                                  completion: @escaping(_ values: Any?,
                                                        _ exception: Exception?) -> Void) {
-        let timeout = timeout ?? Timeout(after: 10, {
+        let timeout = timeout ?? Timeout(after: 30, {
             completion(nil, Exception.timedOut([#file, #function, #line]))
         })
         
@@ -75,7 +75,7 @@ public enum GeneralSerializer {
                                    timeout: Timeout? = nil,
                                    completion: @escaping (_ values: Any?,
                                                           _ exception: Exception?) -> Void) {
-        let timeout = timeout ?? Timeout(after: 10, {
+        let timeout = timeout ?? Timeout(after: 30, {
             completion(nil, Exception.timedOut([#file, #function, #line]))
         })
         
@@ -100,7 +100,7 @@ public enum GeneralSerializer {
                                 forKey key: String,
                                 timeout: Timeout? = nil,
                                 completion: @escaping(_ exception: Exception?) -> Void) {
-        let timeout = timeout ?? Timeout(after: 10, {
+        let timeout = timeout ?? Timeout(after: 30, {
             completion(Exception.timedOut([#file, #function, #line]))
         })
         
@@ -128,7 +128,7 @@ public enum GeneralSerializer {
                                          with data: [String: Any],
                                          timeout: Timeout? = nil,
                                          completion: @escaping(_ exception: Exception?) -> Void) {
-        let timeout = timeout ?? Timeout(after: 10, {
+        let timeout = timeout ?? Timeout(after: 30, {
             completion(Exception.timedOut([#file, #function, #line]))
         })
         

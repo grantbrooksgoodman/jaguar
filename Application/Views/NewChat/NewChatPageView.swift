@@ -46,6 +46,8 @@ public struct NewChatPageView: View {
                 loadedView(contactPairs: contactPairs)
                     .onAppear { AnalyticsService.logEvent(.accessNewChatPage) }
             }
+            .onAppear { stateProvider.showingNewChatPage = true }
+            .onDisappear { stateProvider.showingNewChatPage = false }
         case .failed(let exception):
             Color.clear.onAppear {
                 isPresenting = false

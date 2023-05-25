@@ -31,7 +31,7 @@ public class PageViewDataModel {
     
     public func translateStrings(completion: @escaping (_ translations: [String: Translation]?,
                                                         _ exception: Exception?) -> Void) {
-        let timeout = Timeout(alertingAfter: 10, metadata: [#file, #function, #line])
+        let timeout = Timeout(alertingAfter: 30, metadata: [#file, #function, #line])
         
         FirebaseTranslator.shared.getTranslations(for: Array(inputs.values),
                                                   languagePair: LanguagePair(from: "en",

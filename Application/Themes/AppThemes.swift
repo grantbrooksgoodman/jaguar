@@ -19,7 +19,7 @@ public enum AppThemes {
     
     /* MARK: - Theme List */
     
-    public static var list: [UITheme] = [`default`, dusk, twilight, bluesky, firebrand]
+    public static var list: [UITheme] = [`default`, bluesky, dusk, firebrand, twilight]
     
     //==================================================//
     
@@ -64,68 +64,6 @@ public enum AppThemes {
         return UITheme(name: "Default", items: themedItems)
     }
     
-    public static var dusk: UITheme {
-        let accentColor = UIColor(hex: 0xFA8231)
-        let backgroundColor = UIColor(hex: 0x1A1A1A)
-        
-        let encapsulatingView = ColoredItem(type: .encapsulatingView, set: ColorSet(primary: backgroundColor))
-        let accent = ColoredItem(type: .primaryAccent, set: ColorSet(primary: accentColor))
-        let titleText = ColoredItem(type: .titleText, set: ColorSet(primary: .white))
-        let subtitleText = ColoredItem(type: .subtitleText, set: ColorSet(primary: .lightGray))
-        let senderBubble = ColoredItem(type: .senderBubble, set: ColorSet(primary: accentColor))
-        let receiverBubble = ColoredItem(type: .receiverBubble, set: ColorSet(primary: UIColor(hex: 0x27252A)))
-        let untranslatedBubble = ColoredItem(type: .untranslatedBubble, set: ColorSet(primary: UIColor(hex: 0x65C466)))
-        let navigationBarBackground = ColoredItem(type: .navigationBarBackground, set: ColorSet(primary: backgroundColor))
-        let navigationBarTitle = ColoredItem(type: .navigationBarTitle, set: ColorSet(primary: accentColor))
-        let inputBarBackground = ColoredItem(type: .inputBarBackground, set: ColorSet(primary: backgroundColor))
-        let listViewBackground = ColoredItem(type: .listViewBackground, set: ColorSet(primary: UIColor(hex: 0x1C1C1E)))
-        
-        let themedItems = [encapsulatingView,
-                           accent,
-                           titleText,
-                           subtitleText,
-                           senderBubble,
-                           receiverBubble,
-                           untranslatedBubble,
-                           navigationBarBackground,
-                           navigationBarTitle,
-                           inputBarBackground,
-                           listViewBackground]
-        
-        return UITheme(name: "Dusk", items: themedItems, style: .dark)
-    }
-    
-    public static var twilight: UITheme {
-        let accentColor = UIColor(hex: 0x786DC4)
-        let backgroundColor = UIColor(hex: 0x1A1A1A)
-        
-        let encapsulatingView = ColoredItem(type: .encapsulatingView, set: ColorSet(primary: backgroundColor))
-        let accent = ColoredItem(type: .primaryAccent, set: ColorSet(primary: accentColor))
-        let titleText = ColoredItem(type: .titleText, set: ColorSet(primary: .white))
-        let subtitleText = ColoredItem(type: .subtitleText, set: ColorSet(primary: .lightGray))
-        let senderBubble = ColoredItem(type: .senderBubble, set: ColorSet(primary: accentColor))
-        let receiverBubble = ColoredItem(type: .receiverBubble, set: ColorSet(primary: UIColor(hex: 0x27252A)))
-        let untranslatedBubble = ColoredItem(type: .untranslatedBubble, set: ColorSet(primary: UIColor(hex: 0x65C466)))
-        let navigationBarBackground = ColoredItem(type: .navigationBarBackground, set: ColorSet(primary: backgroundColor))
-        let navigationBarTitle = ColoredItem(type: .navigationBarTitle, set: ColorSet(primary: accentColor))
-        let inputBarBackground = ColoredItem(type: .inputBarBackground, set: ColorSet(primary: backgroundColor))
-        let listViewBackground = ColoredItem(type: .listViewBackground, set: ColorSet(primary: UIColor(hex: 0x1C1C1E)))
-        
-        let themedItems = [encapsulatingView,
-                           accent,
-                           titleText,
-                           subtitleText,
-                           senderBubble,
-                           receiverBubble,
-                           untranslatedBubble,
-                           navigationBarBackground,
-                           navigationBarTitle,
-                           inputBarBackground,
-                           listViewBackground]
-        
-        return UITheme(name: "Twilight", items: themedItems, style: .dark)
-    }
-    
     public static var bluesky: UITheme {
         let accentColor = UIColor(hex: 0x30AAF2)
         let backgroundColor = UIColor(hex: 0x1A1A1A)
@@ -157,6 +95,37 @@ public enum AppThemes {
         return UITheme(name: "Bluesky", items: themedItems, style: .dark)
     }
     
+    public static var dusk: UITheme {
+        let accentColor = UIColor(hex: 0xFA8231)
+        let backgroundColor = UIColor(hex: 0x1A1A1A)
+        
+        let encapsulatingView = ColoredItem(type: .encapsulatingView, set: ColorSet(primary: backgroundColor))
+        let accent = ColoredItem(type: .primaryAccent, set: ColorSet(primary: accentColor))
+        let titleText = ColoredItem(type: .titleText, set: ColorSet(primary: .white))
+        let subtitleText = ColoredItem(type: .subtitleText, set: ColorSet(primary: .lightGray))
+        let senderBubble = ColoredItem(type: .senderBubble, set: ColorSet(primary: accentColor))
+        let receiverBubble = ColoredItem(type: .receiverBubble, set: ColorSet(primary: UIColor(hex: 0x27252A)))
+        let untranslatedBubble = ColoredItem(type: .untranslatedBubble, set: ColorSet(primary: UIColor(hex: 0x65C466)))
+        let navigationBarBackground = ColoredItem(type: .navigationBarBackground, set: ColorSet(primary: backgroundColor))
+        let navigationBarTitle = ColoredItem(type: .navigationBarTitle, set: ColorSet(primary: accentColor))
+        let inputBarBackground = ColoredItem(type: .inputBarBackground, set: ColorSet(primary: backgroundColor))
+        let listViewBackground = ColoredItem(type: .listViewBackground, set: ColorSet(primary: UIColor(hex: 0x1C1C1E)))
+        
+        let themedItems = [encapsulatingView,
+                           accent,
+                           titleText,
+                           subtitleText,
+                           senderBubble,
+                           receiverBubble,
+                           untranslatedBubble,
+                           navigationBarBackground,
+                           navigationBarTitle,
+                           inputBarBackground,
+                           listViewBackground]
+        
+        return UITheme(name: "Dusk", items: themedItems, style: .dark)
+    }
+    
     public static var firebrand: UITheme {
         let accentColor = UIColor(hex: 0xFF5252)
         let backgroundColor = UIColor(hex: 0x1A1A1A)
@@ -186,6 +155,37 @@ public enum AppThemes {
                            listViewBackground]
         
         return UITheme(name: "Firebrand", items: themedItems, style: .dark)
+    }
+    
+    public static var twilight: UITheme {
+        let accentColor = UIColor(hex: 0x786DC4)
+        let backgroundColor = UIColor(hex: 0x1A1A1A)
+        
+        let encapsulatingView = ColoredItem(type: .encapsulatingView, set: ColorSet(primary: backgroundColor))
+        let accent = ColoredItem(type: .primaryAccent, set: ColorSet(primary: accentColor))
+        let titleText = ColoredItem(type: .titleText, set: ColorSet(primary: .white))
+        let subtitleText = ColoredItem(type: .subtitleText, set: ColorSet(primary: .lightGray))
+        let senderBubble = ColoredItem(type: .senderBubble, set: ColorSet(primary: accentColor))
+        let receiverBubble = ColoredItem(type: .receiverBubble, set: ColorSet(primary: UIColor(hex: 0x27252A)))
+        let untranslatedBubble = ColoredItem(type: .untranslatedBubble, set: ColorSet(primary: UIColor(hex: 0x65C466)))
+        let navigationBarBackground = ColoredItem(type: .navigationBarBackground, set: ColorSet(primary: backgroundColor))
+        let navigationBarTitle = ColoredItem(type: .navigationBarTitle, set: ColorSet(primary: accentColor))
+        let inputBarBackground = ColoredItem(type: .inputBarBackground, set: ColorSet(primary: backgroundColor))
+        let listViewBackground = ColoredItem(type: .listViewBackground, set: ColorSet(primary: UIColor(hex: 0x1C1C1E)))
+        
+        let themedItems = [encapsulatingView,
+                           accent,
+                           titleText,
+                           subtitleText,
+                           senderBubble,
+                           receiverBubble,
+                           untranslatedBubble,
+                           navigationBarBackground,
+                           navigationBarTitle,
+                           inputBarBackground,
+                           listViewBackground]
+        
+        return UITheme(name: "Twilight", items: themedItems, style: .dark)
     }
 }
 

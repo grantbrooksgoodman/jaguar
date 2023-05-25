@@ -23,6 +23,43 @@ public extension Core {
         TranslationArchiver.clearArchive()
     }
     
+    @discardableResult
+    static func eraseDocumentsDirectory() -> Exception? {
+        let fileManager = FileManager.default
+        let documentsURL = fileManager.urls(for: .documentDirectory, in: .userDomainMask).first!
+        
+        do {
+            let fileURLs = try fileManager.contentsOfDirectory(at: documentsURL,
+                                                               includingPropertiesForKeys: nil,
+                                                               options: .skipsHiddenFiles)
+            
+            for fileURL in fileURLs {
+                try fileManager.removeItem(at: fileURL)
+            }
+        } catch let error {
+            return Exception(error, metadata: [#file, #function, #line])
+        }
+        
+        return nil
+    }
+    
+    @discardableResult
+    static func eraseTemporaryDirectory() -> Exception? {
+        let fileManager = FileManager.default
+        let tempFolderPath = NSTemporaryDirectory()
+        
+        do {
+            let filePaths = try fileManager.contentsOfDirectory(atPath: tempFolderPath)
+            for filePath in filePaths {
+                try fileManager.removeItem(atPath: tempFolderPath + filePath)
+            }
+        } catch let error {
+            return Exception(error, metadata: [#file, #function, #line])
+        }
+        
+        return nil
+    }
+    
     static func open(_ url: URL) {
 #if !EXTENSION
         UIApplication.shared.open(url)

@@ -23,6 +23,8 @@ public enum ConversationArchiver {
     
     public static func addToArchive(_ conversation: Conversation) {
         initializeArchive()
+        
+        conversationArchive.removeAll(where: { $0.identifier.key == conversation.identifier.key })
         conversationArchive.append(conversation)
         
         Logger.log("Added conversation to local archive.",

@@ -252,6 +252,11 @@ public struct ConversationCell: View {
         }, preview: {
             chatPageView(conversation: conversationBinding, title: navigationTitle)
                 .onAppear {
+                    RuntimeStorage.store(conversation, as: .globalConversation)
+                    RuntimeStorage.store(conversation.get(.last,
+                                                          messages: 10,
+                                                          offset: RuntimeStorage.messageOffset),
+                                         as: .currentMessageSlice)
                     RuntimeStorage.store(true, as: .isPreviewingChat)
                 }
                 .onDisappear {

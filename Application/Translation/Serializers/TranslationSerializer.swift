@@ -26,7 +26,8 @@ public enum TranslationSerializer {
         let serializedTranslation = translation.serialize()
         let dictionary = [serializedTranslation.key: serializedTranslation.value]
         
-        GeneralSerializer.updateChildValues(forKey: "allTranslations/\(languagePair.asString())",
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/translations"
+        GeneralSerializer.updateChildValues(forKey: "\(pathPrefix)/\(languagePair.asString())",
                                             with: dictionary) { exception in
             guard let exception else {
                 Logger.log("Successfully uploaded translation.",
@@ -73,7 +74,9 @@ public enum TranslationSerializer {
     
     public static func downloadTranslations(completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
 #warning("Figure out whether the limit will cause any issues. It shouldn't, because we have findTranslation() as a backup, but still.")
-        GeneralSerializer.queryValues(atPath: "allTranslations/en-\(RuntimeStorage.languageCode!)",
+        
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/translations"
+        GeneralSerializer.queryValues(atPath: "\(pathPrefix)/en-\(RuntimeStorage.languageCode!)",
                                       limit: 50) { (returnedValues,
                                                     exception) in
             guard let values = returnedValues as? [String: String] else {
@@ -137,7 +140,8 @@ public enum TranslationSerializer {
                                        languagePair: Translator.LanguagePair,
                                        completion: @escaping(_ returnedTranslation: Translator.Translation?,
                                                              _ exception: Exception?) -> Void) {
-        let path = "/allTranslations/\(languagePair.asString())"
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/translations"
+        let path = "\(pathPrefix)/\(languagePair.asString())"
         
         GeneralSerializer.getValues(atPath: "\(path)/\(withReference)") { (returnedValues,
                                                                            exception) in
@@ -174,7 +178,8 @@ public enum TranslationSerializer {
                                        languagePair: Translator.LanguagePair,
                                        completion: @escaping(_ returnedString: String?,
                                                              _ exception: Exception?) -> Void) {
-        let path = "/allTranslations/\(languagePair.asString())"
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/translations"
+        let path = "\(pathPrefix)/\(languagePair.asString())"
         
         GeneralSerializer.getValues(atPath: "\(path)/\(input.value().compressedHash)") { (returnedValues, exception) in
             guard let value = returnedValues as? String else {
@@ -244,7 +249,8 @@ public enum TranslationSerializer {
     public static func removeTranslation(for input: Translator.TranslationInput,
                                          languagePair: Translator.LanguagePair,
                                          completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
-        GeneralSerializer.updateChildValues(forKey: "/allTranslations/\(languagePair.asString())",
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/translations"
+        GeneralSerializer.updateChildValues(forKey: "\(pathPrefix)/\(languagePair.asString())",
                                             with: [input.value().compressedHash: NSNull()]) { exception in
             guard let exception else {
                 Logger.log("Successfully removed translation.",
@@ -264,10 +270,11 @@ public enum TranslationSerializer {
                                           completion: @escaping(_ exception: Exception?) -> Void = { _ in }) {
         var nulledDictionary = [String: Any]()
         for input in inputs {
-            nulledDictionary[input.value()] = NSNull()
+            nulledDictionary[input.value().compressedHash] = NSNull()
         }
         
-        GeneralSerializer.updateChildValues(forKey: "/allTranslations/\(languagePair.asString())",
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/translations"
+        GeneralSerializer.updateChildValues(forKey: "\(pathPrefix)/\(languagePair.asString())",
                                             with: nulledDictionary) { exception in
             guard let exception else {
                 Logger.log("Successfully removed translations.",
@@ -303,7 +310,8 @@ public enum TranslationSerializer {
             dictionary[serialized.key] = serialized.value
         }
         
-        GeneralSerializer.updateChildValues(forKey: "/allTranslations/\(languagePair.asString())",
+        let pathPrefix = "\(GeneralSerializer.environment.shortString)/translations"
+        GeneralSerializer.updateChildValues(forKey: "\(pathPrefix)/\(languagePair.asString())",
                                             with: dictionary) { exception in
             guard let exception else {
                 Logger.log("Successfully uploaded translations.",
