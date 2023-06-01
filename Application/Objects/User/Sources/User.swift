@@ -293,25 +293,24 @@ public class User: Codable {
             return
         }
         
+        guard let currentUser = RuntimeStorage.currentUser else {
+            completion(Exception("Couldn't get current user.", metadata: [#file, #function, #line]))
+            return
+        }
+        
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
         
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue("key=\(apiKey)", forHTTPHeaderField: "Authorization")
         
-        var title = Localizer.preLocalizedString(for: .messageReceived,
-                                                 language: languageCode) ?? "Message Received"
-        if let currentUser = RuntimeStorage.currentUser {
-            title = currentUser.compiledPhoneNumber.phoneNumberFormatted
-        }
-        
         var payload: [String: Any] = ["to": pushToken,
                                       "mutable_content": true]
-        payload["notification"] = ["title": title,
+        payload["notification"] = ["title": currentUser.compiledPhoneNumber.phoneNumberFormatted,
                                    "body": text ?? "AUDIO",
                                    "badge": badgeNumber]
         payload["data"] = ["isAudioMessage": text == nil,
-                           "userHash": phoneNumber.digits.compressedHash]
+                           "userHash": currentUser.phoneNumber.digits.compressedHash]
         
         do {
             try request.httpBody = JSONSerialization.data(withJSONObject: payload)

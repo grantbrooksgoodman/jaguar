@@ -176,7 +176,7 @@ public struct DevModeService {
     
     private static func toggleDeveloperMode(enabled: Bool) {
         Build.set(.developerModeEnabled, to: enabled)
-        UserDefaults.standard.set(enabled, forKey: "developerModeEnabled")
+        UserDefaults.standard.set(enabled, forKey: UserDefaultsKeys.developerModeEnabledKey)
         StateProvider.shared.developerModeEnabled = enabled
         Core.hud.showSuccess(text: "Developer Mode \(enabled ? "Enabled" : "Disabled")")
     }

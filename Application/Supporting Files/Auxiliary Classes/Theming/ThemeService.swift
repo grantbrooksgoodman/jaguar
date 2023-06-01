@@ -21,7 +21,7 @@ public struct ThemeService {
     
     private(set) static var currentTheme = AppThemes.default {
         didSet {
-            UserDefaults.standard.set(currentTheme.name, forKey: "currentTheme")
+            UserDefaults.standard.set(currentTheme.name, forKey: UserDefaultsKeys.currentThemeKey)
             ColorProvider.shared.updateColorState()
             ColorProvider.shared.currentThemeName = currentTheme.name
         }
@@ -40,13 +40,13 @@ public struct ThemeService {
         guard currentTheme.style == theme.style else {
             AKAlert(message: "The new appearance will take effect the next time you restart the app.",
                     cancelButtonTitle: "Dismiss").present { _ in
-                UserDefaults.standard.set(theme.name, forKey: "pendingThemeName")
+                UserDefaults.standard.set(theme.name, forKey: UserDefaultsKeys.pendingThemeNameKey)
             }
             
             return
         }
         
-        UserDefaults.standard.set(nil, forKey: "pendingThemeName")
+        UserDefaults.standard.set(nil, forKey: UserDefaultsKeys.pendingThemeNameKey)
         currentTheme = theme
     }
 }

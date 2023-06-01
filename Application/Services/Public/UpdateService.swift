@@ -23,13 +23,13 @@ public struct UpdateService {
     
     private(set) static var buildNumberWhenLastForcedToUpdate: Int? {
         didSet {
-            UserDefaults.standard.set(buildNumberWhenLastForcedToUpdate, forKey: "buildNumberWhenLastForcedToUpdate")
+            UserDefaults.standard.set(buildNumberWhenLastForcedToUpdate, forKey: UserDefaultsKeys.buildNumberWhenLastForcedToUpdateKey)
         }
     }
     
     private(set) static var relaunchesSinceLastPostponed = 0 {
         didSet {
-            UserDefaults.standard.set(relaunchesSinceLastPostponed, forKey: "relaunchesSinceLastPostponed")
+            UserDefaults.standard.set(relaunchesSinceLastPostponed, forKey: UserDefaultsKeys.relaunchesSinceLastPostponedKey)
         }
     }
     
@@ -43,12 +43,12 @@ public struct UpdateService {
     private(set) static var firstPostponedUpdate: Date? {
         didSet {
             guard let firstPostponedUpdate else {
-                UserDefaults.standard.set(nil, forKey: "firstPostponedUpdate")
+                UserDefaults.standard.set(nil, forKey: UserDefaultsKeys.firstPostponedUpdateKey)
                 return
             }
             
             let dateString = Core.masterDateFormatter.string(from: firstPostponedUpdate)
-            UserDefaults.standard.set(dateString, forKey: "firstPostponedUpdate")
+            UserDefaults.standard.set(dateString, forKey: UserDefaultsKeys.firstPostponedUpdateKey)
         }
     }
     

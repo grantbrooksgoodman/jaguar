@@ -76,6 +76,8 @@ public final class ChatPageViewController: MessagesViewController,
         super.viewWillAppear(animated)
         
         RuntimeStorage.store(true, as: .isPresentingChat)
+        RuntimeStorage.store(false, as: .isSendingMessage)
+        
         DevModeService.removeAction(withTitle: "Show/Hide Build Info Overlay")
         
         // Avoids crashing bug
@@ -139,13 +141,13 @@ public final class ChatPageViewController: MessagesViewController,
         ChatServices.audioMessageService?.removeRecordingUI()
         
         RuntimeStorage.store(false, as: .isPresentingChat)
+        RuntimeStorage.store(false, as: .isSendingMessage)
         
         // #warning("Possibly redundant due to removeRecordingUI() call.")
         SpeechService.shared.stopRecording { fileURL, exception in
             guard let fileURL else {
                 let error = exception ?? Exception(metadata: [#file, #function, #line])
-                Logger.log(error,
-                           verbose: error.isEqual(to: .noAudioRecorderToStop))
+                Logger.log(error, verbose: error.isEqual(to: .noAudioRecorderToStop))
                 return
             }
             
@@ -159,7 +161,7 @@ public final class ChatPageViewController: MessagesViewController,
         super.viewDidDisappear(animated)
         
         if let window = RuntimeStorage.topWindow!.subview(Core.ui.nameTag(for: "buildInfoOverlayWindow")) as? UIWindow {
-            var shouldHide = UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool
+            var shouldHide = UserDefaults.standard.value(forKey: UserDefaultsKeys.hidesBuildInfoOverlayKey) as? Bool
             shouldHide = shouldHide == nil ? true : shouldHide!
             window.isHidden = shouldHide!
         }
@@ -434,6 +436,8 @@ public final class ChatPageViewController: MessagesViewController,
                 item.transform = CGAffineTransform(scaleX: 1.1, y: 1.1)
             }
             .onDeselected { item in item.transform = .identity }
+        
+        messageInputBar.inputTextView.tintColor = .primaryAccentColor
         
         messageInputBar.inputTextView.delegate = self
         ChatServices.audioMessageService?.addGestureRecognizers()

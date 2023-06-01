@@ -295,7 +295,7 @@ public struct UserSerializer {
                     mismatches = mismatches.unique()
                     
                     RuntimeStorage.store(mismatches, as: .mismatchedHashes)
-                    UserDefaults.standard.set(mismatches, forKey: "mismatchedHashes")
+                    UserDefaults.standard.set(mismatches, forKey: UserDefaultsKeys.mismatchedHashesKey)
                     
                     completion(nil, Exception("There are matching hashes for this number, but no users have any of the possible calling codes.",
                                               extraParams: ["PhoneNumber": phoneNumber],

@@ -136,9 +136,10 @@ public enum Build {
     }
     
     private static func getBundleVersion() -> String {
-        let currentReleaseBuildNumber = Int(Bundle.main.infoDictionary!["CFBundleReleaseVersion"] as! String)!
+        Bundle.main.infoDictionary!["CFBundleShortVersionString"] as! String
         
-        return "\(String(appStoreReleaseVersion)).\(String(currentReleaseBuildNumber / 150)).\(String(currentReleaseBuildNumber / 50))"
+        //        let currentReleaseBuildNumber = Int(Bundle.main.infoDictionary!["CFBundleReleaseVersion"] as! String)!
+        //        return "\(String(appStoreReleaseVersion)).\(String(currentReleaseBuildNumber / 150)).\(String(currentReleaseBuildNumber / 50))"
     }
     
     private static func getBuildSKU() -> String {

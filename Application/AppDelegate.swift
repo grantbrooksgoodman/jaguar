@@ -62,11 +62,11 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     private func resetForFirstRunIfNeeded(environment: GeneralSerializer.Environment = .production) {
         guard Build.stage != .generalRelease else { return }
         
-        if let didResetForFirstRun = UserDefaults.standard.value(forKey: "didResetForFirstRun") as? Bool {
+        if let didResetForFirstRun = UserDefaults.standard.value(forKey: UserDefaultsKeys.didResetForFirstRunKey) as? Bool {
             RuntimeStorage.store(didResetForFirstRun, as: .didResetForFirstRun)
         } else {
             RuntimeStorage.store(false, as: .didResetForFirstRun)
-            UserDefaults.standard.set(false, forKey: "didResetForFirstRun")
+            UserDefaults.standard.set(false, forKey: UserDefaultsKeys.didResetForFirstRunKey)
         }
         
         guard !RuntimeStorage.didResetForFirstRun! else { return }
@@ -84,9 +84,9 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         TranslationArchiver.clearArchive()
         
         RuntimeStorage.store(true, as: .didResetForFirstRun)
-        UserDefaults.standard.set(true, forKey: "didResetForFirstRun")
+        UserDefaults.standard.set(true, forKey: UserDefaultsKeys.didResetForFirstRunKey)
         
-        UserDefaults.standard.set(environment.shortString, forKey: "firebaseEnvironment")
+        UserDefaults.standard.set(environment.shortString, forKey: UserDefaultsKeys.firebaseEnvironmentKey)
     }
     
     private func preInitialize() {
@@ -96,7 +96,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
                              as: .languageCode)
         
         var developerModeEnabled = false
-        if let developerMode = UserDefaults.standard.value(forKey: "developerModeEnabled") as? Bool {
+        if let developerMode = UserDefaults.standard.value(forKey: UserDefaultsKeys.developerModeEnabledKey) as? Bool {
             developerModeEnabled = developerMode
         }
         
@@ -114,18 +114,18 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         }
         
         UserDefaults.standard.setValue(Build.stage == .generalRelease ? false : developerModeEnabled,
-                                       forKey: "developerModeEnabled")
+                                       forKey: UserDefaultsKeys.developerModeEnabledKey)
         
         Logger.exposureLevel = .verbose
         DevModeService.addStandardActions()
         
         /* MARK: Theme Setup */
         
-        if let themeName = UserDefaults.standard.value(forKey: "pendingThemeName") as? String,
+        if let themeName = UserDefaults.standard.value(forKey: UserDefaultsKeys.pendingThemeNameKey) as? String,
            let correspondingTheme = AppThemes.list.first(where: { $0.name == themeName }) {
             ThemeService.setTheme(correspondingTheme, checkStyle: false)
-            UserDefaults.standard.removeObject(forKey: "pendingThemeName")
-        } else if let themeName = UserDefaults.standard.value(forKey: "currentTheme") as? String,
+            UserDefaults.standard.removeObject(forKey: UserDefaultsKeys.pendingThemeNameKey)
+        } else if let themeName = UserDefaults.standard.value(forKey: UserDefaultsKeys.currentThemeKey) as? String,
                   let correspondingTheme = AppThemes.list.first(where: { $0.name == themeName }) {
             ThemeService.setTheme(correspondingTheme, checkStyle: false)
         } else {
@@ -195,43 +195,45 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         RuntimeStorage.store(0, as: .messageOffset)
         RuntimeStorage.store([], as: .mismatchedHashes)
         
-        if let acknowledgedAudioMessagesUnsupported = UserDefaults.standard.value(forKey: "acknowledgedAudioMessagesUnsupported") as? Bool {
+        if let acknowledgedAudioMessagesUnsupported = UserDefaults.standard.value(forKey: UserDefaultsKeys.acknowledgedAudioMessagesUnsupportedKey) as? Bool {
             RuntimeStorage.store(acknowledgedAudioMessagesUnsupported, as: .acknowledgedAudioMessagesUnsupported)
         }
         
-        if let mismatchedHashes = UserDefaults.standard.value(forKey: "mismatchedHashes") as? [String] {
+        if let mismatchedHashes = UserDefaults.standard.value(forKey: UserDefaultsKeys.mismatchedHashesKey) as? [String] {
             RuntimeStorage.store(mismatchedHashes, as: .mismatchedHashes)
         }
         
-        if UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool == nil {
-            UserDefaults.standard.set(false, forKey: "hidesBuildInfoOverlay")
+        if UserDefaults.standard.value(forKey: UserDefaultsKeys.hidesBuildInfoOverlayKey) as? Bool == nil {
+            UserDefaults.standard.set(false, forKey: UserDefaultsKeys.hidesBuildInfoOverlayKey)
         }
         
-        if let firstPostponedUpdateString = UserDefaults.standard.value(forKey: "firstPostponedUpdate") as? String,
+        if let firstPostponedUpdateString = UserDefaults.standard.value(forKey: UserDefaultsKeys.firstPostponedUpdateKey) as? String,
            let asDate = Core.masterDateFormatter?.date(from: firstPostponedUpdateString) {
             UpdateService.setFirstPostponedUpdate(asDate)
             
-            if let relaunchesSinceLastPostponed = UserDefaults.standard.value(forKey: "relaunchesSinceLastPostponed") as? Int {
+            if let relaunchesSinceLastPostponed = UserDefaults.standard.value(forKey: UserDefaultsKeys.relaunchesSinceLastPostponedKey) as? Int {
                 UpdateService.setRelaunchesSinceLastPostponed(relaunchesSinceLastPostponed + 1)
             } else {
                 UpdateService.setRelaunchesSinceLastPostponed(UpdateService.relaunchesSinceLastPostponed + 1)
             }
         }
         
-        if let buildNumberWhenLastForcedToUpdate = UserDefaults.standard.value(forKey: "buildNumberWhenLastForcedToUpdate") as? Int {
+        if let buildNumberWhenLastForcedToUpdate = UserDefaults.standard.value(forKey: UserDefaultsKeys.buildNumberWhenLastForcedToUpdateKey) as? Int {
             UpdateService.setBuildNumberWhenLastForcedToUpdate(buildNumberWhenLastForcedToUpdate)
         }
+        
+        ReviewService.incrementAppOpenCount()
     }
     
     private func setEnvironment(to environment: GeneralSerializer.Environment? = nil) {
         guard Build.stage != .generalRelease else {
             GeneralSerializer.environment = .production
-            UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
+            UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: UserDefaultsKeys.firebaseEnvironmentKey)
             return
         }
         
         guard let environment else {
-            if let environmentString = UserDefaults.standard.string(forKey: "firebaseEnvironment"),
+            if let environmentString = UserDefaults.standard.string(forKey: UserDefaultsKeys.firebaseEnvironmentKey),
                let environment = environmentString.asEnvironment {
                 GeneralSerializer.environment = environment
             }
@@ -239,7 +241,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
         }
         
         GeneralSerializer.environment = environment
-        UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
+        UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: UserDefaultsKeys.firebaseEnvironmentKey)
     }
     
     private func setUpCallingCodes() {
@@ -297,7 +299,7 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
     }
     
     private func setUpUserHashes() {
-        if let archivedHashes = UserDefaults.standard.value(forKey: "archivedServerUserHashes") as? [String] {
+        if let archivedHashes = UserDefaults.standard.value(forKey: UserDefaultsKeys.archivedServerUserHashesKey) as? [String] {
             RuntimeStorage.store(archivedHashes, as: .archivedServerUserHashes)
         } else {
             // #warning("Maybe this should be async?")
@@ -307,12 +309,12 @@ public let telephonyNetworkInfo = CTTelephonyNetworkInfo()
                     return
                 }
                 
-                UserDefaults.standard.set(updatedServerUserHashes, forKey: "archivedServerUserHashes")
+                UserDefaults.standard.set(updatedServerUserHashes, forKey: UserDefaultsKeys.archivedServerUserHashesKey)
                 RuntimeStorage.store(updatedServerUserHashes, as: .archivedServerUserHashes)
             }
         }
         
-        guard let localUserHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] else { return }
+        guard let localUserHashes = UserDefaults.standard.value(forKey: UserDefaultsKeys.archivedLocalUserHashesKey) as? [String] else { return }
         RuntimeStorage.store(localUserHashes, as: .archivedLocalUserHashes)
     }
     

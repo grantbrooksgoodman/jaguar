@@ -95,7 +95,16 @@ public class ConversationsPageViewModel: ObservableObject {
                             return
                         }
                         
-                        Core.gcd.after(seconds: 2) { UpdateService.promptToUpdateIfNeeded() }
+                        guard ReviewService.canPromptToReview else {
+                            Core.gcd.after(seconds: 2) { UpdateService.promptToUpdateIfNeeded() }
+                            return
+                        }
+                        
+                        Core.gcd.after(seconds: 2) {
+                            guard !RuntimeStorage.isPresentingChat!,
+                                  !RuntimeStorage.isPreviewingChat! else { return }
+                            ReviewService.promptToReview()
+                        }
                     }
                     
                     RuntimeStorage.topWindow?.removeOverlay()
@@ -247,11 +256,21 @@ public class ConversationsPageViewModel: ObservableObject {
 #if !EXTENSION
             UIApplication.shared.applicationIconBadgeNumber = RuntimeStorage.currentUser!.badgeNumber
 #endif
+            guard let clearedCaches = UserDefaults.standard.value(forKey: UserDefaultsKeys.clearedCachesKey) as? Bool,
+                  clearedCaches else {
+                self.state = .loaded(translations: translations,
+                                     conversations: conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }))
+                completion()
+                return
+            }
             
-            self.state = .loaded(translations: translations,
-                                 conversations: conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }))
+            UserDefaults.standard.set(false, forKey: UserDefaultsKeys.clearedCachesKey)
             
-            completion()
+            ContactService.loadContacts { _, _ in
+                self.state = .loaded(translations: translations,
+                                     conversations: conversations.sorted(by: { $0.lastModifiedDate > $1.lastModifiedDate }))
+                completion()
+            }
         }
     }
     

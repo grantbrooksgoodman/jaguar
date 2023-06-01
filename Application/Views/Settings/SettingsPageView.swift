@@ -76,6 +76,14 @@ public struct SettingsPageView: View {
                         contactView
                     }
                     
+                    StaticList(items: [StaticListItem(title: translations["invite_friends"]!.output,
+                                                      imageData: (Image(systemName: "location.square.fill"), .blue),
+                                                      action: askToTranslate),
+                                       StaticListItem(title: translations["leave_a_review"]!.output,
+                                                      imageData: (Image(systemName: "star.square.fill"), .yellow),
+                                                      action: viewModel.reviewOnAppStore)])
+                    .padding(.bottom, 20)
+                    
                     StaticList(items: [StaticListItem(title: translations["change_theme"]!.output,
                                                       imageData: (Image(systemName: "eye.square.fill"), .purple),
                                                       action: viewModel.changeTheme),
@@ -210,6 +218,23 @@ public struct SettingsPageView: View {
     //==================================================//
     
     /* MARK: - Private Methods */
+    
+    private func askToTranslate() {
+        InviteService.askToTranslate { shouldTranslate in
+            guard let shouldTranslate else { return }
+            isPresenting = false
+            
+            Core.gcd.after(milliseconds: 1500) {
+                if shouldTranslate {
+                    stateProvider.showingInviteLanguagePicker = true
+                } else {
+                    InviteService.composeInvitation()
+                }
+                
+                RuntimeStorage.store(false, as: .wantsToInvite)
+            }
+        }
+    }
     
     private func confirmSignOut() {
         viewModel.confirmSignOut(viewRouter)

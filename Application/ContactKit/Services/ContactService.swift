@@ -185,7 +185,7 @@ public enum ContactService {
                 
                 guard serverArchive.sorted() == updatedServerUserHashes.sorted() else {
                     // #warning("I *think* this should be here, but having trouble with the logic.")
-                    UserDefaults.standard.set(updatedServerUserHashes, forKey: "archivedServerUserHashes")
+                    UserDefaults.standard.set(updatedServerUserHashes, forKey: UserDefaultsKeys.archivedServerUserHashesKey)
                     RuntimeStorage.store(updatedServerUserHashes, as: .archivedServerUserHashes)
                     
                     completion(true, nil)
@@ -209,7 +209,7 @@ public enum ContactService {
                 
                 let shouldUpdate = archivedContactCount != filtered.count
                 if shouldUpdate {
-                    UserDefaults.standard.set(updatedServerUserHashes, forKey: "archivedServerUserHashes")
+                    UserDefaults.standard.set(updatedServerUserHashes, forKey: UserDefaultsKeys.archivedServerUserHashesKey)
                     RuntimeStorage.store(updatedServerUserHashes, as: .archivedServerUserHashes)
                 }
                 
@@ -247,7 +247,7 @@ public enum ContactService {
                             return
                         }
                         
-                        UserDefaults.standard.set(updatedLocalUserHashes, forKey: "archivedLocalUserHashes")
+                        UserDefaults.standard.set(updatedLocalUserHashes, forKey: UserDefaultsKeys.archivedLocalUserHashesKey)
                         RuntimeStorage.store(updatedLocalUserHashes, as: .archivedLocalUserHashes)
                         
                         updateContacts { contactPairs, exception in

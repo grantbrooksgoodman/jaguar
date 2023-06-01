@@ -160,8 +160,8 @@ public struct UserTestingSerializer {
     }
     
     public func signInNextUserInSequence(completion: @escaping (_ exception: Exception?) -> Void = { _ in }) {
-        UserDefaults.standard.setValue(nil, forKey: "userList")
-        UserDefaults.standard.setValue(0, forKey: "userListPosition")
+        UserDefaults.standard.setValue(nil, forKey: UserDefaultsKeys.userListKey)
+        UserDefaults.standard.setValue(0, forKey: UserDefaultsKeys.userListPositionKey)
         
         UserDefaults.standard.setValue(nil, forKey: "conversationArchive")
         UserDefaults.standard.setValue(nil, forKey: "conversationArchiveUserID")
@@ -173,8 +173,8 @@ public struct UserTestingSerializer {
         RuntimeStorage.remove(.currentUserID)
         
         // #warning("Will never be executed.")
-        if let userList = UserDefaults.standard.value(forKey: "userList") as? [String],
-           let position = UserDefaults.standard.value(forKey: "userListPosition") as? Int {
+        if let userList = UserDefaults.standard.value(forKey: UserDefaultsKeys.userListKey) as? [String],
+           let position = UserDefaults.standard.value(forKey: UserDefaultsKeys.userListPositionKey) as? Int {
             getSetUser(with: userList,
                        position: position) { exception in
                 completion(exception)
@@ -186,8 +186,8 @@ public struct UserTestingSerializer {
                     return
                 }
                 
-                UserDefaults.standard.setValue(Array(values.keys), forKey: "userList")
-                UserDefaults.standard.setValue(0, forKey: "userListPosition")
+                UserDefaults.standard.setValue(Array(values.keys), forKey: UserDefaultsKeys.userListKey)
+                UserDefaults.standard.setValue(0, forKey: UserDefaultsKeys.userListPositionKey)
                 
                 self.getSetUser(with: Array(values.keys),
                                 position: 0) { exception in
@@ -264,7 +264,7 @@ public struct UserTestingSerializer {
         var position = position
         
         guard position + 1 < list.count else {
-            UserDefaults.standard.setValue(0, forKey: "userListPosition")
+            UserDefaults.standard.setValue(0, forKey: UserDefaultsKeys.userListPositionKey)
             UserSerializer.shared.getUser(withIdentifier: list[0]) { returnedUser, exception in
                 guard let user = returnedUser else {
                     completion(exception ?? Exception(metadata: [#file, #function, #line]))
@@ -274,7 +274,7 @@ public struct UserTestingSerializer {
                 RuntimeStorage.store(user, as: .currentUser)
                 RuntimeStorage.store(user.identifier!, as: .currentUserID)
                 
-                UserDefaults.standard.setValue(nil, forKey: "userList")
+                UserDefaults.standard.setValue(nil, forKey: UserDefaultsKeys.userListKey)
                 completion(nil)
             }
             
@@ -282,7 +282,7 @@ public struct UserTestingSerializer {
         }
         
         position += 1
-        UserDefaults.standard.setValue(position, forKey: "userListPosition")
+        UserDefaults.standard.setValue(position, forKey: UserDefaultsKeys.userListPositionKey)
         let userToGet = list[position]
         
         UserSerializer.shared.getUser(withIdentifier: userToGet) { returnedUser, exception in

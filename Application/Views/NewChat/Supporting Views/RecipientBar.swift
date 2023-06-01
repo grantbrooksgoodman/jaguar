@@ -386,7 +386,7 @@ public class RecipientBar: UIView {
                         return
                     }
                     
-                    if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
+                    if let archivedHashes = UserDefaults.standard.value(forKey: UserDefaultsKeys.archivedLocalUserHashesKey) as? [String] {
                         RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
                         StateProvider.shared.showNewChatPageForGrantedContactAccess = true
                     } else {
@@ -396,7 +396,7 @@ public class RecipientBar: UIView {
                                 return
                             }
                             
-                            UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
+                            UserDefaults.standard.set(hashes, forKey: UserDefaultsKeys.archivedLocalUserHashesKey)
                             RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
                             StateProvider.shared.showNewChatPageForGrantedContactAccess = true
                         }
@@ -407,7 +407,7 @@ public class RecipientBar: UIView {
             return
         }
         
-        guard !contactPairs.isEmpty else {
+        guard !contactPairs.excludingCurrentUser.isEmpty else {
             promptToInvite()
             return
         }

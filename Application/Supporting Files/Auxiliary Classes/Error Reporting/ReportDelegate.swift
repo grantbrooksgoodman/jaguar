@@ -270,11 +270,13 @@ public class ReportDelegate: UIViewController, AKReportDelegate, MFMailComposeVi
                 return
             }
             
-            let filePath = "\(GeneralSerializer.environment.shortString)/reports/\(logFile.directoryName!)/\(logFile.fileName!).log"
+            let bundleVersionString = "\(Build.bundleVersion) (\(Build.buildNumber))"
+            
+            let filePath = "\(GeneralSerializer.environment.shortString)/reports/\(bundleVersionString)/\(logFile.directoryName!)/\(logFile.fileName!).log"
             
             let storageMetadata = StorageMetadata(dictionary: ["name": filePath])
             storageMetadata.contentType = "application/json"
-            storageMetadata.customMetadata = ["Bundle Version": "\(Build.bundleVersion) (\(Build.buildNumber))"]
+            storageMetadata.customMetadata = ["Bundle Version": bundleVersionString]
             
             if let description {
                 storageMetadata.customMetadata!["Description"] = description

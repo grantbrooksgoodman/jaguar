@@ -31,7 +31,7 @@ public class SelectLanguagePageViewModel: ObservableObject {
     /* MARK: - Properties */
     
     private let inputs = ["title": Translator.TranslationInput("Select Language"),
-                          "subtitle": Translator.TranslationInput("To begin, please select your language."),
+                          "subtitle": Translator.TranslationInput("To begin, please select your language.\n\nNote that this setting cannot be changed later."),
                           "instruction": Translator.TranslationInput("I speak:", alternate: "Language you speak:"),
                           "continue": Translator.TranslationInput("Continue"),
                           "back": Translator.TranslationInput("Back", alternate: "Go back")]

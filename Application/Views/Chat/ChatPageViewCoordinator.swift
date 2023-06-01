@@ -119,18 +119,16 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
               text != "CANCEL_RECORDING",
               text.lowercasedTrimmingWhitespace != "" else { return }
         
+        showSendingUI(inputBar)
         ChatServices.defaultChatUIService?.setUserCancellation(enabled: false)
-        
-        inputBar.inputTextView.text = ""
-        inputBar.sendButton.startAnimating()
-        inputBar.sendButton.isEnabled = false
-        
         UIImpactFeedbackGenerator(style: .medium).impactOccurred()
         RuntimeStorage.store(true, as: .isSendingMessage)
         
         ChatServices.defaultDeliveryService?.sendTextMessage(text: text, completion: { exception in
             RuntimeStorage.store(false, as: .isSendingMessage)
             ChatServices.defaultChatUIService?.showMenuForFirstMessageIfNeeded()
+            
+            inputBar.inputTextView.tintColor = .primaryAccentColor
             
             guard let exception else { return }
             Logger.log(exception)
@@ -215,12 +213,13 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
             }
         case .stopRecording:
             stopRecording {
-                inputBar.sendButton.startAnimating()
+                self.showSendingUI(inputBar)
                 ChatServices.defaultChatUIService?.setUserCancellation(enabled: false)
                 inputBar.sendButton.isEnabled = false
             } completion: { inputFile, outputFile, translation, exception in
                 guard let inputFile, let outputFile, let translation else {
                     self.handleStopRecordingException(exception ?? Exception(metadata: [#file, #function, #line]))
+                    guard !inputBar.sendButton.isAnimating else { return }
                     RuntimeStorage.store(false, as: .isSendingMessage)
                     return
                 }
@@ -231,6 +230,8 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
                                                                       completion: { exception in
                     RuntimeStorage.store(false, as: .isSendingMessage)
                     ChatServices.defaultChatUIService?.showMenuForFirstMessageIfNeeded()
+                    
+                    inputBar.inputTextView.tintColor = .primaryAccentColor
                     
                     guard let exception else { return }
                     Logger.log(exception)
@@ -303,6 +304,17 @@ extension ChatPageViewCoordinator: InputBarAccessoryViewDelegate {
         ChatServices.defaultAudioMessageService?.removeRecordingUI(completion: { exception in
             completion(exception)
         })
+    }
+    
+    //==================================================//
+    
+    /* MARK: - Helper Methods */
+    
+    private func showSendingUI(_ inputBar: InputBarAccessoryView) {
+        inputBar.inputTextView.text = ""
+        inputBar.inputTextView.tintColor = .clear
+        inputBar.sendButton.startAnimating()
+        inputBar.sendButton.isEnabled = false
     }
 }
 

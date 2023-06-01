@@ -64,8 +64,7 @@ public enum ContactArchiver {
     public static func clearArchive() {
         contactArchive = []
         UserDefaults.standard.setValue(nil, forKey: "contactArchive")
-        UserDefaults(suiteName: "group.us.neotechnica.notificationextension")?.setValue(nil,
-                                                                                        forKey: "contactArchive")
+        UserDefaults(suiteName: "group.us.neotechnica.notificationextension")?.setValue(nil, forKey: "contactArchive")
     }
     
     public static func getArchive(completion: @escaping (_ returnedContactPairs: [ContactPair]?,

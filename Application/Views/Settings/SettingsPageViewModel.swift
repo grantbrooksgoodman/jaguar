@@ -41,6 +41,8 @@ public class SettingsPageViewModel: ObservableObject {
     
     private let inputs = ["change_theme": Translator.TranslationInput("Change Theme", alternate: "Change Appearance"),
                           "clear_caches": Translator.TranslationInput("Clear Caches"),
+                          "invite_friends": Translator.TranslationInput("Invite Friends"),
+                          "leave_a_review": Translator.TranslationInput("Leave a Review"),
                           "log_out": Translator.TranslationInput("Log Out"),
                           "version": Translator.TranslationInput("Version")]
     
@@ -148,22 +150,21 @@ public class SettingsPageViewModel: ObservableObject {
         return items
     }
     
+    public func reviewOnAppStore() {
+        guard let reviewURL = URL(string: "https://apps.apple.com/app/id1662674065?action=write-review") else { return }
+        Core.open(reviewURL)
+    }
+    
     //==================================================//
     
     /* MARK: - Private Methods */
     
     private func clearCaches() {
-        ContactArchiver.clearArchive()
-        ContactService.clearCache()
-        ConversationArchiver.clearArchive()
-        RecognitionService.clearCache()
-        RegionDetailServer.clearCache()
-        TranslationArchiver.clearArchive()
-        
+        Core.clearCaches()
         AnalyticsService.logEvent(.clearCaches)
         
-        UserDefaults.standard.set(nil, forKey: "archivedLocalUserHashes")
-        UserDefaults.standard.set(nil, forKey: "archivedServerUserHashes")
+        UserDefaults.standard.set(nil, forKey: UserDefaultsKeys.archivedLocalUserHashesKey)
+        UserDefaults.standard.set(nil, forKey: UserDefaultsKeys.archivedServerUserHashesKey)
         
         Core.eraseDocumentsDirectory()
         Core.eraseTemporaryDirectory()

@@ -153,13 +153,13 @@ public extension DevModeService {
     
     private static func resetUserDefaults() {
         UserDefaults.reset()
-        UserDefaults.standard.set(true, forKey: "developerModeEnabled")
+        UserDefaults.standard.set(true, forKey: UserDefaultsKeys.developerModeEnabledKey)
         Core.hud.showSuccess(text: "Reset UserDefaults")
     }
     
     private static func restoreResetOnFirstRunFlag() {
         RuntimeStorage.store(false, as: .didResetForFirstRun)
-        UserDefaults.standard.set(false, forKey: "didResetForFirstRun")
+        UserDefaults.standard.set(false, forKey: UserDefaultsKeys.didResetForFirstRunKey)
         Core.hud.flash("App will reset on next launch", image: .success)
     }
     
@@ -210,8 +210,8 @@ public extension DevModeService {
             TranslationArchiver.clearArchive()
             
             environment = GeneralSerializer.environment.description
-            UserDefaults.standard.set(true, forKey: "developerModeEnabled")
-            UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: "firebaseEnvironment")
+            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.developerModeEnabledKey)
+            UserDefaults.standard.set(GeneralSerializer.environment.shortString, forKey: UserDefaultsKeys.firebaseEnvironmentKey)
             
             AKAlert(message: "Switched to \(environment) environment. You must now restart the app.",
                     actions: [AKAction(title: "Exit", style: .destructivePreferred)],
@@ -228,15 +228,15 @@ public extension DevModeService {
         
         guard !RuntimeStorage.isPresentingChat! else { return }
         
-        guard let currentValue = UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool else {
+        guard let currentValue = UserDefaults.standard.value(forKey: UserDefaultsKeys.hidesBuildInfoOverlayKey) as? Bool else {
             overlay.isHidden.toggle()
-            UserDefaults.standard.set(overlay.isHidden, forKey: "hidesBuildInfoOverlay")
+            UserDefaults.standard.set(overlay.isHidden, forKey: UserDefaultsKeys.hidesBuildInfoOverlayKey)
             return
         }
         
         let toggledValue = !currentValue
         overlay.isHidden = toggledValue
-        UserDefaults.standard.set(toggledValue, forKey: "hidesBuildInfoOverlay")
+        UserDefaults.standard.set(toggledValue, forKey: UserDefaultsKeys.hidesBuildInfoOverlayKey)
     }
     
     //==================================================//

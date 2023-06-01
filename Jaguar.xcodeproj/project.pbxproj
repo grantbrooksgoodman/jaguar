@@ -418,6 +418,9 @@
 		B90500C328E2509C00FC56F0 /* FirebaseTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90500C128E2509900FC56F0 /* FirebaseTranslator.swift */; };
 		B90500C428E2509C00FC56F0 /* FirebaseTranslator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90500C128E2509900FC56F0 /* FirebaseTranslator.swift */; };
 		B90500C628E2509C00FC56F0 /* FirebaseTranslatorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90500C228E2509C00FC56F0 /* FirebaseTranslatorTests.swift */; };
+		B90A35AC2A27C82400B889D0 /* Array+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90A35AB2A27C82400B889D0 /* Array+Extensions.swift */; };
+		B90A35AD2A27C82400B889D0 /* Array+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90A35AB2A27C82400B889D0 /* Array+Extensions.swift */; };
+		B90A35AE2A27C82400B889D0 /* Array+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90A35AB2A27C82400B889D0 /* Array+Extensions.swift */; };
 		B90A69A528E513D1009FF2EB /* PhoneNumberService_OLD.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90A69A428E513D1009FF2EB /* PhoneNumberService_OLD.swift */; };
 		B90A69A928E52178009FF2EB /* ContactArchiver.swift in Sources */ = {isa = PBXBuildFile; fileRef = B90A69A828E52178009FF2EB /* ContactArchiver.swift */; };
 		B910C401290C7C2700BE7BB0 /* ConversationTestingSerializer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B910C400290C7C2700BE7BB0 /* ConversationTestingSerializer.swift */; };
@@ -576,6 +579,9 @@
 		B9984D312A06D455007A37FE /* ConnectionAlertDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9984D302A06D455007A37FE /* ConnectionAlertDelegate.swift */; };
 		B9984D322A06D455007A37FE /* ConnectionAlertDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9984D302A06D455007A37FE /* ConnectionAlertDelegate.swift */; };
 		B9984D332A06D455007A37FE /* ConnectionAlertDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9984D302A06D455007A37FE /* ConnectionAlertDelegate.swift */; };
+		B99F13EE2A28065A00B9FCE2 /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99F13ED2A28065A00B9FCE2 /* UserDefaultsKeys.swift */; };
+		B99F13EF2A28087300B9FCE2 /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99F13ED2A28065A00B9FCE2 /* UserDefaultsKeys.swift */; };
+		B99F13F02A28087300B9FCE2 /* UserDefaultsKeys.swift in Sources */ = {isa = PBXBuildFile; fileRef = B99F13ED2A28065A00B9FCE2 /* UserDefaultsKeys.swift */; };
 		B9AC1D2D295629CD0098BA0A /* ReferenceGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9AC1D2C295629CD0098BA0A /* ReferenceGenerator.swift */; };
 		B9AC1D2E295629CD0098BA0A /* ReferenceGenerator.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9AC1D2C295629CD0098BA0A /* ReferenceGenerator.swift */; };
 		B9B14C7E295822DC00857002 /* QuickViewer.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B14C7D295822DC00857002 /* QuickViewer.swift */; };
@@ -593,6 +599,9 @@
 		B9C8799E2960DBDF00B2675D /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8799D2960DBDF00B2675D /* AnalyticsService.swift */; };
 		B9C8799F2960DBDF00B2675D /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8799D2960DBDF00B2675D /* AnalyticsService.swift */; };
 		B9C879A02960F77000B2675D /* AnalyticsService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9C8799D2960DBDF00B2675D /* AnalyticsService.swift */; };
+		B9CB488A2A27E54600A93862 /* ReviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CB48892A27E54600A93862 /* ReviewService.swift */; };
+		B9CB488B2A27E54600A93862 /* ReviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CB48892A27E54600A93862 /* ReviewService.swift */; };
+		B9CB488C2A27E54600A93862 /* ReviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CB48892A27E54600A93862 /* ReviewService.swift */; };
 		B9CBB0CB296E1D3A00E75F53 /* NumberPair.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CBB0CA296E1D3A00E75F53 /* NumberPair.swift */; };
 		B9CBB0CC296E1D3A00E75F53 /* NumberPair.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CBB0CA296E1D3A00E75F53 /* NumberPair.swift */; };
 		B9CBB0CD296E1D3A00E75F53 /* NumberPair.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9CBB0CA296E1D3A00E75F53 /* NumberPair.swift */; };
@@ -1063,6 +1072,7 @@
 		B901E2B7292C681500831B55 /* ContactCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContactCell.swift; sourceTree = "<group>"; };
 		B90500C128E2509900FC56F0 /* FirebaseTranslator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirebaseTranslator.swift; sourceTree = "<group>"; };
 		B90500C228E2509C00FC56F0 /* FirebaseTranslatorTests.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = FirebaseTranslatorTests.swift; sourceTree = "<group>"; };
+		B90A35AB2A27C82400B889D0 /* Array+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Array+Extensions.swift"; sourceTree = "<group>"; };
 		B90A69A428E513D1009FF2EB /* PhoneNumberService_OLD.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = PhoneNumberService_OLD.swift; path = "Application/Other Files/PhoneNumberService_OLD.swift"; sourceTree = SOURCE_ROOT; };
 		B90A69A828E52178009FF2EB /* ContactArchiver.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ContactArchiver.swift; sourceTree = "<group>"; };
 		B910C400290C7C2700BE7BB0 /* ConversationTestingSerializer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConversationTestingSerializer.swift; sourceTree = "<group>"; };
@@ -1108,6 +1118,7 @@
 		B9984D1C2A05D26D007A37FE /* UILabel+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UILabel+Extensions.swift"; sourceTree = "<group>"; };
 		B9984D202A060BF7007A37FE /* UIColor+Extensions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "UIColor+Extensions.swift"; sourceTree = "<group>"; };
 		B9984D302A06D455007A37FE /* ConnectionAlertDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ConnectionAlertDelegate.swift; sourceTree = "<group>"; };
+		B99F13ED2A28065A00B9FCE2 /* UserDefaultsKeys.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = UserDefaultsKeys.swift; sourceTree = "<group>"; };
 		B9AC1D2C295629CD0098BA0A /* ReferenceGenerator.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ReferenceGenerator.swift; sourceTree = "<group>"; };
 		B9B14C7D295822DC00857002 /* QuickViewer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QuickViewer.swift; sourceTree = "<group>"; };
 		B9B14C8329591D1000857002 /* LogFile.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LogFile.swift; sourceTree = "<group>"; };
@@ -1119,6 +1130,7 @@
 		B9B88A8D29A59E570036F2E5 /* DeliveryService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DeliveryService.swift; sourceTree = "<group>"; };
 		B9B900C928EA6AF100839AED /* LookupTables.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = LookupTables.plist; sourceTree = "<group>"; };
 		B9C8799D2960DBDF00B2675D /* AnalyticsService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AnalyticsService.swift; sourceTree = "<group>"; };
+		B9CB48892A27E54600A93862 /* ReviewService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ReviewService.swift; sourceTree = "<group>"; };
 		B9CBB0CA296E1D3A00E75F53 /* NumberPair.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NumberPair.swift; sourceTree = "<group>"; };
 		B9CBD88628F3F02800A6DD0D /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		B9E9EF4C29E61C3500DD34B7 /* ThemeComponents.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = ThemeComponents.swift; sourceTree = "<group>"; };
@@ -1815,6 +1827,7 @@
 				B9449C4128EDF2F900A02EA8 /* RuntimeStorage.swift */,
 				A2DF2C5628199B660089DEA1 /* SceneDelegate.swift */,
 				B97FBA69297E35A500F66FCE /* Audio */,
+				B99F13EC2A28064400B9FCE2 /* Constants */,
 				B9A0596C28EB4AB700D0244F /* ContactKit */,
 				B9F6ACB029AC3D4500572F31 /* Extensions */,
 				A25714A328725D6400022366 /* Objects */,
@@ -2025,6 +2038,7 @@
 				B952143529CF99060042D327 /* InviteService.swift */,
 				B92246B1290FA37900A05730 /* MessageComposer.swift */,
 				B922186829B4361800A107BE /* PermissionService.swift */,
+				B9CB48892A27E54600A93862 /* ReviewService.swift */,
 				B9F9189F29FB05AB00327C8B /* UpdateService.swift */,
 			);
 			path = Public;
@@ -2199,6 +2213,14 @@
 			path = Services;
 			sourceTree = "<group>";
 		};
+		B99F13EC2A28064400B9FCE2 /* Constants */ = {
+			isa = PBXGroup;
+			children = (
+				B99F13ED2A28065A00B9FCE2 /* UserDefaultsKeys.swift */,
+			);
+			path = Constants;
+			sourceTree = "<group>";
+		};
 		B9A0596C28EB4AB700D0244F /* ContactKit */ = {
 			isa = PBXGroup;
 			children = (
@@ -2283,6 +2305,7 @@
 		B9F6ACB029AC3D4500572F31 /* Extensions */ = {
 			isa = PBXGroup;
 			children = (
+				B90A35AB2A27C82400B889D0 /* Array+Extensions.swift */,
 				B950D4D42A070AB4007F218B /* Core+Extensions.swift */,
 				B9F6ACB929AC3E4700572F31 /* Date+Extensions.swift */,
 				B9F6ACB529AC3E0900572F31 /* InputBar+Extensions.swift */,
@@ -2870,7 +2893,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\nbuildNumber=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" \"$INFOPLIST_FILE\")\n\nreleaseBuildNumber=$((($buildNumber + 1) - 11536))\n\nbuildNumber=$(($buildNumber + 1))\nminorReleaseNumber=$((releaseBuildNumber/150))\nbugFixReleaseNumber=$((releaseBuildNumber/50))\nCFBundleVersionINCR=1.$((minorReleaseNumber)).$((bugFixReleaseNumber))\n\nbuildDate=`date +%s`\n\n/usr/libexec/PlistBuddy -c \"Set :CFBuildDate $buildDate\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $buildNumber\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleReleaseVersion $releaseBuildNumber\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $CFBundleVersionINCR\" \"$INFOPLIST_FILE\"\n";
+			shellScript = "#!/bin/bash\nbuildNumber=$(/usr/libexec/PlistBuddy -c \"Print CFBundleVersion\" \"$INFOPLIST_FILE\")\n\nreleaseBuildNumber=$((($buildNumber + 1) - 11538))\n\nbuildNumber=$(($buildNumber + 1))\nminorReleaseNumber=$((releaseBuildNumber/150))\nbugFixReleaseNumber=$((releaseBuildNumber/50))\nCFBundleVersionINCR=1.$((minorReleaseNumber)).$((bugFixReleaseNumber))\n\nbuildDate=`date +%s`\n\n/usr/libexec/PlistBuddy -c \"Set :CFBuildDate $buildDate\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleVersion $buildNumber\" \"$INFOPLIST_FILE\"\n/usr/libexec/PlistBuddy -c \"Set :CFBundleReleaseVersion $releaseBuildNumber\" \"$INFOPLIST_FILE\"\n#/usr/libexec/PlistBuddy -c \"Set :CFBundleShortVersionString $CFBundleVersionINCR\" \"$INFOPLIST_FILE\"\n";
 		};
 		FF09609F95F05539E0D31483 /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -2902,6 +2925,8 @@
 			buildActionMask = 2147483647;
 			files = (
 				B90500C428E2509C00FC56F0 /* FirebaseTranslator.swift in Sources */,
+				B99F13EF2A28087300B9FCE2 /* UserDefaultsKeys.swift in Sources */,
+				B9CB488B2A27E54600A93862 /* ReviewService.swift in Sources */,
 				A2E21E82289C952400AE16FE /* InitialPageViewModel.swift in Sources */,
 				A2B00388281C326A00B771BA /* GeneralSerializer.swift in Sources */,
 				B911F68D292EE66F00642159 /* ContactNavigationRouter.swift in Sources */,
@@ -2983,6 +3008,7 @@
 				A2B0037F281C325800B771BA /* Extensions.swift in Sources */,
 				A2E21E8C289C953900AE16FE /* SignInPageViewModel.swift in Sources */,
 				B9F6ACB329AC3D6D00572F31 /* UIFont+Extensions.swift in Sources */,
+				B90A35AD2A27C82400B889D0 /* Array+Extensions.swift in Sources */,
 				A25FE35928BA017E0097552E /* SentenceGenerator.swift in Sources */,
 				B952143B29CF9B450042D327 /* LanguagePickerView.swift in Sources */,
 				B92CF00528F48C3B00870B5C /* PhoneNumber.swift in Sources */,
@@ -3061,6 +3087,7 @@
 				B9F9189C29FAF00C00327C8B /* MetadataService.swift in Sources */,
 				B901E2B8292C681500831B55 /* ContactCell.swift in Sources */,
 				B9E9EF5529E61C3F00DD34B7 /* UITheme.swift in Sources */,
+				B90A35AC2A27C82400B889D0 /* Array+Extensions.swift in Sources */,
 				B9E9EF5129E61C3A00DD34B7 /* ThemeService.swift in Sources */,
 				B9438F4F29A2B1D8005A5CB6 /* ChatUIService.swift in Sources */,
 				B91688E128FE1204004C80A2 /* ExceptionCatalog.swift in Sources */,
@@ -3104,6 +3131,7 @@
 				A23D81D9288F20D700BD486D /* ChatPageViewCoordinator.swift in Sources */,
 				B91688DE28FE11DB004C80A2 /* Exception.swift in Sources */,
 				B9EA1192296A7F0900215C6C /* ContactPair.swift in Sources */,
+				B9CB488A2A27E54600A93862 /* ReviewService.swift in Sources */,
 				B9F91F8B294F0EBA00428BCA /* RecognitionService.swift in Sources */,
 				B953BD48297868DB00F492FA /* SpeechService.swift in Sources */,
 				B950D4D52A070AB4007F218B /* Core+Extensions.swift in Sources */,
@@ -3154,6 +3182,7 @@
 				B922186929B4361800A107BE /* PermissionService.swift in Sources */,
 				B9E9EF6A29E7E42A00DD34B7 /* SettingsPageViewModel.swift in Sources */,
 				B9E9EF6129E73C6400DD34B7 /* ThemedView.swift in Sources */,
+				B99F13EE2A28065A00B9FCE2 /* UserDefaultsKeys.swift in Sources */,
 				B951593628E25FA700AE6070 /* ShakeGesture.swift in Sources */,
 				B92246B2290FA37900A05730 /* MessageComposer.swift in Sources */,
 				B9438F5329A2B83D005A5CB6 /* MenuControllerService.swift in Sources */,
@@ -3191,6 +3220,7 @@
 				B9EA1190296A2F3A00215C6C /* PhoneNumberService.swift in Sources */,
 				B9984D332A06D455007A37FE /* ConnectionAlertDelegate.swift in Sources */,
 				B97FBA6D297EDE1800F66FCE /* RetranslationService.swift in Sources */,
+				B99F13F02A28087300B9FCE2 /* UserDefaultsKeys.swift in Sources */,
 				B91A21DA295A8D320094FF48 /* Timeout.swift in Sources */,
 				B91A2208295A8EC80094FF48 /* ConversationTestingSerializer.swift in Sources */,
 				B9F6ACC429AC3FF800572F31 /* Message+MessageExtensions.swift in Sources */,
@@ -3220,12 +3250,14 @@
 				B91A2206295A8EC80094FF48 /* ConversationSerializer.swift in Sources */,
 				B91A21FE295A8EB10094FF48 /* Contact.swift in Sources */,
 				B97FBA5B297B532700F66FCE /* AudioPlaybackController.swift in Sources */,
+				B9CB488C2A27E54600A93862 /* ReviewService.swift in Sources */,
 				B9E9EF5729E61C3F00DD34B7 /* UITheme.swift in Sources */,
 				B97FBA64297E34F800F66FCE /* AudioFile.swift in Sources */,
 				B9E9EF7029E8747300DD34B7 /* StaticList.swift in Sources */,
 				B900F53D29B7E0C3008731A7 /* DevModeService.swift in Sources */,
 				B9F918A629FB57B400327C8B /* UserDefaults+Extensions.swift in Sources */,
 				B91A21DB295A8D320094FF48 /* ExpiryAlertDelegate.swift in Sources */,
+				B90A35AE2A27C82400B889D0 /* Array+Extensions.swift in Sources */,
 				B97FBA5F297E344800F66FCE /* AudioMessageSerializer.swift in Sources */,
 				B900F54629B8218C008731A7 /* UIApplication+Extensions.swift in Sources */,
 				B9984D232A060BF7007A37FE /* UIColor+Extensions.swift in Sources */,

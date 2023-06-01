@@ -162,7 +162,7 @@ public struct PermissionsPageView: View {
                 return
             }
             
-            if let archivedHashes = UserDefaults.standard.value(forKey: "archivedLocalUserHashes") as? [String] {
+            if let archivedHashes = UserDefaults.standard.value(forKey: UserDefaultsKeys.archivedLocalUserHashesKey) as? [String] {
                 RuntimeStorage.store(archivedHashes, as: .archivedLocalUserHashes)
             } else {
                 ContactService.getLocalUserHashes { hashes, exception in
@@ -172,7 +172,7 @@ public struct PermissionsPageView: View {
                         return
                     }
                     
-                    UserDefaults.standard.set(hashes, forKey: "archivedLocalUserHashes")
+                    UserDefaults.standard.set(hashes, forKey: UserDefaultsKeys.archivedLocalUserHashesKey)
                     RuntimeStorage.store(hashes, as: .archivedLocalUserHashes)
                 }
             }

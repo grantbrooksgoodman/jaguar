@@ -237,7 +237,7 @@ public class SceneDelegate: UIResponder, UIWindowSceneDelegate, UIGestureRecogni
                 window.addSubview(buildInfoOverlayWindow)
             }
             
-            if let shouldHide = UserDefaults.standard.value(forKey: "hidesBuildInfoOverlay") as? Bool {
+            if let shouldHide = UserDefaults.standard.value(forKey: UserDefaultsKeys.hidesBuildInfoOverlayKey) as? Bool {
                 buildInfoOverlayWindow.isHidden = shouldHide
             }
             

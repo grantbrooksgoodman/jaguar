@@ -605,7 +605,7 @@ public class AudioMessageService: NSObject, UIGestureRecognizerDelegate, ChatSer
         let shouldShowKeyboard = delegate.messageInputBar.inputTextView.isFirstResponder
         alert.present { _ in
             RuntimeStorage.store(true, as: .acknowledgedAudioMessagesUnsupported)
-            UserDefaults.standard.set(true, forKey: "acknowledgedAudioMessagesUnsupported")
+            UserDefaults.standard.set(true, forKey: UserDefaultsKeys.acknowledgedAudioMessagesUnsupportedKey)
             
             self.removeGestureRecognizers()
             ChatServices.defaultChatUIService?.configureInputBar(forRecord: false)

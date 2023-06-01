@@ -21,6 +21,8 @@ public extension Core {
         RecognitionService.clearCache()
         RegionDetailServer.clearCache()
         TranslationArchiver.clearArchive()
+        
+        UserDefaults.standard.set(true, forKey: UserDefaultsKeys.clearedCachesKey)
     }
     
     @discardableResult
